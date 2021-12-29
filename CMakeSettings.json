@@ -1,0 +1,30 @@
+﻿{
+  "configurations": [
+    {
+      "name": "MatterFi-x64-${configurationType}-static",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DVCPKG_TARGET_TRIPLET=x64-windows-static -DMETIER_BUNDLED_OPENTXS=ON -DMETIER_PEDANTIC_BUILD=OFF -DMETIER_QML_INTERFACE=0N -DMETIER_DEFAULT_SYNC_SERVER=\"tcp://40.88.35.72:8814\" -DMETIER_DEFAULT_BLOCKCHAIN=9 -DOPENTXS_BUILD_TESTS=OFF",
+      "cmakeToolchain": "c:/src22/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "buildCommandArgs": "-v -k 0",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
+    },
+    {
+      "name": "MatterFi-x64-${configurationType}-static-with-dbg-info",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DVCPKG_TARGET_TRIPLET=x64-windows-static -DMETIER_BUNDLED_OPENTXS=ON -DMETIER_PEDANTIC_BUILD=OFF -DMETIER_QML_INTERFACE=0N -DMETIER_DEFAULT_SYNC_SERVER=\"tcp://40.88.35.72:8814\" -DMETIER_DEFAULT_BLOCKCHAIN=9 -DOPENTXS_BUILD_TESTS=OFF",
+      "cmakeToolchain": "c:/src22/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "buildCommandArgs": "-v -k 0",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
+    }
+  ]
+}
