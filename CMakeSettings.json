@@ -1,0 +1,43 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-${configurationType}-static",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DVCPKG_TARGET_TRIPLET=x64-windows-static -DMETIER_BUNDLED_OPENTXS=ON -DMETIER_PEDANTIC_BUILD=OFF -DMETIER_QML_INTERFACE=ON -DMETIER_DEFAULT_SYNC_SERVER=\"tcp://40.88.35.72:8814\" -DMETIER_DEFAULT_BLOCKCHAIN=9 -DOPENTXS_BUILD_TESTS=OFF",
+      "cmakeToolchain": "c:/src22/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "buildCommandArgs": "-v -k 0",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
+    },
+    {
+      "name": "x64-${configurationType}-static",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DVCPKG_TARGET_TRIPLET=x64-windows-static -DMETIER_BUNDLED_OPENTXS=ON -DMETIER_PEDANTIC_BUILD=OFF -DMETIER_QML_INTERFACE=ON -DMETIER_DEFAULT_SYNC_SERVER=\"tcp://40.88.35.72:8814\" -DMETIER_DEFAULT_BLOCKCHAIN=9 -DOPENTXS_BUILD_TESTS=OFF",
+      "cmakeToolchain": "c:/src22/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "buildCommandArgs": "-v -k 0",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
+    },
+    {
+      "name": "x64-${configurationType}-static-UT",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DOPENTXS_BUILD_TESTS=ON -DOPENTXS_PEDANTIC_BUILD=ON -DOT_VALGRIND=ON -DOT_CRYPTO_SUPPORTED_KEY_RSA=ON -DOT_CRYPTO_SUPPORTED_KEY_SECP256K1=ON -DOT_CRYPTO_SUPPORTED_KEY_ED25519=ON -DOT_CRYPTO_USING_LIBSECP256K1=ON -DOT_CRYPTO_USING_OPENSSL=ON -DOT_DHT=ON -DOT_CASH_USING_LUCRE=ON -DOT_SCRIPT_USING_CHAI=ON -DOT_WITH_QT=ON -DOT_WITH_QML=ON -DOT_STORAGE_FS=ON -DOT_STORAGE_SQLITE=ON -DOT_STORAGE_LMDB=ON -DOT_WITH_BLOCKCHAIN=ON -DOT_CRYPTO_USING_PACKETCRYPT=ON -DOT_ENABLE_RPC=ON",
+      "cmakeToolchain": "c:/src22/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "buildCommandArgs": "-v -k 0",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
+    }
+  ]
+}
