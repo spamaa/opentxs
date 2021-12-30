@@ -45,7 +45,7 @@ namespace opentxs
 using ReturnType = contract::implementation::Server;
 
 auto Factory::ServerContract(const api::Session& api) noexcept
-    -> std::unique_ptr<contract::Server>
+    -> std::unique_ptr<contract::Notary>
 {
     return std::make_unique<contract::blank::Server>(api);
 }
@@ -58,19 +58,19 @@ auto Factory::ServerContract(
     const std::string& name,
     const VersionNumber version,
     const opentxs::PasswordPrompt& reason) noexcept
-    -> std::unique_ptr<contract::Server>
+    -> std::unique_ptr<contract::Notary>
 {
     if (false == bool(nym)) { return {}; }
     if (false == nym->HasCapability(NymCapability::AUTHENTICATE_CONNECTION)) {
         return {};
     }
 
-    auto list = std::list<contract::Server::Endpoint>{};
+    auto list = std::list<contract::Notary::Endpoint>{};
     std::transform(
         std::begin(endpoints),
         std::end(endpoints),
         std::back_inserter(list),
-        [](const auto& in) -> contract::Server::Endpoint {
+        [](const auto& in) -> contract::Notary::Endpoint {
             return {
                 static_cast<core::AddressType>(std::get<0>(in)),
                 static_cast<contract::ProtocolVersion>(std::get<1>(in)),
@@ -117,7 +117,7 @@ auto Factory::ServerContract(
     const api::Session& api,
     const Nym_p& nym,
     const proto::ServerContract& serialized) noexcept
-    -> std::unique_ptr<contract::Server>
+    -> std::unique_ptr<contract::Notary>
 {
     if (false == proto::Validate<proto::ServerContract>(serialized, VERBOSE)) {
         return nullptr;
@@ -139,7 +139,7 @@ auto Factory::ServerContract(
 
 namespace opentxs::contract
 {
-const VersionNumber Server::DefaultVersion{2};
+const VersionNumber Notary::DefaultVersion{2};
 }  // namespace opentxs::contract
 
 namespace opentxs::contract::implementation
@@ -150,7 +150,7 @@ Server::Server(
     const VersionNumber version,
     const std::string& terms,
     const std::string& name,
-    std::list<contract::Server::Endpoint>&& endpoints,
+    std::list<contract::Notary::Endpoint>&& endpoints,
     OTData&& key,
     OTServerID&& id,
     Signatures&& signatures)
@@ -215,14 +215,14 @@ auto Server::EffectiveName() const -> std::string
 }
 
 auto Server::extract_endpoints(const proto::ServerContract& serialized) noexcept
-    -> std::list<contract::Server::Endpoint>
+    -> std::list<contract::Notary::Endpoint>
 {
-    auto output = std::list<contract::Server::Endpoint>{};
+    auto output = std::list<contract::Notary::Endpoint>{};
 
     for (auto& listen : serialized.address()) {
         // WARNING: preserve the order of this list, or signature verfication
         // will fail!
-        output.emplace_back(contract::Server::Endpoint{
+        output.emplace_back(contract::Notary::Endpoint{
             translate(listen.type()),
             translate(listen.protocol()),
             listen.host(),

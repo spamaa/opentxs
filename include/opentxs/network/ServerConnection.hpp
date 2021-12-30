@@ -11,7 +11,7 @@
 
 #include "opentxs/Types.hpp"
 #include "opentxs/core/Types.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/util/Pimpl.hpp"
 
 namespace opentxs

@@ -36,7 +36,6 @@
 #include "opentxs/api/session/Workflow.hpp"
 #include "opentxs/contact/Contact.hpp"
 #include "opentxs/core/PaymentCode.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"

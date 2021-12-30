@@ -69,7 +69,7 @@ class Reply;
 class Request;
 }  // namespace peer
 
-class Server;
+class Notary;
 }  // namespace contract
 
 namespace network
@@ -269,7 +269,7 @@ public:
         const bool setContactData,
         const bool forcePrimary,
         const bool resync) const -> BackgroundTask final;
-    auto SetIntroductionServer(const contract::Server& contract) const
+    auto SetIntroductionServer(const contract::Notary& contract) const
         -> OTServerID final;
     auto SendCheque(
         const identifier::Nym& localNymID,
@@ -421,7 +421,7 @@ private:
         const identifier::Server& serverID) const -> void;
     auto set_introduction_server(
         const Lock& lock,
-        const contract::Server& contract) const -> OTServerID;
+        const contract::Notary& contract) const -> OTServerID;
     auto start_task(const TaskID taskID, bool success) const
         -> BackgroundTask final;
     auto status(const Lock& lock, const TaskID taskID) const -> ThreadStatus;

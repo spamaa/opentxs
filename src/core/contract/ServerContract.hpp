@@ -16,9 +16,9 @@
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/Types.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Server.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Numbers.hpp"
 #include "serialization/protobuf/ServerContract.pb.h"
@@ -43,7 +43,7 @@ class String;
 
 namespace opentxs::contract::implementation
 {
-class Server final : public contract::Server,
+class Server final : public contract::Notary,
                      public opentxs::contract::implementation::Signable
 {
 public:
@@ -76,7 +76,7 @@ public:
         const VersionNumber version,
         const std::string& terms,
         const std::string& name,
-        std::list<contract::Server::Endpoint>&& endpoints,
+        std::list<contract::Notary::Endpoint>&& endpoints,
         OTData&& key,
         OTServerID&& id,
         Signatures&& signatures = {});
@@ -90,13 +90,13 @@ public:
 private:
     friend opentxs::Factory;
 
-    const std::list<contract::Server::Endpoint> listen_params_;
+    const std::list<contract::Notary::Endpoint> listen_params_;
     const std::string name_;
     const OTData transport_key_;
 
     static auto extract_endpoints(
         const proto::ServerContract& serialized) noexcept
-        -> std::list<contract::Server::Endpoint>;
+        -> std::list<contract::Notary::Endpoint>;
 
     auto clone() const noexcept -> Server* final { return new Server(*this); }
     auto contract(const Lock& lock) const -> proto::ServerContract;

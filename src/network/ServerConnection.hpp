@@ -17,11 +17,11 @@
 
 #include "Proto.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/AddressType.hpp"
 #include "opentxs/core/Flag.hpp"
 #include "opentxs/core/Lockable.hpp"
 #include "opentxs/core/Message.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"
 #include "opentxs/network/ServerConnection.hpp"

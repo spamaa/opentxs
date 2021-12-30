@@ -17,7 +17,7 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/contact/ClaimType.hpp"
 #include "opentxs/core/Types.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/ui/UnitListItem.hpp"

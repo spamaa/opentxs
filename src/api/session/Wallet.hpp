@@ -36,7 +36,7 @@
 #include "opentxs/core/Editor.hpp"
 #include "opentxs/core/Lockable.hpp"
 #include "opentxs/core/Types.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
@@ -314,7 +314,7 @@ public:
         const std::string& nymid,
         const std::string& name,
         const std::string& terms,
-        const std::list<contract::Server::Endpoint>& endpoints,
+        const std::list<contract::Notary::Endpoint>& endpoints,
         const PasswordPrompt& reason,
         const VersionNumber version) const -> OTServerContract final;
     auto ServerList() const -> ObjectList final;
@@ -422,7 +422,7 @@ private:
     using NymLock =
         std::pair<std::mutex, std::shared_ptr<identity::internal::Nym>>;
     using NymMap = std::map<OTNymID, NymLock>;
-    using ServerMap = std::map<OTServerID, std::shared_ptr<contract::Server>>;
+    using ServerMap = std::map<OTServerID, std::shared_ptr<contract::Notary>>;
     using UnitMap = std::map<OTUnitID, std::shared_ptr<contract::Unit>>;
     using IssuerID = std::pair<OTIdentifier, OTIdentifier>;
     using IssuerLock =
@@ -540,7 +540,7 @@ private:
         const identifier::Nym& issuerID,
         const bool create) const -> IssuerLock&;
 
-    auto server(std::unique_ptr<contract::Server> contract) const
+    auto server(std::unique_ptr<contract::Notary> contract) const
         noexcept(false) -> OTServerContract;
     auto unit_definition(std::shared_ptr<contract::Unit>&& contract) const
         -> OTUnitDefinition;

@@ -43,6 +43,7 @@
 #include "opentxs/contact/ContactGroup.hpp"  // IWYU pragma: keep
 #include "opentxs/contact/ContactItem.hpp"
 #include "opentxs/contact/SectionType.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/Account.hpp"
 #include "opentxs/core/Cheque.hpp"
 #include "opentxs/core/Data.hpp"
@@ -51,7 +52,6 @@
 #include "opentxs/core/Lockable.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/peer/BailmentNotice.hpp"
 #include "opentxs/core/contract/peer/BailmentReply.hpp"
 #include "opentxs/core/contract/peer/BailmentRequest.hpp"
@@ -1953,7 +1953,7 @@ auto OTX::RegisterNymPublic(
     return RegisterNym(nymID, serverID, resync);
 }
 
-auto OTX::SetIntroductionServer(const contract::Server& contract) const
+auto OTX::SetIntroductionServer(const contract::Notary& contract) const
     -> OTServerID
 {
     Lock lock(introduction_server_lock_);
@@ -2148,7 +2148,7 @@ void OTX::set_contact(
 
 auto OTX::set_introduction_server(
     const Lock& lock,
-    const contract::Server& contract) const -> OTServerID
+    const contract::Notary& contract) const -> OTServerID
 {
     OT_ASSERT(CheckLock(lock, introduction_server_lock_));
 

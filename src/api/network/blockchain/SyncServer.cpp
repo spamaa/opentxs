@@ -35,7 +35,7 @@
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
 #include "opentxs/core/contract/ContractType.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/contract/Types.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"

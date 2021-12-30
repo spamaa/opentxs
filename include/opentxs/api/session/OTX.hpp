@@ -40,7 +40,7 @@ class OTX;
 
 namespace contract
 {
-class Server;
+class Notary;
 }  // namespace contract
 
 namespace identifier
@@ -258,7 +258,7 @@ public:
         const bool setContactData,
         const bool forcePrimary = false,
         const bool resync = false) const -> BackgroundTask = 0;
-    virtual auto SetIntroductionServer(const contract::Server& contract) const
+    virtual auto SetIntroductionServer(const contract::Notary& contract) const
         -> OTServerID = 0;
     virtual auto SendCheque(
         const identifier::Nym& localNymID,

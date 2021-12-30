@@ -24,7 +24,7 @@ class Session;
 
 namespace contract
 {
-class Server;
+class Notary;
 class Unit;
 }  // namespace contract
 
@@ -85,7 +85,7 @@ auto BlockchainSyncMessage(
 auto BlockchainSyncPublishContract() noexcept -> network::p2p::PublishContract;
 auto BlockchainSyncPublishContract(const identity::Nym& payload) noexcept
     -> network::p2p::PublishContract;
-auto BlockchainSyncPublishContract(const contract::Server& payload) noexcept
+auto BlockchainSyncPublishContract(const contract::Notary& payload) noexcept
     -> network::p2p::PublishContract;
 auto BlockchainSyncPublishContract(const contract::Unit& payload) noexcept
     -> network::p2p::PublishContract;
@@ -121,7 +121,7 @@ auto BlockchainSyncQueryContractReply(const Identifier& id) noexcept
     -> network::p2p::QueryContractReply;
 auto BlockchainSyncQueryContractReply(const identity::Nym& payload) noexcept
     -> network::p2p::QueryContractReply;
-auto BlockchainSyncQueryContractReply(const contract::Server& payload) noexcept
+auto BlockchainSyncQueryContractReply(const contract::Notary& payload) noexcept
     -> network::p2p::QueryContractReply;
 auto BlockchainSyncQueryContractReply(const contract::Unit& payload) noexcept
     -> network::p2p::QueryContractReply;

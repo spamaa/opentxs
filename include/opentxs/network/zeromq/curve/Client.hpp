@@ -15,7 +15,7 @@ namespace opentxs
 {
 namespace contract
 {
-class Server;
+class Notary;
 }  // namespace contract
 
 class Data;
@@ -39,7 +39,7 @@ public:
         const std::string& clientPrivate,
         const std::string& clientPublic) const noexcept -> bool = 0;
     virtual auto SetServerPubkey(
-        const contract::Server& contract) const noexcept -> bool = 0;
+        const contract::Notary& contract) const noexcept -> bool = 0;
     virtual auto SetServerPubkey(const Data& key) const noexcept -> bool = 0;
 
     ~Client() override = default;

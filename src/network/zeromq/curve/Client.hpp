@@ -18,7 +18,7 @@ namespace opentxs
 {
 namespace contract
 {
-class Server;
+class Notary;
 }  // namespace contract
 
 namespace network
@@ -47,12 +47,12 @@ public:
         const std::string& serverPublic,
         const std::string& clientPrivate,
         const std::string& clientPublic) const noexcept -> bool final;
-    auto SetServerPubkey(const contract::Server& contract) const noexcept
+    auto SetServerPubkey(const contract::Notary& contract) const noexcept
         -> bool final;
     auto SetServerPubkey(const Data& key) const noexcept -> bool final;
 
 protected:
-    auto set_public_key(const contract::Server& contract) const noexcept
+    auto set_public_key(const contract::Notary& contract) const noexcept
         -> bool;
     auto set_public_key(const Data& key) const noexcept -> bool;
 

@@ -16,7 +16,7 @@
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/core/Ledger.hpp"
 #include "opentxs/core/PasswordPrompt.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/Server.hpp"

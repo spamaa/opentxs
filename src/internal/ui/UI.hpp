@@ -91,7 +91,7 @@ class Session;
 
 namespace contract
 {
-class Server;
+class Notary;
 class Unit;
 }  // namespace contract
 
@@ -548,7 +548,7 @@ struct AccountActivity : virtual public List,
     virtual auto Contract() const noexcept -> const contract::Unit& = 0;
     // WARNING potential race condition. Child rows must never call this
     // except when directed by parent object
-    virtual auto Notary() const noexcept -> const contract::Server& = 0;
+    virtual auto Notary() const noexcept -> const contract::Notary& = 0;
     using ui::AccountActivity::Send;
     virtual auto Send(
         const std::string& address,

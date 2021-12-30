@@ -19,11 +19,11 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/contact/Types.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/Amount.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/Types.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/contract/Types.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
@@ -172,7 +172,7 @@ private:
     }
 };
 
-struct Server final : virtual public opentxs::contract::Server,
+struct Server final : virtual public opentxs::contract::Notary,
                       public blank::Signable {
     auto ConnectInfo(
         std::string&,

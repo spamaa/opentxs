@@ -24,8 +24,8 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/Amount.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/ui/AccountActivity.hpp"
@@ -160,7 +160,7 @@ public:
 
         return display_balance(balance_);
     }
-    auto Notary() const noexcept -> const contract::Server& final
+    auto Notary() const noexcept -> const contract::Notary& final
     {
         return notary_.get();
     }

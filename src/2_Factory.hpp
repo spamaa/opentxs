@@ -100,7 +100,7 @@ class Currency;
 class Security;
 }  // namespace unit
 
-class Server;
+class Notary;
 class Signable;
 class Unit;
 }  // namespace contract
@@ -599,7 +599,7 @@ public:
         const proto::UnitDefinition serialized) noexcept
         -> std::shared_ptr<contract::unit::Security>;
     static auto ServerContract(const api::Session& api) noexcept
-        -> std::unique_ptr<contract::Server>;
+        -> std::unique_ptr<contract::Notary>;
     static auto ServerContract(
         const api::Session& api,
         const Nym_p& nym,
@@ -608,12 +608,12 @@ public:
         const std::string& name,
         const VersionNumber version,
         const opentxs::PasswordPrompt& reason) noexcept
-        -> std::unique_ptr<contract::Server>;
+        -> std::unique_ptr<contract::Notary>;
     static auto ServerContract(
         const api::Session& api,
         const Nym_p& nym,
         const proto::ServerContract& serialized) noexcept
-        -> std::unique_ptr<contract::Server>;
+        -> std::unique_ptr<contract::Notary>;
     static auto StoreSecret(
         const api::Session& api,
         const Nym_p& nym,

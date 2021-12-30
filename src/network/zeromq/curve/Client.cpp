@@ -16,8 +16,8 @@
 #include "internal/util/LogMacros.hpp"
 #include "network/zeromq/socket/Socket.hpp"
 #include "opentxs/Types.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/Data.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/util/Log.hpp"
 
 namespace opentxs::network::zeromq
@@ -78,7 +78,7 @@ auto Client::SetKeysZ85(
     return set_local_keys(clientPrivate, clientPublic);
 }
 
-auto Client::SetServerPubkey(const contract::Server& contract) const noexcept
+auto Client::SetServerPubkey(const contract::Notary& contract) const noexcept
     -> bool
 {
     return set_public_key(contract);
@@ -89,7 +89,7 @@ auto Client::SetServerPubkey(const Data& key) const noexcept -> bool
     return set_public_key(key);
 }
 
-auto Client::set_public_key(const contract::Server& contract) const noexcept
+auto Client::set_public_key(const contract::Notary& contract) const noexcept
     -> bool
 {
     const auto& key = contract.TransportKey();

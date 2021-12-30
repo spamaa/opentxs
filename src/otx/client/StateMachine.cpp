@@ -33,6 +33,7 @@
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/contact/ClaimType.hpp"
 #include "opentxs/contact/SectionType.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/Amount.hpp"
 #include "opentxs/core/Cheque.hpp"
 #include "opentxs/core/Editor.hpp"
@@ -42,7 +43,6 @@
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/UniqueQueue.hpp"
 #include "opentxs/core/contract/ContractType.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -845,7 +845,7 @@ auto StateMachine::queue_contracts(
         missing_nyms_, unknown_nyms_);
     check_missing_contract<CheckNymTask, identity::Nym>(
         outdated_nyms_, unknown_nyms_, false);
-    check_missing_contract<DownloadContractTask, contract::Server>(
+    check_missing_contract<DownloadContractTask, contract::Notary>(
         missing_servers_, unknown_servers_);
     check_missing_contract<DownloadUnitDefinitionTask, contract::Unit>(
         missing_unit_definitions_, unknown_units_);

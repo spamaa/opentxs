@@ -22,7 +22,7 @@ namespace opentxs
 {
 namespace contract
 {
-class Server;
+class Notary;
 }  // namespace contract
 
 namespace proto
@@ -32,14 +32,14 @@ class ServerContract;
 
 class PasswordPrompt;
 
-using OTServerContract = SharedPimpl<contract::Server>;
+using OTServerContract = SharedPimpl<contract::Notary>;
 }  // namespace opentxs
 
 namespace opentxs
 {
 namespace contract
 {
-class OPENTXS_EXPORT Server : virtual public opentxs::contract::Signable
+class OPENTXS_EXPORT Notary : virtual public opentxs::contract::Signable
 {
 public:
     using Endpoint = std::tuple<
@@ -70,10 +70,10 @@ public:
 
     virtual void InitAlias(const std::string& alias) = 0;
 
-    ~Server() override = default;
+    ~Notary() override = default;
 
 protected:
-    Server() noexcept = default;
+    Notary() noexcept = default;
 
 private:
     friend OTServerContract;
@@ -82,10 +82,10 @@ private:
     auto clone() const noexcept -> Server* override = 0;
 #endif
 
-    Server(const Server&) = delete;
-    Server(Server&&) = delete;
-    auto operator=(const Server&) -> Server& = delete;
-    auto operator=(Server&&) -> Server& = delete;
+    Notary(const Notary&) = delete;
+    Notary(Notary&&) = delete;
+    auto operator=(const Notary&) ->Notary & = delete;
+    auto operator=(Notary&&) ->Notary & = delete;
 };
 }  // namespace contract
 }  // namespace opentxs

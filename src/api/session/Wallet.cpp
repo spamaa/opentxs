@@ -2278,7 +2278,7 @@ auto Wallet::Server(
     throw std::runtime_error("Server contract not found");
 }
 
-auto Wallet::server(std::unique_ptr<contract::Server> contract) const
+auto Wallet::server(std::unique_ptr<contract::Notary> contract) const
     noexcept(false) -> OTServerContract
 {
     if (false == bool(contract)) {
@@ -2349,7 +2349,7 @@ auto Wallet::Server(const proto::ServerContract& contract) const
 
     if (!nym) { throw std::runtime_error("Invalid nym"); }
 
-    auto candidate = std::unique_ptr<contract::Server>{
+    auto candidate = std::unique_ptr<contract::Notary>{
         opentxs::Factory::ServerContract(api_, nym, contract)};
 
     if (!candidate) {
@@ -2396,7 +2396,7 @@ auto Wallet::Server(
     const std::string& nymid,
     const std::string& name,
     const std::string& terms,
-    const std::list<contract::Server::Endpoint>& endpoints,
+    const std::list<contract::Notary::Endpoint>& endpoints,
     const opentxs::PasswordPrompt& reason,
     const VersionNumber version) const -> OTServerContract
 {
@@ -2417,7 +2417,7 @@ auto Wallet::Server(
                     std::get<4>(in)};
             });
         auto pContract =
-            std::unique_ptr<contract::Server>{opentxs::Factory::ServerContract(
+            std::unique_ptr<contract::Notary>{opentxs::Factory::ServerContract(
                 api_, nym, list, terms, name, version, reason)};
 
         if (pContract) {

@@ -31,7 +31,6 @@
 #include "opentxs/core/Message.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/display/Definition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"

@@ -36,6 +36,7 @@
 #include "opentxs/api/session/Storage.hpp"
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/contact/ClaimType.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/AddressType.hpp"
 #include "opentxs/core/Amount.hpp"
 #include "opentxs/core/Armored.hpp"
@@ -45,7 +46,6 @@
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/ProtocolVersion.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/cron/OTCron.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -276,7 +276,7 @@ void Server::CreateMainFile(bool& mainFileExists)
         String::Factory(std::to_string(bindPort)),
         notUsed);
 
-    auto endpoints = std::list<contract::Server::Endpoint>{};
+    auto endpoints = std::list<contract::Notary::Endpoint>{};
     const auto inproc = args.NotaryInproc();
 
     if (inproc) {
@@ -371,8 +371,8 @@ void Server::CreateMainFile(bool& mainFileExists)
                 terms,
                 endpoints,
                 reason_,
-                (inproc) ? std::max(2u, contract::Server::DefaultVersion)
-                         : contract::Server::DefaultVersion);
+                (inproc) ? std::max(2u, contract::Notary::DefaultVersion)
+                         : contract::Notary::DefaultVersion);
         } else {
             LogError()(OT_PRETTY_CLASS())("Existing contract found. Restoring.")
                 .Flush();

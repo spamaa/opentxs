@@ -21,7 +21,7 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/core/contract/ContractType.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/identity/Nym.hpp"
@@ -63,7 +63,7 @@ auto BlockchainSyncPublishContract(const identity::Nym& payload) noexcept
     }
 }
 
-auto BlockchainSyncPublishContract(const contract::Server& payload) noexcept
+auto BlockchainSyncPublishContract(const contract::Notary& payload) noexcept
     -> ReturnType
 {
     try {

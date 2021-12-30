@@ -40,6 +40,7 @@
 #include "opentxs/blockchain/p2p/Address.hpp"
 #include "opentxs/blockchain/p2p/Types.hpp"
 #endif  // OT_BLOCKCHAIN
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/contact/Types.hpp"
 #include "opentxs/core/Amount.hpp"
 #include "opentxs/core/Armored.hpp"
@@ -54,7 +55,6 @@
 #include "opentxs/core/Types.hpp"
 #include "opentxs/core/contract/CurrencyContract.hpp"
 #include "opentxs/core/contract/SecurityContract.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
 #include "opentxs/core/contract/peer/BailmentNotice.hpp"

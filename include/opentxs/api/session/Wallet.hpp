@@ -19,7 +19,7 @@
 
 #include "opentxs/Types.hpp"
 #include "opentxs/contact/Types.hpp"
-#include "opentxs/core/contract/ServerContract.hpp"
+#include "opentxs/contract/Notary.hpp"
 #include "opentxs/core/contract/UnitDefinition.hpp"
 #include "opentxs/core/contract/basket/BasketContract.hpp"
 #include "opentxs/identity/Nym.hpp"
@@ -485,7 +485,7 @@ public:
         const std::string& nymid,
         const std::string& name,
         const std::string& terms,
-        const std::list<contract::Server::Endpoint>& endpoints,
+        const std::list<contract::Notary::Endpoint>& endpoints,
         const PasswordPrompt& reason,
         const VersionNumber version) const noexcept(false)
         -> OTServerContract = 0;
