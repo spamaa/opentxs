@@ -96,7 +96,8 @@ BlockchainAccountActivity::BlockchainAccountActivity(
           [this](auto&& in) { pipeline_.Push(std::move(in)); }))
     , balance_socket_(Widget::api_.Network().ZeroMQ().DealerSocket(
           balance_cb_,
-          network::zeromq::socket::Direction::Connect))
+          network::zeromq::socket::Direction::Connect,
+          "BlockchainAccountActivity"))
     , progress_()
     , height_(0)
 {

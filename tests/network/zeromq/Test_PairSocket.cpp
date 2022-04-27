@@ -123,7 +123,9 @@ TEST_F(Test_PairSocket, PairSocket_Factory2)
 TEST_F(Test_PairSocket, PairSocket_Factory3)
 {
     auto pairSocket = context_.PairSocket(
-        ot::network::zeromq::ListenCallback::Factory(), TEST_ENDPOINT);
+        ot::network::zeromq::ListenCallback::Factory(),
+        TEST_ENDPOINT,
+        "Test_PairSocket");
 
     ASSERT_NE(nullptr, &pairSocket.get());
     ASSERT_EQ(zmq::socket::Type::Pair, pairSocket->Type());

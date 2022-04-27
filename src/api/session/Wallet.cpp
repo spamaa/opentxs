@@ -165,6 +165,7 @@ Wallet::Wallet(const api::Session& api)
         auto& out = handle_.batch_;
         out.listen_callbacks_.emplace_back(Callback::Factory(
             [this](auto&& in) { process_p2p(std::move(in)); }));
+        out.thread_name_ = "Wallet";
 
         return out;
     }())
@@ -211,7 +212,8 @@ Wallet::Wallet(const api::Session& api)
                    auto&& m) {
                    if (batch.toggle_) { socket.Send(std::move(m)); }
                }},
-          }))
+          },
+          batch_.thread_name_))
 {
     LogTrace()(OT_PRETTY_CLASS())("using ZMQ batch ")(batch_.id_).Flush();
     account_publisher_->Start(api_.Endpoints().AccountUpdate().data());

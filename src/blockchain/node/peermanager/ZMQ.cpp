@@ -98,10 +98,12 @@ public:
               [=](auto&& in) { this->internal(std::move(in)); }))
         , external_(api_.Network().ZeroMQ().RouterSocket(
               cb_ex_,
-              zmq::socket::Direction::Bind))
+              zmq::socket::Direction::Bind,
+              "ZMQ Incoming external"))
         , internal_(api_.Network().ZeroMQ().RouterSocket(
               cb_int_,
-              zmq::socket::Direction::Bind))
+              zmq::socket::Direction::Bind,
+              "ZMQ Incoming internal"))
     {
     }
     ZMQIncomingConnectionManager() = delete;

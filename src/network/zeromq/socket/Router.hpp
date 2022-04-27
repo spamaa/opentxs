@@ -57,7 +57,8 @@ public:
     Router(
         const zeromq::Context& context,
         const Direction direction,
-        const zeromq::ListenCallback& callback) noexcept;
+        const zeromq::ListenCallback& callback,
+        const std::string_view threadname = "Router") noexcept;
     Router() = delete;
     Router(const Router&) = delete;
     Router(Router&&) = delete;

@@ -54,6 +54,7 @@ public:
 protected:
     const bool start_thread_;
     mutable std::thread receiver_thread_;
+    mutable CString thread_name_;
 
     virtual auto have_callback() const noexcept -> bool { return false; }
     void run_tasks(const Lock& lock) const noexcept;
@@ -69,7 +70,8 @@ protected:
         const zeromq::Context& context,
         const socket::Type type,
         const Direction direction,
-        const bool startThread) noexcept;
+        const bool startThread,
+        const std::string_view threadname = "Receiver") noexcept;
 
     ~Receiver() override;
 

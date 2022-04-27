@@ -74,8 +74,9 @@ auto Widget::setup_listeners(const ListenerDefinitions& definitions) noexcept
                 [=](const Message& message) -> void {
                     (*copy)(this, message);
                 }));
-        auto& socket = listeners_.emplace_back(
-            api_.Network().ZeroMQ().SubscribeSocket(nextCallback.get()));
+        auto& socket =
+            listeners_.emplace_back(api_.Network().ZeroMQ().SubscribeSocket(
+                nextCallback.get(), "Widget"));
         const auto listening = socket->Start(endpoint);
 
         OT_ASSERT(listening)

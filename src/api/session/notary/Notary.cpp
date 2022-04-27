@@ -53,6 +53,7 @@
 #include "otx/common/OTStorage.hpp"
 #include "otx/server/Server.hpp"
 #include "otx/server/ServerSettings.hpp"
+#include "util/Thread.hpp"
 
 namespace opentxs
 {
@@ -442,6 +443,8 @@ auto Notary::load_public_mint(
 
 void Notary::mint() const
 {
+    SetThisThreadsName("Notary mint");
+
     opentxs::Lock updateLock(mint_update_lock_, std::defer_lock);
 
     const UnallocatedCString serverID{server_.GetServerID().str()};

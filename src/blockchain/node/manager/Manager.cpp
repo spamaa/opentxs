@@ -321,8 +321,10 @@ Base::Base(
     }())
     , sync_cb_(zmq::ListenCallback::Factory(
           [&](auto&& m) { pipeline_.Push(std::move(m)); }))
-    , sync_socket_(
-          api_.Network().ZeroMQ().PairSocket(sync_cb_, requestor_endpoint_))
+    , sync_socket_(api_.Network().ZeroMQ().PairSocket(
+          sync_cb_,
+          requestor_endpoint_,
+          "Blockchain sync"))
     , local_chain_height_(0)
     , remote_chain_height_(params::Chains().at(chain_).checkpoint_.height_)
     , waiting_for_headers_(Flag::Factory(false))

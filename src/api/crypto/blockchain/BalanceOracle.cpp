@@ -86,7 +86,7 @@ BalanceOracle::Imp::Imp(
     : Actor(
           api,
           LogTrace(),
-          CString{"balance oracle", alloc},
+          CString{"Balance oracle", alloc},
           0ms,
           batch,
           alloc,

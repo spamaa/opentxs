@@ -56,19 +56,23 @@ public:
         const zeromq::ListenCallback& callback,
         const std::string_view endpoint,
         const Direction direction,
-        const bool startThread) noexcept;
+        const bool startThreadconst,
+        const std::string_view threadname = "Pair") noexcept;
     Pair(
         const zeromq::Context& context,
         const zeromq::ListenCallback& callback,
-        const bool startThread = true) noexcept;
+        const bool startThread = true,
+        const std::string_view threadname = "Pair") noexcept;
     Pair(
         const zeromq::ListenCallback& callback,
         const zeromq::socket::Pair& peer,
-        const bool startThread = true) noexcept;
+        const bool startThread = true,
+        const std::string_view threadname = "Pair") noexcept;
     Pair(
         const zeromq::Context& context,
         const zeromq::ListenCallback& callback,
-        const std::string_view endpoint) noexcept;
+        const std::string_view endpoint,
+        const std::string_view threadname = "Pair") noexcept;
     Pair() = delete;
     Pair(const Pair&) = delete;
     Pair(Pair&&) = delete;

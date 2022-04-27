@@ -18,6 +18,7 @@
 #include "opentxs/api/crypto/Crypto.hpp"
 #include "opentxs/api/crypto/Encode.hpp"
 #include "opentxs/api/network/Asio.hpp"
+#include "util/Thread.hpp"
 #include "util/storage/Config.hpp"
 
 namespace opentxs::factory
@@ -90,7 +91,8 @@ auto GarbageCollected::EmptyBucket(const bool bucket) const -> bool
         return false;
     }
 
-    asio_.Internal().Post(ThreadPool::General, [=] { purge(newName); });
+    asio_.Internal().Post(
+        ThreadPool::General, [=] { purge(newName); }, "GarbageCollected");
 
     return boost::filesystem::create_directory(oldDirectory);
 }

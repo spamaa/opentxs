@@ -119,11 +119,14 @@ Pair::Pair(const Flag& running, const api::session::Client& client)
           [this](const auto& in) -> void { callback_peer_request(in); }))
     , pair_event_(client_.Network().ZeroMQ().PublishSocket())
     , pending_bailment_(client_.Network().ZeroMQ().PublishSocket())
-    , nym_subscriber_(client_.Network().ZeroMQ().SubscribeSocket(nym_callback_))
-    , peer_reply_subscriber_(
-          client_.Network().ZeroMQ().SubscribeSocket(peer_reply_callback_))
-    , peer_request_subscriber_(
-          client_.Network().ZeroMQ().SubscribeSocket(peer_request_callback_))
+    , nym_subscriber_(
+          client_.Network().ZeroMQ().SubscribeSocket(nym_callback_, "Pair nym"))
+    , peer_reply_subscriber_(client_.Network().ZeroMQ().SubscribeSocket(
+          peer_reply_callback_,
+          "Pair reply"))
+    , peer_request_subscriber_(client_.Network().ZeroMQ().SubscribeSocket(
+          peer_request_callback_,
+          "Pair request"))
 {
     // WARNING: do not access client_.Wallet() during construction
     pair_event_->Start(client_.Endpoints().PairEvent().data());

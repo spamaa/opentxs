@@ -53,6 +53,7 @@ private:
     PairEventListener(
         const zeromq::Context& context,
         const zeromq::PairEventCallback& callback,
-        const int instance);
+        const int instance,
+        const std::string_view threadname = "PairEventListener");
 };
 }  // namespace opentxs::network::zeromq::implementation

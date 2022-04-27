@@ -46,7 +46,8 @@ public:
 
     Subscribe(
         const zeromq::Context& context,
-        const zeromq::ListenCallback& callback) noexcept;
+        const zeromq::ListenCallback& callback,
+        const std::string_view threadname = "Subscribe") noexcept;
     Subscribe() = delete;
     Subscribe(const Subscribe&) = delete;
     Subscribe(Subscribe&&) = delete;

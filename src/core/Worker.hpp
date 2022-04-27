@@ -106,6 +106,7 @@ protected:
         , shutdown_(shutdown_promise_.get_future())
         , pipeline_(api.Network().ZeroMQ().Internal().Pipeline(
               [this](auto&& in) { downcast().pipeline(std::move(in)); },
+              "Worker",
               {},
               {},
               {},

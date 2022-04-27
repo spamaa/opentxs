@@ -45,7 +45,7 @@ namespace opentxs::api::imp
 Log::Log(const zmq::Context& zmq, const UnallocatedCString endpoint)
     : callback_(opentxs::network::zeromq::ListenCallback::Factory(
           [&](auto&& msg) -> void { callback(std::move(msg)); }))
-    , socket_(zmq.PullSocket(callback_, zmq::socket::Direction::Bind))
+    , socket_(zmq.PullSocket(callback_, zmq::socket::Direction::Bind, "Logger"))
     , publish_socket_(zmq.PublishSocket())
     , publish_{!endpoint.empty()}
 {

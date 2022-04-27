@@ -19,12 +19,14 @@ namespace opentxs::network::zeromq::internal
 Batch::Batch(
     const BatchID id,
     const zeromq::Context& context,
-    Vector<socket::Type>&& types) noexcept
+    Vector<socket::Type>&& types,
+    const std::string_view threadname) noexcept
     : id_(id)
     , listen_callbacks_()
     , reply_callbacks_()
     , sockets_()
     , toggle_(false)
+    , thread_name_(threadname)
 {
     sockets_.reserve(types.size());
     std::transform(

@@ -72,7 +72,12 @@ Server::Imp::Imp(const api::Session& api, const zeromq::Context& zmq) noexcept
 
         return out;
     }()))
-    , batch_(handle_.batch_)
+    , batch_([&]() -> auto& {
+        auto& out = handle_.batch_;
+        out.thread_name_ = "P2PServer";
+
+        return out;
+    }())
     , external_callback_(
           batch_.listen_callbacks_.emplace_back(zeromq::ListenCallback::Factory(
               [this](auto&& msg) { process_external(std::move(msg)); })))
@@ -160,7 +165,8 @@ Server::Imp::Imp(const api::Session& api, const zeromq::Context& zmq) noexcept
               }
 
               return out;
-          }()))
+          }(),
+          batch_.thread_name_))
     , sync_endpoint_()
     , sync_public_endpoint_()
     , update_endpoint_()

@@ -71,7 +71,8 @@ StartupPublisher::StartupPublisher(
               {pull_.ID(),
                &pull_,
                [&cb = cb_](auto&& m) { cb.Process(std::move(m)); }},
-          }))
+          },
+          "StartupPublisher"))
 {
     OT_ASSERT(nullptr != thread_);
 
