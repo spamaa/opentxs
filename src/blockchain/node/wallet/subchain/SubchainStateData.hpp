@@ -11,6 +11,7 @@
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <cs_deferred_guarded.h>
+#include <cs_plain_guarded.h>
 #include <cs_shared_guarded.h>
 #include <atomic>
 #include <condition_variable>
@@ -146,6 +147,8 @@ public:
         libguarded::shared_guarded<wallet::ElementCache, std::shared_mutex>;
     using MatchCache =
         libguarded::shared_guarded<wallet::MatchCache, std::shared_mutex>;
+    using ProgressPosition =
+        libguarded::plain_guarded<std::optional<block::Position>>;
     using FinishedCallback =
         std::function<void(const Vector<block::Position>&)>;
 
@@ -177,7 +180,7 @@ public:
     mutable MatchCache match_cache_;
     mutable std::atomic_bool scan_dirty_;
     mutable std::atomic<std::size_t> process_queue_;
-    mutable std::atomic<block::Height> rescan_progress_;
+    mutable ProgressPosition progress_position_;
 
     auto ChangeState(const State state, StateSequence reorg) noexcept
         -> bool final;
