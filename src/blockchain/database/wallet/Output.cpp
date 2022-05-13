@@ -271,16 +271,13 @@ public:
 
             const auto reason = api_.Factory().PasswordPrompt(
                 "Save a received blockchain transaction(s)");
-            for (const auto& pTx : processed) {
-                // TODO add a batching version of this call
-                const auto added =
-                    api_.Crypto().Blockchain().Internal().ProcessTransaction(
-                        chain_, *pTx, reason);
+            const auto added =
+                api_.Crypto().Blockchain().Internal().ProcessTransactions(
+                    chain_, std::move(processed), reason);
 
-                if (false == added) {
-                    throw std::runtime_error{
-                        "Error adding transaction to activity database"};
-                }
+            if (false == added) {
+                throw std::runtime_error{
+                    "Error adding transaction to activity database"};
             }
 
             // NOTE uncomment this for detailed debugging: cache.Print();
@@ -487,9 +484,12 @@ public:
 
             const auto reason = api_.Factory().PasswordPrompt(
                 "Save an outgoing blockchain transaction");
+            auto transactions =
+                Set<std::shared_ptr<block::bitcoin::Transaction>>{
+                    transaction.Internal().clone()};
 
-            if (!api.Internal().ProcessTransaction(
-                    chain_, transaction, reason)) {
+            if (!api.Internal().ProcessTransactions(
+                    chain_, std::move(transactions), reason)) {
                 throw std::runtime_error{
                     "Error adding transaction to database"};
             }

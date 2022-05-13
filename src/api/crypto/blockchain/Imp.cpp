@@ -1161,9 +1161,9 @@ auto Blockchain::Imp::ProcessMergedContact(const Contact&, const Contact&)
     return false;
 }
 
-auto Blockchain::Imp::ProcessTransaction(
+auto Blockchain::Imp::ProcessTransactions(
     const opentxs::blockchain::Type,
-    const opentxs::blockchain::block::bitcoin::Transaction&,
+    Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&&,
     const PasswordPrompt&) const noexcept -> bool
 {
     return false;

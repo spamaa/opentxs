@@ -31,8 +31,6 @@
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
-#include "serialization/protobuf/BlockchainBlockHeader.pb.h"
-#include "serialization/protobuf/BlockchainTransaction.pb.h"
 #include "util/LMDB.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
@@ -75,6 +73,12 @@ class Block;
 class Data;
 }  // namespace p2p
 }  // namespace network
+
+namespace proto
+{
+class BlockchainBlockHeader;
+class BlockchainTransaction;
+}  // namespace proto
 
 class Contact;
 class Data;
@@ -164,6 +168,8 @@ public:
         opentxs::network::p2p::Data& output) const noexcept -> bool;
     auto LoadTransaction(const ReadView txid) const noexcept
         -> std::unique_ptr<block::bitcoin::Transaction>;
+    auto LoadTransaction(const ReadView txid, proto::BlockchainTransaction& out)
+        const noexcept -> std::unique_ptr<block::bitcoin::Transaction>;
     auto LookupContact(const Data& pubkeyHash) const noexcept
         -> UnallocatedSet<OTIdentifier>;
     auto LookupTransactions(const PatternID pattern) const noexcept
@@ -186,6 +192,9 @@ public:
         -> bool;
     auto StoreTransaction(const block::bitcoin::Transaction& tx) const noexcept
         -> bool;
+    auto StoreTransaction(
+        const block::bitcoin::Transaction& tx,
+        proto::BlockchainTransaction& out) const noexcept -> bool;
     auto SyncTip(const Chain chain) const noexcept -> Height;
     auto UpdateContact(const Contact& contact) const noexcept
         -> UnallocatedVector<pTxid>;

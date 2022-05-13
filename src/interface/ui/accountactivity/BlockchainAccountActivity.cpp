@@ -15,6 +15,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "Proto.tpp"
 #include "interface/ui/base/List.hpp"
 #include "interface/ui/base/Widget.hpp"
 #include "internal/api/crypto/blockchain/Types.hpp"
@@ -54,6 +55,7 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
+#include "serialization/protobuf/BlockchainTransaction.pb.h"
 #include "serialization/protobuf/PaymentEvent.pb.h"
 #include "serialization/protobuf/PaymentWorkflow.pb.h"
 #include "serialization/protobuf/PaymentWorkflowEnums.pb.h"
@@ -418,23 +420,33 @@ auto BlockchainAccountActivity::process_txid(const Message& in) noexcept -> void
     wait_for_startup();
     const auto body = in.Body();
 
-    OT_ASSERT(2 < body.size());
+    OT_ASSERT(3 < body.size());
 
-    const auto txid = Widget::api_.Factory().Data(body.at(1));
+    const auto& api = Widget::api_;
+    const auto txid = api.Factory().Data(body.at(1));
     const auto chain = body.at(2).as<blockchain::Type>();
 
     if (chain != chain_) { return; }
 
-    process_txid(txid);
+    const auto proto = proto::Factory<proto::BlockchainTransaction>(body.at(3));
+    process_txid(txid, factory::BitcoinTransaction(api, proto));
 }
 
 auto BlockchainAccountActivity::process_txid(const Data& txid) noexcept
     -> std::optional<AccountActivityRowID>
 {
+    return process_txid(
+        txid, Widget::api_.Crypto().Blockchain().LoadTransactionBitcoin(txid));
+}
+
+auto BlockchainAccountActivity::process_txid(
+    const Data& txid,
+    std::unique_ptr<const blockchain::block::bitcoin::Transaction> pTX) noexcept
+    -> std::optional<AccountActivityRowID>
+{
     const auto rowID = AccountActivityRowID{
         blockchain_thread_item_id(Widget::api_.Crypto(), chain_, txid),
         proto::PAYMENTEVENTTYPE_COMPLETE};
-    auto pTX = Widget::api_.Crypto().Blockchain().LoadTransactionBitcoin(txid);
 
     if (false == bool(pTX)) { return std::nullopt; }
 

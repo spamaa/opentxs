@@ -547,6 +547,14 @@ auto Database::LoadTransaction(const ReadView txid) const noexcept
     return imp_.wallet_.LoadTransaction(txid);
 }
 
+auto Database::LoadTransaction(
+    const ReadView txid,
+    proto::BlockchainTransaction& out) const noexcept
+    -> std::unique_ptr<block::bitcoin::Transaction>
+{
+    return imp_.wallet_.LoadTransaction(txid, out);
+}
+
 auto Database::LookupContact(const Data& pubkeyHash) const noexcept
     -> UnallocatedSet<OTIdentifier>
 {
@@ -650,6 +658,13 @@ auto Database::StoreTransaction(
     const block::bitcoin::Transaction& tx) const noexcept -> bool
 {
     return imp_.wallet_.StoreTransaction(tx);
+}
+
+auto Database::StoreTransaction(
+    const block::bitcoin::Transaction& tx,
+    proto::BlockchainTransaction& out) const noexcept -> bool
+{
+    return imp_.wallet_.StoreTransaction(tx, out);
 }
 
 auto Database::SyncTip(const Chain chain) const noexcept -> Height

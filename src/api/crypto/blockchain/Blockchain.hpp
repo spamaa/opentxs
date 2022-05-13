@@ -239,9 +239,10 @@ public:
     auto ProcessContact(const Contact& contact) const noexcept -> bool final;
     auto ProcessMergedContact(const Contact& parent, const Contact& child)
         const noexcept -> bool final;
-    auto ProcessTransaction(
+    auto ProcessTransactions(
         const Chain chain,
-        const opentxs::blockchain::block::bitcoin::Transaction& transaction,
+        Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&&
+            transactions,
         const PasswordPrompt& reason) const noexcept -> bool final;
     auto RecipientContact(const Key& key) const noexcept -> OTIdentifier final;
     auto Release(const Key key) const noexcept -> bool final;
