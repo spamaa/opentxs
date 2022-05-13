@@ -350,12 +350,12 @@ auto Blockchain::ProcessMergedContact(
     return imp_->ProcessMergedContact(parent, child);
 }
 
-auto Blockchain::ProcessTransaction(
+auto Blockchain::ProcessTransactions(
     const Chain chain,
-    const opentxs::blockchain::block::bitcoin::Transaction& in,
+    Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&& in,
     const PasswordPrompt& reason) const noexcept -> bool
 {
-    return imp_->ProcessTransaction(chain, in, reason);
+    return imp_->ProcessTransactions(chain, std::move(in), reason);
 }
 
 auto Blockchain::PubkeyHash(

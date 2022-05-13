@@ -251,9 +251,10 @@ struct Blockchain::Imp {
     virtual auto ProcessMergedContact(
         const Contact& parent,
         const Contact& child) const noexcept -> bool;
-    virtual auto ProcessTransaction(
+    virtual auto ProcessTransactions(
         const opentxs::blockchain::Type chain,
-        const opentxs::blockchain::block::bitcoin::Transaction& in,
+        Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&&
+            transactions,
         const PasswordPrompt& reason) const noexcept -> bool;
     auto PubkeyHash(const opentxs::blockchain::Type chain, const Data& pubkey)
         const noexcept(false) -> OTData;

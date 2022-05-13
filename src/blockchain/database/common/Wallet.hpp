@@ -51,6 +51,11 @@ class Bulk;
 }  // namespace database
 }  // namespace blockchain
 
+namespace proto
+{
+class BlockchainTransaction;
+}  // namespace proto
+
 namespace storage
 {
 namespace lmdb
@@ -78,12 +83,17 @@ public:
         const UnallocatedVector<PatternID>& patterns) const noexcept -> bool;
     auto LoadTransaction(const ReadView txid) const noexcept
         -> std::unique_ptr<block::bitcoin::Transaction>;
+    auto LoadTransaction(const ReadView txid, proto::BlockchainTransaction& out)
+        const noexcept -> std::unique_ptr<block::bitcoin::Transaction>;
     auto LookupContact(const Data& pubkeyHash) const noexcept
         -> UnallocatedSet<OTIdentifier>;
     auto LookupTransactions(const PatternID pattern) const noexcept
         -> UnallocatedVector<pTxid>;
     auto StoreTransaction(const block::bitcoin::Transaction& tx) const noexcept
         -> bool;
+    auto StoreTransaction(
+        const block::bitcoin::Transaction& tx,
+        proto::BlockchainTransaction& out) const noexcept -> bool;
     auto UpdateContact(const Contact& contact) const noexcept
         -> UnallocatedVector<pTxid>;
     auto UpdateMergedContact(const Contact& parent, const Contact& child)

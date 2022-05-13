@@ -243,10 +243,11 @@ public:
     {
         return {};
     }
-    auto ProcessTransaction(
-        const Chain,
-        const opentxs::blockchain::block::bitcoin::Transaction&,
-        const PasswordPrompt&) const noexcept -> bool final
+    auto ProcessTransactions(
+        const Chain chain,
+        Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&&
+            transactions,
+        const PasswordPrompt& reason) const noexcept -> bool final
     {
         return {};
     }

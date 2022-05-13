@@ -104,6 +104,11 @@ class Message;
 }  // namespace zeromq
 }  // namespace network
 
+namespace proto
+{
+class BlockchainTransaction;
+}  // namespace proto
+
 class Contact;
 class Data;
 class Identifier;
@@ -157,10 +162,12 @@ struct BlockchainImp final : public Blockchain::Imp {
     auto ProcessContact(const Contact& contact) const noexcept -> bool final;
     auto ProcessMergedContact(const Contact& parent, const Contact& child)
         const noexcept -> bool final;
-    auto ProcessTransaction(
+    auto ProcessTransactions(
         const opentxs::blockchain::Type chain,
-        const opentxs::blockchain::block::bitcoin::Transaction& in,
+        Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&&
+            transactions,
         const PasswordPrompt& reason) const noexcept -> bool final;
+
     auto ReportScan(
         const opentxs::blockchain::Type chain,
         const identifier::Nym& owner,
@@ -212,11 +219,22 @@ private:
     auto broadcast_update_signal(
         const UnallocatedVector<pTxid>& transactions) const noexcept -> void;
     auto broadcast_update_signal(
+        const proto::BlockchainTransaction& proto,
         const opentxs::blockchain::block::bitcoin::Transaction& tx)
         const noexcept -> void;
     auto load_transaction(const Lock& lock, const Txid& id) const noexcept
         -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>;
+    auto load_transaction(
+        const Lock& lock,
+        const Txid& id,
+        proto::BlockchainTransaction& out) const noexcept
+        -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>;
     auto load_transaction(const Lock& lock, const TxidHex& id) const noexcept
+        -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>;
+    auto load_transaction(
+        const Lock& lock,
+        const TxidHex& id,
+        proto::BlockchainTransaction& out) const noexcept
         -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>;
     auto notify_new_account(
         const Identifier& id,
@@ -228,6 +246,7 @@ private:
         const noexcept -> bool;
     auto reconcile_activity_threads(
         const Lock& lock,
+        const proto::BlockchainTransaction& proto,
         const opentxs::blockchain::block::bitcoin::Transaction& tx)
         const noexcept -> bool;
 };

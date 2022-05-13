@@ -147,6 +147,41 @@ auto Wallet::LoadTransaction(const ReadView txid) const noexcept
     }
 }
 
+auto Wallet::LoadTransaction(
+    const ReadView txid,
+    proto::BlockchainTransaction& proto) const noexcept
+    -> std::unique_ptr<block::bitcoin::Transaction>
+{
+    try {
+        proto = [&] {
+            const auto index = [&] {
+                auto out = util::IndexData{};
+                auto cb = [&out](const ReadView in) {
+                    if (sizeof(out) != in.size()) { return; }
+
+                    std::memcpy(static_cast<void*>(&out), in.data(), in.size());
+                };
+                lmdb_.Load(transaction_table_, txid, cb);
+
+                if (0 == out.size_) {
+                    throw std::out_of_range("Transaction not found");
+                }
+
+                return out;
+            }();
+
+            return proto::Factory<proto::BlockchainTransaction>(
+                bulk_.ReadView(index));
+        }();
+
+        return factory::BitcoinTransaction(api_, proto);
+    } catch (const std::exception& e) {
+        LogTrace()(OT_PRETTY_CLASS())(e.what()).Flush();
+
+        return {};
+    }
+}
+
 auto Wallet::LookupContact(const Data& pubkeyHash) const noexcept
     -> UnallocatedSet<OTIdentifier>
 {
@@ -175,8 +210,17 @@ auto Wallet::LookupTransactions(const PatternID pattern) const noexcept
 auto Wallet::StoreTransaction(
     const block::bitcoin::Transaction& in) const noexcept -> bool
 {
+    auto out = proto::BlockchainTransaction{};
+
+    return StoreTransaction(in, out);
+}
+
+auto Wallet::StoreTransaction(
+    const block::bitcoin::Transaction& in,
+    proto::BlockchainTransaction& proto) const noexcept -> bool
+{
     try {
-        const auto proto = [&] {
+        proto = [&] {
             auto out = in.Internal().Serialize();
 
             if (false == out.has_value()) {
