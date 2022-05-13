@@ -232,7 +232,17 @@ auto Scan::Imp::work() noexcept -> bool
     }
 
     const auto height = current().first;
-    const auto rescan = parent_.rescan_progress_.load();
+    const auto rescan = [&]() -> block::Height {
+        auto handle = parent_.progress_position_.lock();
+
+        if (handle->has_value()) {
+
+            return handle->value().first;
+        } else {
+
+            return -1;
+        }
+    }();
     const auto& threshold = parent_.scan_threshold_;
 
     if (parent_.scan_dirty_ && ((height - rescan) > threshold)) {

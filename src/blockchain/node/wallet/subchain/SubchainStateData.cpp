@@ -497,7 +497,7 @@ SubchainStateData::SubchainStateData(
     , match_cache_(alloc)
     , scan_dirty_(false)
     , process_queue_(0)
-    , rescan_progress_(-1)
+    , progress_position_(std::nullopt)
     , to_block_oracle_(pipeline_.Internal().ExtraSocket(0))
     , to_children_(pipeline_.Internal().ExtraSocket(1))
     , to_scan_(pipeline_.Internal().ExtraSocket(2))
