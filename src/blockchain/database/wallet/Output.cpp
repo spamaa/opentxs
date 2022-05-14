@@ -1320,7 +1320,7 @@ private:
         for (auto& [txid, transaction] : blockMatches) {
             auto& [indices, pTx] = transaction;
             auto& modified = pTx->Internal();
-            process_inputs(subchain, created, spent, modified, cache);
+            process_inputs(log, subchain, created, spent, modified, cache);
         }
 
         write(
@@ -1781,6 +1781,7 @@ private:
         }
     }
     auto process_inputs(
+        const Log& log,
         const SubchainID& subchain,
         TXOs& created,
         TXOs& spent,
@@ -1791,10 +1792,12 @@ private:
 
         for (auto& input : tx.Inputs()) {
             const auto& outpoint = input.PreviousOutput();
+            auto relevant{false};
 
             if (cache.Exists(subchain, outpoint)) {
                 associate_input(index, cache.GetOutput(subchain, outpoint), tx);
                 spent.emplace(outpoint, nullptr);
+                relevant = true;
             } else if (auto i = created.find(outpoint); created.end() != i) {
                 const auto& pOutput = i->second;
 
@@ -1802,9 +1805,23 @@ private:
 
                 associate_input(index, pOutput->Internal(), tx);
                 spent.insert(created.extract(i));
+                relevant = true;
             } else {
                 // NOTE this input does not spend an output which is owned by
                 // the current subchain
+            }
+
+            log(OT_PRETTY_CLASS())("input ")(index)(" of transaction ")
+                .asHex(tx.ID())(" spends ")(outpoint)
+                .Flush();
+
+            if (relevant) {
+                log(OT_PRETTY_CLASS())(outpoint)(" status updated to spent")
+                    .Flush();
+            } else {
+                log(OT_PRETTY_CLASS())(outpoint)(
+                    " not relevant to this subchain")
+                    .Flush();
             }
 
             ++index;
