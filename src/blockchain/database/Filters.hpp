@@ -17,8 +17,8 @@
 #include "Proto.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/database/Database.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Cfilter.hpp"
+#include "internal/blockchain/database/Types.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
@@ -75,7 +75,7 @@ namespace opentxs::blockchain::database
 class Filters
 {
 public:
-    using Parent = node::internal::FilterDatabase;
+    using Parent = database::Cfilter;
     using CFHeaderParams = Parent::CFHeaderParams;
     using CFilterParams = Parent::CFilterParams;
 

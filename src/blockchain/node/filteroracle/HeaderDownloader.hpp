@@ -41,9 +41,9 @@ public:
 
     HeaderDownloader(
         const api::Session& api,
-        internal::FilterDatabase& db,
+        database::Cfilter& db,
         const HeaderOracle& header,
-        const internal::Network& node,
+        const internal::Manager& node,
         FilterOracle::FilterDownloader& filter,
         const blockchain::Type chain,
         const cfilter::Type type,
@@ -83,9 +83,9 @@ private:
     friend HeaderDM;
     friend HeaderWorker;
 
-    internal::FilterDatabase& db_;
+    database::Cfilter& db_;
     const HeaderOracle& header_;
-    const internal::Network& node_;
+    const internal::Manager& node_;
     FilterOracle::FilterDownloader& filter_;
     const blockchain::Type chain_;
     const cfilter::Type type_;
@@ -93,7 +93,7 @@ private:
 
     auto batch_ready() const noexcept -> void
     {
-        node_.JobReady(internal::PeerManager::Task::JobAvailableCfheaders);
+        node_.JobReady(PeerManagerJobs::JobAvailableCfheaders);
     }
     auto batch_size(const std::size_t in) const noexcept -> std::size_t
     {
@@ -221,7 +221,7 @@ private:
 
         const auto& previous = data.front()->previous_.get();
         auto hashes = Vector<cfilter::Hash>{};
-        auto headers = Vector<internal::FilterDatabase::CFHeaderParams>{};
+        auto headers = Vector<database::Cfilter::CFHeaderParams>{};
 
         for (const auto& task : data) {
             const auto& hash = hashes.emplace_back(task->data_.get());

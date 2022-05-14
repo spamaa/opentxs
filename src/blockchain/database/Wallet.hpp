@@ -24,8 +24,8 @@
 #include "blockchain/database/wallet/Subchain.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/database/Database.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Types.hpp"
+#include "internal/blockchain/database/Wallet.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -80,6 +80,11 @@ class Database;
 
 namespace node
 {
+namespace internal
+{
+struct SpendPolicy;
+}  // namespace internal
+
 class HeaderOracle;
 }  // namespace node
 }  // namespace blockchain
@@ -108,12 +113,12 @@ class Identifier;
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
-namespace opentxs::blockchain::database
+namespace opentxs::blockchain::database::implemenation
 {
 class Wallet
 {
 public:
-    using Parent = node::internal::WalletDatabase;
+    using Parent = database::Wallet;
     using NodeID = Parent::NodeID;
     using pNodeID = Parent::pNodeID;
     using SubchainIndex = Parent::SubchainIndex;
@@ -245,4 +250,4 @@ private:
     auto operator=(const Wallet&) -> Wallet& = delete;
     auto operator=(Wallet&&) -> Wallet& = delete;
 };
-}  // namespace opentxs::blockchain::database
+}  // namespace opentxs::blockchain::database::implemenation

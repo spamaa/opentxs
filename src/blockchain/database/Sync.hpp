@@ -17,8 +17,7 @@
 #include "Proto.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/database/Database.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Types.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -75,7 +74,7 @@ class LMDB;
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
-namespace opentxs::blockchain::database
+namespace opentxs::blockchain::database::implementation
 {
 class Sync
 {
@@ -105,4 +104,4 @@ private:
     const blockchain::Type chain_;
     const block::Hash genesis_;
 };
-}  // namespace opentxs::blockchain::database
+}  // namespace opentxs::blockchain::database::implementation

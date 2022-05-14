@@ -17,7 +17,9 @@
 #include "blockchain/node/UpdateTransaction.hpp"
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/database/Header.hpp"
 #include "internal/blockchain/node/Factory.hpp"
+#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/Work.hpp"
@@ -36,7 +38,7 @@ namespace opentxs::factory
 {
 auto HeaderOracle(
     const api::Session& api,
-    blockchain::node::internal::HeaderDatabase& database,
+    blockchain::database::Header& database,
     const blockchain::Type type) noexcept
     -> std::unique_ptr<blockchain::node::HeaderOracle>
 {
@@ -50,7 +52,7 @@ namespace opentxs::blockchain::node::implementation
 {
 HeaderOracle::HeaderOracle(
     const api::Session& api,
-    internal::HeaderDatabase& database,
+    database::Header& database,
     const blockchain::Type type) noexcept
     : internal::HeaderOracle()
     , api_(api)
@@ -1019,6 +1021,11 @@ auto HeaderOracle::ProcessSyncData(
 
         return 0;
     }
+}
+
+auto HeaderOracle::RecentHashes(alloc::Resource* alloc) const noexcept -> Hashes
+{
+    return database_.RecentHashes(alloc);
 }
 
 auto HeaderOracle::stage_candidate(

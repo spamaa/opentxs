@@ -24,7 +24,6 @@
 #include "blockchain/database/common/Database.hpp"
 #include "internal/api/crypto/blockchain/BalanceOracle.hpp"
 #include "internal/blockchain/database/common/Common.hpp"
-#include "internal/blockchain/node/Node.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/api/Context.hpp"

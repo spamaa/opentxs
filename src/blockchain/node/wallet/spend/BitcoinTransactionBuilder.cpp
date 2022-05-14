@@ -449,7 +449,7 @@ struct BitcoinTransactionBuilder::Imp {
     }
 
     Imp(const api::Session& api,
-        internal::WalletDatabase& db,
+        database::Wallet& db,
         const Identifier& id,
         const Proposal& proposal,
         const Type chain,
@@ -1276,7 +1276,7 @@ private:
 
 BitcoinTransactionBuilder::BitcoinTransactionBuilder(
     const api::Session& api,
-    internal::WalletDatabase& db,
+    database::Wallet& db,
     const Identifier& id,
     const Proposal& proposal,
     const Type chain,

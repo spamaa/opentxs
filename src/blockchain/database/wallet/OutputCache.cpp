@@ -24,7 +24,7 @@
 #include "blockchain/database/wallet/Subchain.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
-#include "internal/blockchain/database/Database.hpp"
+#include "internal/blockchain/database/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/api/session/Factory.hpp"

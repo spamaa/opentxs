@@ -470,7 +470,6 @@ namespace purse
 namespace token
 {
 }  // namespace token
-
 }  // namespace blind
 
 namespace client

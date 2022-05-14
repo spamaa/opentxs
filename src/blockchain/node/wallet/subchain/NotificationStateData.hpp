@@ -23,7 +23,6 @@
 #include "blockchain/node/wallet/subchain/SubchainStateData.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/node/Node.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Index.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
@@ -85,13 +84,17 @@ class Account;
 class Notification;
 }  // namespace crypto
 
+namespace database
+{
+class Wallet;
+}  // namespace database
+
 namespace node
 {
 namespace internal
 {
-struct Mempool;
-struct Network;
-struct WalletDatabase;
+class Manager;
+class Mempool;
 }  // namespace internal
 
 namespace wallet
@@ -133,8 +136,8 @@ class NotificationStateData final : public SubchainStateData
 public:
     NotificationStateData(
         const api::Session& api,
-        const node::internal::Network& node,
-        node::internal::WalletDatabase& db,
+        const node::internal::Manager& node,
+        database::Wallet& db,
         const node::internal::Mempool& mempool,
         const cfilter::Type filter,
         const crypto::Subchain subchain,

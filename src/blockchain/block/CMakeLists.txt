@@ -21,6 +21,7 @@ if(OT_BLOCKCHAIN_EXPORT)
     opentxs-common
     PRIVATE
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/Block.hpp"
+      "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/Validator.hpp"
       "Block.cpp"
       "Block.hpp"
       "Common.cpp"

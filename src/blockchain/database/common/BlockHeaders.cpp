@@ -15,6 +15,7 @@
 #include "Proto.hpp"
 #include "Proto.tpp"
 #include "blockchain/database/common/Bulk.hpp"
+#include "internal/blockchain/database/common/Common.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/blockchain/block/Header.hpp"

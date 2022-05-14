@@ -8,8 +8,9 @@
 #include <opentxs/opentxs.hpp>
 #include <type_traits>
 
+#include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Factory.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Manager.hpp"
 
 namespace ottest
 {

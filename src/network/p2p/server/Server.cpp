@@ -19,7 +19,7 @@
 
 #include "internal/api/network/Blockchain.hpp"
 #include "internal/api/session/Endpoints.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Manager.hpp"
 #include "internal/network/p2p/Factory.hpp"
 #include "internal/network/p2p/Types.hpp"
 #include "internal/network/zeromq/Batch.hpp"

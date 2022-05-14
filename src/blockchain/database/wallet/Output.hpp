@@ -16,7 +16,7 @@
 #include <mutex>
 #include <optional>
 
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Wallet.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/block/Outpoint.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
@@ -56,6 +56,14 @@ class Proposal;
 class SubchainData;
 }  // namespace wallet
 }  // namespace database
+
+namespace node
+{
+namespace internal
+{
+struct SpendPolicy;
+}  // namespace internal
+}  // namespace node
 }  // namespace blockchain
 
 namespace identifier
@@ -89,7 +97,7 @@ namespace opentxs::blockchain::database::wallet
 {
 using AccountID = Identifier;
 using SubchainID = Identifier;
-using Parent = node::internal::WalletDatabase;
+using Parent = database::Wallet;
 using NodeID = Parent::NodeID;
 using BatchedMatches = Parent::BatchedMatches;
 using UTXO = Parent::UTXO;
