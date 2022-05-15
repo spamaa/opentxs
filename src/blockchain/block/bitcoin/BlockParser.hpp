@@ -53,17 +53,24 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 namespace internal
 {
 class Header;
 }  // namespace internal
 
-class Block;
 class Header;
+}  // namespace block
+}  // namespace bitcoin
+
+namespace block
+{
+namespace bitcoin
+{
+class Block;
 class Transaction;
 }  // namespace bitcoin
 }  // namespace block
@@ -91,7 +98,7 @@ auto parse_header(
     const ReadView in,
     ByteIterator& it,
     std::size_t& expectedSize)
-    -> std::unique_ptr<blockchain::block::bitcoin::internal::Header>;
+    -> std::unique_ptr<blockchain::bitcoin::block::Header>;
 auto parse_normal_block(
     const api::Session& api,
     const blockchain::Type chain,
@@ -106,7 +113,7 @@ auto parse_transactions(
     const api::Session& api,
     const blockchain::Type chain,
     const ReadView in,
-    const blockchain::block::bitcoin::Header& header,
+    const blockchain::bitcoin::block::Header& header,
     BlockReturnType::CalculatedSize& sizeData,
     ByteIterator& it,
     std::size_t& expectedSize) -> ParsedTransactions;

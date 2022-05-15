@@ -25,13 +25,13 @@
 #include "blockchain/block/Block.hpp"
 #include "blockchain/block/bitcoin/BlockParser.hpp"
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Header.hpp"
 #include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
@@ -240,7 +240,7 @@ const Block::value_type Block::null_tx_{};
 Block::Block(
     const api::Session& api,
     const blockchain::Type chain,
-    std::unique_ptr<const internal::Header> header,
+    std::unique_ptr<const blockchain::bitcoin::block::Header> header,
     TxidIndex&& index,
     TransactionMap&& transactions,
     std::optional<CalculatedSize>&& size) noexcept(false)

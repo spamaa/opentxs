@@ -3,74 +3,25 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"                 // IWYU pragma: associated
-#include "1_Internal.hpp"               // IWYU pragma: associated
-#include "blockchain/block/Header.hpp"  // IWYU pragma: associated
+#include "0_stdafx.hpp"                     // IWYU pragma: associated
+#include "1_Internal.hpp"                   // IWYU pragma: associated
+#include "blockchain/block/header/Imp.hpp"  // IWYU pragma: associated
 
 #include <cstdint>
-#include <memory>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
 
 #include "internal/blockchain/Blockchain.hpp"
-#include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/block/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Header.hpp"
-#include "opentxs/api/session/Factory.hpp"
-#include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/bitcoin/NumericHash.hpp"
 #include "opentxs/blockchain/bitcoin/Work.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
-#include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "serialization/protobuf/BlockchainBlockHeader.pb.h"  // IWYU pragma: keep
 #include "serialization/protobuf/BlockchainBlockLocalData.pb.h"
-
-namespace opentxs::factory
-{
-auto GenesisBlockHeader(
-    const api::Session& api,
-    const blockchain::Type type) noexcept
-    -> std::unique_ptr<blockchain::block::Header>
-{
-    switch (type) {
-        case blockchain::Type::Bitcoin:
-        case blockchain::Type::BitcoinCash:
-        case blockchain::Type::Bitcoin_testnet3:
-        case blockchain::Type::BitcoinCash_testnet3:
-        case blockchain::Type::Litecoin:
-        case blockchain::Type::Litecoin_testnet4:
-        case blockchain::Type::PKT:
-        case blockchain::Type::PKT_testnet:
-        case blockchain::Type::BitcoinSV:
-        case blockchain::Type::BitcoinSV_testnet3:
-        case blockchain::Type::eCash:
-        case blockchain::Type::eCash_testnet3:
-        case blockchain::Type::UnitTest: {
-            const auto& hex =
-                blockchain::params::Chains().at(type).genesis_header_hex_;
-            const auto data = api.Factory().DataFromHex(hex);
-
-            return factory::BitcoinBlockHeader(api, type, data->Bytes());
-        }
-        case blockchain::Type::Unknown:
-        case blockchain::Type::Ethereum_frontier:
-        case blockchain::Type::Ethereum_ropsten:
-        default: {
-            LogError()("opentxs::factory::")(__func__)(": Unsupported type (")(
-                static_cast<std::uint32_t>(type))(")")
-                .Flush();
-
-            return nullptr;
-        }
-    }
-}
-}  // namespace opentxs::factory
 
 namespace opentxs::blockchain::block::implementation
 {
@@ -126,7 +77,8 @@ auto Header::EffectiveState() const noexcept -> Header::Status
     return status_;
 }
 
-void Header::CompareToCheckpoint(const block::Position& checkpoint) noexcept
+auto Header::CompareToCheckpoint(const block::Position& checkpoint) noexcept
+    -> void
 {
     const auto& [height, hash] = checkpoint;
 
@@ -150,7 +102,7 @@ auto Header::InheritedState() const noexcept -> Header::Status
     return inherit_status_;
 }
 
-void Header::InheritHeight(const block::Header& parent)
+auto Header::InheritHeight(const block::Header& parent) -> void
 {
     if (parent.Hash() != parent_hash_) {
         throw std::runtime_error("Invalid parent");
@@ -159,16 +111,16 @@ void Header::InheritHeight(const block::Header& parent)
     height_ = parent.Height() + 1;
 }
 
-void Header::InheritState(const block::Header& parent)
+auto Header::InheritState(const block::Header& parent) -> void
 {
     if (parent.Hash() != parent_hash_) {
         throw std::runtime_error("Invalid parent");
     }
 
-    inherit_status_ = parent.EffectiveState();
+    inherit_status_ = parent.Internal().EffectiveState();
 }
 
-void Header::InheritWork(const blockchain::Work& work) noexcept
+auto Header::InheritWork(const blockchain::Work& work) noexcept -> void
 {
     inherit_work_ = work;
 }
@@ -208,13 +160,16 @@ auto Header::Position() const noexcept -> block::Position
     return {height_, hash_};
 }
 
-void Header::RemoveBlacklistState() noexcept
+auto Header::RemoveBlacklistState() noexcept -> void
 {
     status_ = Status::Normal;
     inherit_status_ = Status::Normal;
 }
 
-void Header::RemoveCheckpointState() noexcept { status_ = Status::Normal; }
+auto Header::RemoveCheckpointState() noexcept -> void
+{
+    status_ = Status::Normal;
+}
 
 auto Header::Serialize(SerializedType& output) const noexcept -> bool
 {
@@ -231,7 +186,7 @@ auto Header::Serialize(SerializedType& output) const noexcept -> bool
     return true;
 }
 
-void Header::SetDisconnectedState() noexcept
+auto Header::SetDisconnectedState() noexcept -> void
 {
     status_ = Status::Disconnected;
     inherit_status_ = Status::Error;

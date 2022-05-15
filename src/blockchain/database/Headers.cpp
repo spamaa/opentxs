@@ -20,9 +20,10 @@
 #include "blockchain/database/common/Database.hpp"
 #include "blockchain/node/UpdateTransaction.hpp"
 #include "internal/api/session/FactoryAPI.hpp"
+#include "internal/blockchain/bitcoin/block/Header.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/block/Factory.hpp"
+#include "internal/blockchain/block/Header.hpp"
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Header.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/Types.hpp"
@@ -31,8 +32,8 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
@@ -169,8 +170,8 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
             BlockHeaderMetadata,
             hash.Bytes(),
             [&] {
-                auto out = block::Header::SerializedType{};
-                data.second.first->Serialize(out);
+                auto out = block::internal::Header::SerializedType{};
+                data.second.first->Internal().Serialize(out);
 
                 return proto::ToString(out.local());
             }(),
@@ -420,8 +421,8 @@ auto Headers::import_genesis(const blockchain::Type type) const noexcept -> void
 
             const auto result =
                 lmdb_.Store(BlockHeaderMetadata, hash.Bytes(), [&] {
-                    auto proto = block::Header::SerializedType{};
-                    genesis->Serialize(proto);
+                    auto proto = block::internal::Header::SerializedType{};
+                    genesis->Internal().Serialize(proto);
 
                     return proto::ToString(proto.local());
                 }());
@@ -444,8 +445,9 @@ auto Headers::import_genesis(const blockchain::Type type) const noexcept -> void
                           BlockHeaderMetadata,
                           hash.Bytes(),
                           [&] {
-                              auto proto = block::Header::SerializedType{};
-                              genesis->Serialize(proto);
+                              auto proto =
+                                  block::internal::Header::SerializedType{};
+                              genesis->Internal().Serialize(proto);
 
                               return proto::ToString(proto.local());
                           }())
@@ -483,7 +485,7 @@ auto Headers::IsSibling(const block::Hash& hash) const noexcept -> bool
 }
 
 auto Headers::load_bitcoin_header(const block::Hash& hash) const
-    -> std::unique_ptr<block::bitcoin::Header>
+    -> std::unique_ptr<bitcoin::block::Header>
 {
     auto proto = common_.LoadBlockHeader(hash);
     const auto haveMeta =
@@ -503,7 +505,7 @@ auto Headers::load_bitcoin_header(const block::Hash& hash) const
         throw std::out_of_range("Wrong header format");
     }
 
-    return std::move(output);
+    return output;
 }
 
 auto Headers::load_header(const block::Hash& hash) const
@@ -599,7 +601,7 @@ auto Headers::SiblingHashes() const noexcept -> database::Hashes
 }
 
 auto Headers::TryLoadBitcoinHeader(const block::Hash& hash) const noexcept
-    -> std::unique_ptr<block::bitcoin::Header>
+    -> std::unique_ptr<bitcoin::block::Header>
 {
     try {
         return load_bitcoin_header(hash);

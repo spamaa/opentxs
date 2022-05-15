@@ -48,6 +48,7 @@
 #if OT_BLOCKCHAIN
 #include "opentxs/blockchain/bitcoin/NumericHash.hpp"
 #include "opentxs/blockchain/bitcoin/Work.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/bitcoin/bloom/BloomFilter.hpp"
 #include "opentxs/blockchain/bitcoin/bloom/BloomUpdateFlag.hpp"
 #include "opentxs/blockchain/bitcoin/bloom/Types.hpp"
@@ -71,7 +72,6 @@
 #include "opentxs/blockchain/block/Types.hpp"
 #if OT_BLOCKCHAIN
 #include "opentxs/blockchain/block/bitcoin/Block.hpp"
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/blockchain/block/bitcoin/Input.hpp"
 #include "opentxs/blockchain/block/bitcoin/Inputs.hpp"
 #include "opentxs/blockchain/block/bitcoin/Opcodes.hpp"

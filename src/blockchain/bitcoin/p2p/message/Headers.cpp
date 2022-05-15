@@ -16,13 +16,13 @@
 
 #include "blockchain/bitcoin/p2p/Header.hpp"
 #include "blockchain/bitcoin/p2p/Message.hpp"
-#include "internal/blockchain/block/Block.hpp"  // IWYU pragma: keep
+#include "internal/blockchain/bitcoin/block/Header.hpp"  // IWYU pragma: keep
+#include "internal/blockchain/block/Block.hpp"           // IWYU pragma: keep
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Header.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/p2p/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/p2p/bitcoin/message/Message.hpp"
 #include "internal/util/LogMacros.hpp"
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/p2p/Types.hpp"
 #include "opentxs/network/blockchain/bitcoin/CompactSize.hpp"
 #include "opentxs/util/Bytes.hpp"
@@ -69,7 +69,7 @@ auto BitcoinP2PHeaders(
         return nullptr;
     }
 
-    UnallocatedVector<std::unique_ptr<blockchain::block::bitcoin::Header>>
+    UnallocatedVector<std::unique_ptr<blockchain::bitcoin::block::Header>>
         headers{};
 
     if (count > 0) {
@@ -109,7 +109,7 @@ auto BitcoinP2PHeaders(
 auto BitcoinP2PHeaders(
     const api::Session& api,
     const blockchain::Type network,
-    UnallocatedVector<std::unique_ptr<blockchain::block::bitcoin::Header>>&&
+    UnallocatedVector<std::unique_ptr<blockchain::bitcoin::block::Header>>&&
         headers) -> blockchain::p2p::bitcoin::message::internal::Headers*
 {
     namespace bitcoin = blockchain::p2p::bitcoin;

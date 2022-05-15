@@ -13,10 +13,9 @@
 
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Header.hpp"
 #include "internal/blockchain/block/bitcoin/Transaction.hpp"  // IWYU pragma: keep
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/blockchain/bitcoin/CompactSize.hpp"
 #include "opentxs/util/Container.hpp"
@@ -29,7 +28,7 @@ auto parse_header(
     const ReadView in,
     ByteIterator& it,
     std::size_t& expectedSize)
-    -> std::unique_ptr<blockchain::block::bitcoin::internal::Header>
+    -> std::unique_ptr<blockchain::bitcoin::block::Header>
 {
     if ((nullptr == in.data()) || (0 == in.size())) {
         throw std::runtime_error("Invalid block input");
@@ -60,7 +59,7 @@ auto parse_transactions(
     const api::Session& api,
     const blockchain::Type chain,
     const ReadView in,
-    const blockchain::block::bitcoin::Header& header,
+    const blockchain::bitcoin::block::Header& header,
     BlockReturnType::CalculatedSize& sizeData,
     ByteIterator& it,
     std::size_t& expectedSize) -> ParsedTransactions

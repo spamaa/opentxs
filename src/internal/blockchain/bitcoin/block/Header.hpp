@@ -5,13 +5,15 @@
 
 #pragma once
 
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 
-namespace opentxs::blockchain::block::bitcoin::internal
+#include "internal/blockchain/block/Header.hpp"
+
+namespace opentxs::blockchain::bitcoin::block::internal
 {
-class Header : virtual public bitcoin::Header
+class Header : virtual public blockchain::block::internal::Header
 {
 public:
     ~Header() override = default;
 };
-}  // namespace opentxs::blockchain::block::bitcoin::internal
+}  // namespace opentxs::blockchain::bitcoin::block::internal

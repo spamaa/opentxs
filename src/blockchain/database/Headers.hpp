@@ -47,13 +47,16 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Header;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Header;
 }  // namespace block
 
@@ -108,7 +111,7 @@ public:
     auto SiblingHashes() const noexcept -> database::Hashes;
     // Returns null pointer if the header does not exist
     auto TryLoadBitcoinHeader(const block::Hash& hash) const noexcept
-        -> std::unique_ptr<block::bitcoin::Header>;
+        -> std::unique_ptr<bitcoin::block::Header>;
     // Returns null pointer if the header does not exist
     auto TryLoadHeader(const block::Hash& hash) const noexcept
         -> std::unique_ptr<block::Header>;
@@ -136,7 +139,7 @@ private:
         -> bool;
     // Throws std::out_of_range if the header does not exist
     auto load_bitcoin_header(const block::Hash& hash) const noexcept(false)
-        -> std::unique_ptr<block::bitcoin::Header>;
+        -> std::unique_ptr<bitcoin::block::Header>;
     // Throws std::out_of_range if the header does not exist
     auto load_header(const block::Hash& hash) const noexcept(false)
         -> std::unique_ptr<block::Header>;

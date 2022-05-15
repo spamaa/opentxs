@@ -11,18 +11,21 @@
 #include <cstdint>
 #include <memory>
 
-#include "blockchain/block/Header.hpp"
+#include "blockchain/bitcoin/block/header/Header.hpp"
+#include "blockchain/block/header/Header.hpp"
+#include "blockchain/block/header/Imp.hpp"
+#include "internal/blockchain/bitcoin/block/Header.hpp"
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Header.hpp"
+#include "internal/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/NumericHash.hpp"
 #include "opentxs/blockchain/bitcoin/Work.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
@@ -41,12 +44,17 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Header;
+}  // namespace block
 }  // namespace bitcoin
+
+namespace block
+{
+class Header;
 }  // namespace block
 }  // namespace blockchain
 // }  // namespace v1
@@ -55,10 +63,10 @@ class Header;
 
 namespace be = boost::endian;
 
-namespace opentxs::blockchain::block::bitcoin::implementation
+namespace opentxs::blockchain::bitcoin::block::implementation
 {
-class Header final : virtual public internal::Header,
-                     public block::implementation::Header
+class Header final : virtual public bitcoin::block::Header::Imp,
+                     blockchain::block::implementation::Header
 {
 public:
     struct BitcoinFormat {
@@ -87,30 +95,31 @@ public:
     static auto calculate_hash(
         const api::Session& api,
         const blockchain::Type chain,
-        const ReadView serialized) -> block::Hash;
+        const ReadView serialized) -> blockchain::block::Hash;
     static auto calculate_hash(
         const api::Session& api,
         const blockchain::Type chain,
-        const BitcoinFormat& serialized) -> block::Hash;
+        const BitcoinFormat& serialized) -> blockchain::block::Hash;
     static auto calculate_pow(
         const api::Session& api,
         const blockchain::Type chain,
-        const ReadView serialized) -> block::Hash;
+        const ReadView serialized) -> blockchain::block::Hash;
     static auto calculate_pow(
         const api::Session& api,
         const blockchain::Type chain,
-        const BitcoinFormat& serialized) -> block::Hash;
+        const BitcoinFormat& serialized) -> blockchain::block::Hash;
 
-    auto as_Bitcoin() const noexcept -> std::unique_ptr<bitcoin::Header> final
+    auto clone() const noexcept
+        -> std::unique_ptr<blockchain::block::Header::Imp> final
     {
-        return std::make_unique<Header>(*this);
+        return clone_bitcoin();
     }
-    auto clone() const noexcept -> std::unique_ptr<block::Header> final
+    auto clone_bitcoin() const noexcept -> std::unique_ptr<Imp> final
     {
         return std::make_unique<Header>(*this);
     }
     auto Encode() const noexcept -> OTData final;
-    auto MerkleRoot() const noexcept -> const block::Hash& final
+    auto MerkleRoot() const noexcept -> const blockchain::block::Hash& final
     {
         return merkle_root_;
     }
@@ -132,11 +141,11 @@ public:
         const api::Session& api,
         const blockchain::Type chain,
         const VersionNumber subversion,
-        block::Hash&& hash,
-        block::Hash&& pow,
+        blockchain::block::Hash&& hash,
+        blockchain::block::Hash&& pow,
         const std::int32_t version,
-        block::Hash&& previous,
-        block::Hash&& merkle,
+        blockchain::block::Hash&& previous,
+        blockchain::block::Hash&& merkle,
         const Time timestamp,
         const std::uint32_t nbits,
         const std::uint32_t nonce,
@@ -146,7 +155,7 @@ public:
         const blockchain::Type chain,
         const blockchain::block::Hash& merkle,
         const blockchain::block::Hash& parent,
-        const block::Height height) noexcept(false);
+        const blockchain::block::Height height) noexcept(false);
     Header(const api::Session& api, const SerializedType& serialized) noexcept(
         false);
     Header(const Header& rhs) noexcept;
@@ -154,21 +163,21 @@ public:
     ~Header() final = default;
 
 private:
-    using ot_super = block::implementation::Header;
+    using ot_super = blockchain::block::implementation::Header;
 
     const VersionNumber subversion_;
     const std::int32_t block_version_;
-    const block::Hash merkle_root_;
+    const blockchain::block::Hash merkle_root_;
     const Time timestamp_;
     const std::uint32_t nbits_;
     const std::uint32_t nonce_;
 
     static auto calculate_hash(
         const api::Session& api,
-        const SerializedType& serialized) -> block::Hash;
+        const SerializedType& serialized) -> blockchain::block::Hash;
     static auto calculate_pow(
         const api::Session& api,
-        const SerializedType& serialized) -> block::Hash;
+        const SerializedType& serialized) -> blockchain::block::Hash;
     static auto calculate_work(
         const blockchain::Type chain,
         const std::uint32_t nbits) -> OTWork;
@@ -182,17 +191,17 @@ private:
         const api::Session& api,
         const VersionNumber version,
         const blockchain::Type chain,
-        block::Hash&& hash,
-        block::Hash&& pow,
-        block::Hash&& previous,
-        const block::Height height,
+        blockchain::block::Hash&& hash,
+        blockchain::block::Hash&& pow,
+        blockchain::block::Hash&& previous,
+        const blockchain::block::Height height,
         const Status status,
         const Status inheritStatus,
         const blockchain::Work& work,
         const blockchain::Work& inheritWork,
         const VersionNumber subversion,
         const std::int32_t blockVersion,
-        block::Hash&& merkle,
+        blockchain::block::Hash&& merkle,
         const Time timestamp,
         const std::uint32_t nbits,
         const std::uint32_t nonce,
@@ -202,4 +211,4 @@ private:
     auto operator=(const Header&) -> Header& = delete;
     auto operator=(Header&&) -> Header& = delete;
 };
-}  // namespace opentxs::blockchain::block::bitcoin::implementation
+}  // namespace opentxs::blockchain::bitcoin::block::implementation

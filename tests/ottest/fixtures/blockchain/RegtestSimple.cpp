@@ -161,7 +161,7 @@ auto Regtest_fixture_simple::MineBlocks(
     unsigned block_number,
     unsigned transaction_number,
     unsigned amount) noexcept
-    -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Header>
+    -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Header>
 {
 
     auto target = ancestor + block_number;
@@ -202,7 +202,7 @@ auto Regtest_fixture_simple::MineBlocks(
     std::size_t block_number,
     const Generator& gen,
     const ot::UnallocatedVector<Transaction>& extra) noexcept
-    -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Header>
+    -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Header>
 {
     const auto& network = miner_.Network().Blockchain().GetChain(test_chain_);
     const auto& headerOracle = network.HeaderOracle();
@@ -212,14 +212,14 @@ auto Regtest_fixture_simple::MineBlocks(
     for (auto i = std::size_t{0u}; i < block_number; ++i) {
         EXPECT_TRUE(gen);
 
-        auto tx = gen(previousHeader->Height() + 1);
+        auto tx = gen(previousHeader.Height() + 1);
 
         auto block = miner_.Factory().BitcoinBlock(
-            *previousHeader,
+            previousHeader,
             tx,
-            previousHeader->nBits(),
+            previousHeader.nBits(),
             extra,
-            previousHeader->Version(),
+            previousHeader.Version(),
             [start{ot::Clock::now()}] {
                 return (ot::Clock::now() - start) > std::chrono::minutes(2);
             });
@@ -231,11 +231,10 @@ auto Regtest_fixture_simple::MineBlocks(
         EXPECT_TRUE(added);
 
         previousHeader = block->Header().as_Bitcoin();
-
-        EXPECT_TRUE(previousHeader);
     }
 
-    return previousHeader;
+    return std::make_unique<opentxs::blockchain::bitcoin::block::Header>(
+        previousHeader);
 }
 
 auto Regtest_fixture_simple::CreateClient(
