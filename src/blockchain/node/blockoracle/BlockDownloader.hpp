@@ -43,6 +43,11 @@ class Block;
 }  // namespace bitcoin
 }  // namespace block
 
+namespace database
+{
+class Block;
+}  // namespace database
+
 namespace node
 {
 namespace blockoracle
@@ -52,8 +57,7 @@ class BlockDownloader;
 
 namespace internal
 {
-struct BlockDatabase;
-struct Network;
+class Manager;
 }  // namespace internal
 
 class HeaderOracle;
@@ -93,9 +97,9 @@ public:
 
     BlockDownloader(
         const api::Session& api,
-        internal::BlockDatabase& db,
+        database::Block& db,
         const node::HeaderOracle& header,
-        const internal::Network& node,
+        const internal::Manager& node,
         const blockchain::Type chain,
         const std::string_view shutdown) noexcept;
 
@@ -105,9 +109,9 @@ private:
     friend BlockDMBlock;
     friend BlockWorkerBlock;
 
-    internal::BlockDatabase& db_;
+    database::Block& db_;
     const node::HeaderOracle& header_;
-    const internal::Network& node_;
+    const internal::Manager& node_;
     const blockchain::Type chain_;
     OTZMQPublishSocket socket_;
 

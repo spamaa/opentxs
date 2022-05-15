@@ -36,6 +36,7 @@ extern "C" {
 #include "opentxs/blockchain/block/bitcoin/Script.hpp"
 #include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/blockchain/block/bitcoin/Types.hpp"
+#include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Iterator.hpp"
@@ -53,7 +54,7 @@ struct PacketCrypt::Imp {
 
     static thread_local Context context_;
 
-    const HeaderOracle& headers_;
+    const blockchain::node::HeaderOracle& headers_;
 
     auto Validate(const PktBlock& block) const noexcept -> bool
     {
@@ -213,7 +214,7 @@ struct PacketCrypt::Imp {
         }
     }
 
-    Imp(const HeaderOracle& oracle) noexcept
+    Imp(const blockchain::node::HeaderOracle& oracle) noexcept
         : headers_(oracle)
     {
     }
@@ -223,12 +224,13 @@ thread_local PacketCrypt::Imp::Context PacketCrypt::Imp::context_{
     ::ValidateCtx_create(),
     ::ValidateCtx_destroy};
 
-PacketCrypt::PacketCrypt(const HeaderOracle& oracle) noexcept
+PacketCrypt::PacketCrypt(const blockchain::node::HeaderOracle& oracle) noexcept
     : imp_(std::make_unique<Imp>(oracle))
 {
 }
 
-auto PacketCrypt::Validate(const BitcoinBlock& block) const noexcept -> bool
+auto PacketCrypt::Validate(
+    const blockchain::block::bitcoin::Block& block) const noexcept -> bool
 {
     const auto* p = dynamic_cast<const Imp::PktBlock*>(&block);
 

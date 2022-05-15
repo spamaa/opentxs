@@ -27,7 +27,6 @@
 #include "core/Worker.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/node/Node.hpp"
 #include "internal/blockchain/node/wallet/Account.hpp"
 #include "internal/blockchain/node/wallet/Accounts.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
@@ -62,12 +61,16 @@ class Session;
 
 namespace blockchain
 {
+namespace database
+{
+class Wallet;
+}  // namespace database
+
 namespace node
 {
 namespace internal
 {
-struct Network;
-struct WalletDatabase;
+class Manager;
 }  // namespace internal
 }  // namespace node
 }  // namespace blockchain
@@ -89,8 +92,8 @@ public:
 
     Proposals(
         const api::Session& api,
-        const node::internal::Network& node,
-        node::internal::WalletDatabase& db,
+        const node::internal::Manager& node,
+        database::Wallet& db,
         const Type chain) noexcept;
     ~Proposals();
 

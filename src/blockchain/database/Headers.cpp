@@ -22,7 +22,9 @@
 #include "internal/api/session/FactoryAPI.hpp"
 #include "internal/blockchain/block/Block.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
-#include "internal/blockchain/database/Database.hpp"
+#include "internal/blockchain/database/Types.hpp"
+#include "internal/blockchain/node/Manager.hpp"
+#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/api/session/Factory.hpp"
@@ -46,7 +48,7 @@ namespace opentxs::blockchain::database
 {
 Headers::Headers(
     const api::Session& api,
-    const node::internal::Network& network,
+    const node::internal::Manager& network,
     const common::Database& common,
     const storage::lmdb::LMDB& lmdb,
     const blockchain::Type type) noexcept
@@ -356,10 +358,10 @@ auto Headers::CurrentCheckpoint() const noexcept -> block::Position
     return checkpoint(lock);
 }
 
-auto Headers::DisconnectedHashes() const noexcept -> node::DisconnectedList
+auto Headers::DisconnectedHashes() const noexcept -> database::DisconnectedList
 {
     Lock lock(lock_);
-    auto output = node::DisconnectedList{};
+    auto output = database::DisconnectedList{};
     lmdb_.Read(
         BlockHeaderDisconnected,
         [&](const auto key, const auto value) -> bool {
@@ -579,10 +581,10 @@ auto Headers::recent_hashes(const Lock& lock, alloc::Resource* alloc)
     return output;
 }
 
-auto Headers::SiblingHashes() const noexcept -> node::Hashes
+auto Headers::SiblingHashes() const noexcept -> database::Hashes
 {
     Lock lock(lock_);
-    auto output = node::Hashes{};
+    auto output = database::Hashes{};
     lmdb_.Read(
         BlockHeaderSiblings,
         [&](const auto, const auto value) -> bool {

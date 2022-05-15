@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Mempool.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
@@ -42,13 +42,10 @@ class Transaction;
 }  // namespace bitcoin
 }  // namespace block
 
-namespace node
+namespace database
 {
-namespace internal
-{
-struct WalletDatabase;
-}  // namespace internal
-}  // namespace node
+class Wallet;
+}  // namespace database
 }  // namespace blockchain
 
 namespace network
@@ -83,7 +80,7 @@ public:
 
     Mempool(
         const api::crypto::Blockchain& crypto,
-        internal::WalletDatabase& db,
+        database::Wallet& db,
         const network::zeromq::socket::Publish& socket,
         const Type chain) noexcept;
 

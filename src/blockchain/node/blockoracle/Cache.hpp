@@ -46,12 +46,16 @@ class Block;
 }  // namespace bitcoin
 }  // namespace block
 
+namespace database
+{
+class Block;
+}  // namespace database
+
 namespace node
 {
 namespace internal
 {
-struct BlockDatabase;
-struct Network;
+class Manager;
 }  // namespace internal
 }  // namespace node
 }  // namespace blockchain
@@ -88,8 +92,8 @@ public:
     auto FinishBatch(const BatchID id) noexcept -> void;
     auto GetBatch(allocator_type alloc) noexcept
         -> std::pair<BatchID, Vector<block::Hash>>;
-    auto ProcessBlockRequests(zmq::Message&& in) noexcept -> void;
-    auto ReceiveBlock(const zmq::Frame& in) noexcept -> void;
+    auto ProcessBlockRequests(network::zeromq::Message&& in) noexcept -> void;
+    auto ReceiveBlock(const network::zeromq::Frame& in) noexcept -> void;
     auto ReceiveBlock(const std::string_view in) noexcept -> void;
     auto ReceiveBlock(std::shared_ptr<const block::bitcoin::Block> in) noexcept
         -> void;
@@ -101,8 +105,8 @@ public:
 
     Cache(
         const api::Session& api_,
-        const internal::Network& node,
-        internal::BlockDatabase& db,
+        const internal::Manager& node,
+        database::Block& db,
         const blockchain::Type chain,
         allocator_type alloc) noexcept;
 
@@ -121,8 +125,8 @@ private:
     static const std::chrono::seconds download_timeout_;
 
     const api::Session& api_;
-    const internal::Network& node_;
-    internal::BlockDatabase& db_;
+    const internal::Manager& node_;
+    database::Block& db_;
     const blockchain::Type chain_;
     opentxs::network::zeromq::socket::Raw block_available_;
     opentxs::network::zeromq::socket::Raw cache_size_publisher_;

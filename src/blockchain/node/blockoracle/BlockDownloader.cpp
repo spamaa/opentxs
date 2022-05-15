@@ -16,7 +16,9 @@
 
 #include "internal/api/session/Endpoints.hpp"
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Block.hpp"
+#include "internal/blockchain/node/Manager.hpp"
+#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
@@ -36,9 +38,9 @@ namespace opentxs::blockchain::node::blockoracle
 {
 BlockDownloader::BlockDownloader(
     const api::Session& api,
-    internal::BlockDatabase& db,
+    database::Block& db,
     const node::HeaderOracle& header,
-    const internal::Network& node,
+    const internal::Manager& node,
     const blockchain::Type chain,
     const std::string_view shutdown) noexcept
     : BlockDMBlock(
@@ -70,7 +72,7 @@ BlockDownloader::BlockDownloader(
 
 auto BlockDownloader::batch_ready() const noexcept -> void
 {
-    node_.JobReady(internal::PeerManager::Task::JobAvailableBlock);
+    node_.JobReady(PeerManagerJobs::JobAvailableBlock);
 }
 
 auto BlockDownloader::batch_size(const std::size_t in) const noexcept

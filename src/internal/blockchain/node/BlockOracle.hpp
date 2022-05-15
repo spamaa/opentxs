@@ -8,7 +8,7 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <string_view>
 
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Types.hpp"
 #include "opentxs/blockchain/node/BlockOracle.hpp"
 #include "opentxs/util/Container.hpp"
 #include "util/Work.hpp"

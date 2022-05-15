@@ -12,7 +12,7 @@
 #include <optional>
 
 #include "blockchain/node/wallet/subchain/statemachine/Job.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Wallet.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/util/Mutex.hpp"
@@ -73,8 +73,7 @@ public:
     ~Imp() override = default;
 
 protected:
-    auto done(node::internal::WalletDatabase::ElementMap&& elements) noexcept
-        -> void;
+    auto done(database::Wallet::ElementMap&& elements) noexcept -> void;
 
 private:
     network::zeromq::socket::Raw& to_rescan_;

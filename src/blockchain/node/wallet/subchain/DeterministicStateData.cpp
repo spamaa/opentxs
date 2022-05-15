@@ -20,7 +20,7 @@
 
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Manager.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/session/Crypto.hpp"
@@ -55,8 +55,8 @@ namespace opentxs::blockchain::node::wallet
 {
 DeterministicStateData::DeterministicStateData(
     const api::Session& api,
-    const node::internal::Network& node,
-    node::internal::WalletDatabase& db,
+    const node::internal::Manager& node,
+    database::Wallet& db,
     const node::internal::Mempool& mempool,
     const crypto::Deterministic& subaccount,
     const cfilter::Type filter,
@@ -99,7 +99,7 @@ auto DeterministicStateData::CheckCache(
 }
 
 auto DeterministicStateData::flush_cache(
-    WalletDatabase::BatchedMatches& matches,
+    database::Wallet::BatchedMatches& matches,
     FinishedCallback cb) const noexcept -> void
 {
     const auto start = Clock::now();
@@ -149,7 +149,7 @@ auto DeterministicStateData::handle_confirmed_matches(
 {
     const auto start = Clock::now();
     const auto& [utxo, general] = confirmed;
-    auto transactions = WalletDatabase::BlockMatches{get_allocator()};
+    auto transactions = database::Wallet::BlockMatches{get_allocator()};
 
     for (const auto& match : general) {
         const auto& [txid, elementID] = match;
@@ -231,7 +231,7 @@ auto DeterministicStateData::handle_mempool_matches(
 
     if (0u == general.size()) { return; }
 
-    auto data = WalletDatabase::MatchedTransaction{};
+    auto data = database::Wallet::MatchedTransaction{};
     auto& [outputs, pTX] = data;
 
     for (const auto& match : general) { process(match, *in, data); }
@@ -254,7 +254,7 @@ auto DeterministicStateData::handle_mempool_matches(
 auto DeterministicStateData::process(
     const block::Match match,
     const block::bitcoin::Transaction& transaction,
-    WalletDatabase::MatchedTransaction& output) const noexcept -> void
+    database::Wallet::MatchedTransaction& output) const noexcept -> void
 {
     auto& [outputs, pTX] = output;
     const auto& [txid, elementID] = match;

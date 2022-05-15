@@ -31,7 +31,7 @@ namespace node
 {
 namespace internal
 {
-struct Network;
+class Manager;
 }  // namespace internal
 
 class BlockOracle;
@@ -81,7 +81,7 @@ public:
     virtual auto GetVerifiedPeerCount() const noexcept -> std::size_t = 0;
     virtual auto HeaderOracle() const noexcept -> const node::HeaderOracle& = 0;
     OPENTXS_NO_EXPORT virtual auto Internal() const noexcept
-        -> const internal::Network& = 0;
+        -> const internal::Manager& = 0;
     virtual auto Listen(const blockchain::p2p::Address& address) const noexcept
         -> bool = 0;
     virtual auto SendToAddress(

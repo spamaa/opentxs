@@ -22,7 +22,7 @@
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/block/Block.hpp"  // IWYU pragma: keep
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Types.hpp"
 #include "internal/core/Amount.hpp"
 #include "internal/identity/wot/claim/Types.hpp"
 #include "internal/util/LogMacros.hpp"

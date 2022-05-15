@@ -30,7 +30,8 @@
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Wallet.hpp"
+#include "internal/blockchain/node/Wallet.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/blockchain/node/wallet/subchain/Subchain.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Index.hpp"
@@ -97,12 +98,17 @@ class Element;
 class Subaccount;
 }  // namespace crypto
 
+namespace database
+{
+class Wallet;
+}  // namespace database
+
 namespace node
 {
 namespace internal
 {
-struct Mempool;
-struct WalletDatabase;
+class Manager;
+class Mempool;
 }  // namespace internal
 
 namespace wallet
@@ -141,8 +147,7 @@ class SubchainStateData
       public boost::enable_shared_from_this<SubchainStateData>
 {
 public:
-    using WalletDatabase = node::internal::WalletDatabase;
-    using SubchainIndex = WalletDatabase::pSubchainIndex;
+    using SubchainIndex = database::Wallet::pSubchainIndex;
     using ElementCache =
         libguarded::shared_guarded<wallet::ElementCache, std::shared_mutex>;
     using MatchCache =
@@ -153,8 +158,8 @@ public:
         std::function<void(const Vector<block::Position>&)>;
 
     const api::Session& api_;
-    const node::internal::Network& node_;
-    node::internal::WalletDatabase& db_;
+    const node::internal::Manager& node_;
+    database::Wallet& db_;
     const node::internal::Mempool& mempool_oracle_;
     const crypto::Subaccount& subaccount_;
     const OTNymID owner_;
@@ -194,7 +199,7 @@ public:
         const cfilter::Type type,
         const blockchain::crypto::Element& input,
         const Bip32Index index,
-        WalletDatabase::ElementMap& output) const noexcept -> void;
+        database::Wallet::ElementMap& output) const noexcept -> void;
     auto ProcessBlock(
         const block::Position& position,
         const block::bitcoin::Block& block) const noexcept -> bool;
@@ -229,7 +234,7 @@ public:
     ~SubchainStateData() override;
 
 protected:
-    using TXOs = WalletDatabase::TXOs;
+    using TXOs = database::Wallet::TXOs;
     auto set_key_data(block::bitcoin::Transaction& tx) const noexcept -> void;
 
     virtual auto do_startup() noexcept -> void;
@@ -237,8 +242,8 @@ protected:
 
     SubchainStateData(
         const api::Session& api,
-        const node::internal::Network& node,
-        node::internal::WalletDatabase& db,
+        const node::internal::Manager& node,
+        database::Wallet& db,
         const node::internal::Mempool& mempool,
         const crypto::Subaccount& subaccount,
         const cfilter::Type filter,
@@ -253,9 +258,9 @@ private:
     using Transactions =
         Vector<std::shared_ptr<const block::bitcoin::Transaction>>;
     using Task = node::internal::Wallet::Task;
-    using Patterns = WalletDatabase::Patterns;
+    using Patterns = database::Wallet::Patterns;
     using Targets = GCS::Targets;
-    using Tested = WalletDatabase::MatchingIndices;
+    using Tested = database::Wallet::MatchingIndices;
     using Elements = wallet::ElementCache::Elements;
     using HandledReorgs = Set<StateSequence>;
     using SelectedKeyElement = std::pair<Vector<Bip32Index>, Targets>;
@@ -381,8 +386,8 @@ private:
 
     SubchainStateData(
         const api::Session& api,
-        const node::internal::Network& node,
-        node::internal::WalletDatabase& db,
+        const node::internal::Manager& node,
+        database::Wallet& db,
         const node::internal::Mempool& mempool,
         const crypto::Subaccount& subaccount,
         const cfilter::Type filter,

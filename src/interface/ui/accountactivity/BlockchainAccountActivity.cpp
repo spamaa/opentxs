@@ -23,7 +23,7 @@
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Manager.hpp"
 #include "internal/core/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
@@ -91,11 +91,11 @@ BlockchainAccountActivity::BlockchainAccountActivity(
     : AccountActivity(api, nymID, accountID, AccountType::Blockchain, cb)
     , chain_(chain)
     , confirmed_(0)
-    , balance_cb_(zmq::ListenCallback::Factory(
+    , balance_cb_(network::zeromq::ListenCallback::Factory(
           [this](auto&& in) { pipeline_.Push(std::move(in)); }))
     , balance_socket_(Widget::api_.Network().ZeroMQ().DealerSocket(
           balance_cb_,
-          zmq::socket::Direction::Connect))
+          network::zeromq::socket::Direction::Connect))
     , progress_()
     , height_(0)
 {

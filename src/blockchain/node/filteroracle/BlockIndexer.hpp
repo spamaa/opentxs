@@ -21,7 +21,7 @@
 #include "blockchain/node/filteroracle/FilterOracle.hpp"
 #include "core/Worker.hpp"
 #include "internal/blockchain/Blockchain.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Cfilter.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -58,6 +58,11 @@ class Block;
 }  // namespace bitcoin
 }  // namespace block
 
+namespace database
+{
+class Cfilter;
+}  // namespace database
+
 namespace internal
 {
 class BlockOracle;
@@ -73,6 +78,7 @@ class FilterOracle;
 namespace internal
 {
 class BlockOracle;
+class Manager;
 }  // namespace internal
 
 class HeaderOracle;
@@ -112,10 +118,10 @@ public:
 
     BlockIndexer(
         const api::Session& api,
-        internal::FilterDatabase& db,
+        database::Cfilter& db,
         const HeaderOracle& header,
         const internal::BlockOracle& block,
-        const internal::Network& node,
+        const internal::Manager& node,
         FilterOracle& parent,
         const blockchain::Type chain,
         const cfilter::Type type,
@@ -128,10 +134,10 @@ private:
     friend BlockDMFilter;
     friend BlockWorkerFilter;
 
-    internal::FilterDatabase& db_;
+    database::Cfilter& db_;
     const HeaderOracle& header_;
     const internal::BlockOracle& block_;
-    const internal::Network& node_;
+    const internal::Manager& node_;
     FilterOracle& parent_;
     const blockchain::Type chain_;
     const cfilter::Type type_;
@@ -162,16 +168,16 @@ struct FilterOracle::BlockIndexerData {
     const Task& incoming_data_;
     const cfilter::Type type_;
     cfilter::Hash filter_hash_;
-    internal::FilterDatabase::CFilterParams& filter_data_;
-    internal::FilterDatabase::CFHeaderParams& header_data_;
+    database::Cfilter::CFilterParams& filter_data_;
+    database::Cfilter::CFHeaderParams& header_data_;
     Outstanding& job_counter_;
 
     BlockIndexerData(
         cfilter::Hash blank,
         const Task& data,
         const cfilter::Type type,
-        internal::FilterDatabase::CFilterParams& filter,
-        internal::FilterDatabase::CFHeaderParams& header,
+        database::Cfilter::CFilterParams& filter,
+        database::Cfilter::CFHeaderParams& header,
         Outstanding& jobCounter) noexcept
         : incoming_data_(data)
         , type_(type)

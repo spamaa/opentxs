@@ -24,7 +24,7 @@
 #include "internal/api/crypto/Blockchain.hpp"
 #include "internal/api/session/Session.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Manager.hpp"
 #include "internal/core/PaymentCode.hpp"
 #include "internal/util/BoostPMR.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -61,8 +61,8 @@ namespace opentxs::blockchain::node::wallet
 {
 NotificationStateData::NotificationStateData(
     const api::Session& api,
-    const node::internal::Network& node,
-    node::internal::WalletDatabase& db,
+    const node::internal::Manager& node,
+    database::Wallet& db,
     const node::internal::Mempool& mempool,
     const cfilter::Type filter,
     const crypto::Subchain subchain,

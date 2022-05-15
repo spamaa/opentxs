@@ -32,7 +32,7 @@
 #include "core/Worker.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Wallet.hpp"
 #include "internal/blockchain/node/wallet/Account.hpp"
 #include "internal/blockchain/node/wallet/Accounts.hpp"
 #include "internal/blockchain/node/wallet/FeeOracle.hpp"
@@ -74,8 +74,19 @@ class Session;
 
 namespace blockchain
 {
+namespace database
+{
+class Wallet;
+}  // namespace database
+
 namespace node
 {
+namespace internal
+{
+class Manager;
+class Mempool;
+}  // namespace internal
+
 class Mempool;
 }  // namespace node
 }  // namespace blockchain
@@ -169,8 +180,8 @@ public:
 
     Wallet(
         const api::Session& api,
-        const node::internal::Network& parent,
-        node::internal::WalletDatabase& db,
+        const node::internal::Manager& parent,
+        database::Wallet& db,
         const node::internal::Mempool& mempool,
         const Type chain,
         const std::string_view shutdown) noexcept;
@@ -182,14 +193,14 @@ private:
 
     using Work = wallet::WalletJobs;
 
-    const node::internal::Network& parent_;
-    node::internal::WalletDatabase& db_;
+    const node::internal::Manager& parent_;
+    database::Wallet& db_;
     const Type chain_;
     wallet::FeeOracle fee_oracle_;
     wallet::Accounts accounts_;
     wallet::Proposals proposals_;
 
-    auto pipeline(const zmq::Message& in) noexcept -> void;
+    auto pipeline(const network::zeromq::Message& in) noexcept -> void;
     auto shutdown(std::promise<void>& promise) noexcept -> void;
     auto state_machine() noexcept -> bool;
 

@@ -28,7 +28,6 @@
 #include "core/Worker.hpp"
 #include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/node/Node.hpp"
 #include "internal/blockchain/node/wallet/Account.hpp"
 #include "internal/blockchain/node/wallet/Accounts.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
@@ -76,13 +75,10 @@ class Output;
 }  // namespace bitcoin
 }  // namespace block
 
-namespace node
+namespace database
 {
-namespace internal
-{
-struct WalletDatabase;
-}  // namespace internal
-}  // namespace node
+class Wallet;
+}  // namespace database
 }  // namespace blockchain
 
 namespace identifier
@@ -121,7 +117,7 @@ public:
 
     BitcoinTransactionBuilder(
         const api::Session& api,
-        node::internal::WalletDatabase& db,
+        database::Wallet& db,
         const Identifier& id,
         const Proposal& proposal,
         const Type chain,

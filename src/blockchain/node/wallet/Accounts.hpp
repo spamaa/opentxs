@@ -47,13 +47,17 @@ class Session;
 
 namespace blockchain
 {
+namespace database
+{
+class Wallet;
+}  // namespace database
+
 namespace node
 {
 namespace internal
 {
-struct Mempool;
-struct Network;
-struct WalletDatabase;
+class Manager;
+class Mempool;
 }  // namespace internal
 
 namespace wallet
@@ -100,8 +104,8 @@ public:
     auto Shutdown() noexcept -> void;
 
     Imp(const api::Session& api,
-        const node::internal::Network& node,
-        node::internal::WalletDatabase& db,
+        const node::internal::Manager& node,
+        database::Wallet& db,
         const node::internal::Mempool& mempool,
         const network::zeromq::BatchID batch,
         const Type chain,
@@ -120,8 +124,8 @@ private:
     using AccountMap = Map<OTNymID, wallet::Account>;
 
     const api::Session& api_;
-    const node::internal::Network& node_;
-    node::internal::WalletDatabase& db_;
+    const node::internal::Manager& node_;
+    database::Wallet& db_;
     const node::internal::Mempool& mempool_;
     const Type chain_;
     const cfilter::Type filter_type_;
@@ -156,8 +160,8 @@ private:
     auto work() noexcept -> bool;
 
     Imp(const api::Session& api,
-        const node::internal::Network& node,
-        node::internal::WalletDatabase& db,
+        const node::internal::Manager& node,
+        database::Wallet& db,
         const node::internal::Mempool& mempool,
         const network::zeromq::BatchID batch,
         const Type chain,

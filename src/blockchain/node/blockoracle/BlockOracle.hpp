@@ -24,9 +24,11 @@
 
 #include "blockchain/node/blockoracle/Cache.hpp"
 #include "core/Worker.hpp"
+#include "internal/blockchain/block/Validator.hpp"
+#include "internal/blockchain/database/Block.hpp"
 #include "internal/blockchain/node/BlockBatch.hpp"
 #include "internal/blockchain/node/BlockOracle.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/node/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -75,6 +77,7 @@ class BlockDownloader;
 namespace internal
 {
 class BlockBatch;
+class Manager;
 }  // namespace internal
 
 class HeaderOracle;
@@ -133,9 +136,9 @@ public:
     auto StartDownloader() noexcept -> void;
 
     Imp(const api::Session& api,
-        const internal::Network& node,
+        const internal::Manager& node,
         const node::HeaderOracle& header,
-        internal::BlockDatabase& db,
+        database::Block& db,
         const blockchain::Type chain,
         const std::string_view parent,
         const network::zeromq::BatchID batch,
@@ -151,17 +154,17 @@ private:
         libguarded::shared_guarded<blockoracle::Cache, std::shared_mutex>;
 
     const api::Session& api_;
-    const internal::Network& node_;
-    const internal::BlockDatabase& db_;
+    const internal::Manager& node_;
+    const database::Block& db_;
     const CString submit_endpoint_;
-    const std::unique_ptr<const internal::BlockValidator> validator_;
+    const std::unique_ptr<const block::Validator> validator_;
     const std::unique_ptr<blockoracle::BlockDownloader> block_downloader_;
     mutable Cache cache_;
 
     static auto get_validator(
         const blockchain::Type chain,
         const node::HeaderOracle& headers) noexcept
-        -> std::unique_ptr<const internal::BlockValidator>;
+        -> std::unique_ptr<const block::Validator>;
 
     auto do_shutdown() noexcept -> void;
     auto do_startup() noexcept -> void;
@@ -169,9 +172,9 @@ private:
     auto work() noexcept -> bool;
 
     Imp(const api::Session& api,
-        const internal::Network& node,
+        const internal::Manager& node,
         const node::HeaderOracle& header,
-        internal::BlockDatabase& db,
+        database::Block& db,
         const blockchain::Type chain,
         const std::string_view parent,
         const network::zeromq::BatchID batch,

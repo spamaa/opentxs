@@ -18,8 +18,7 @@
 #include "Proto.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/database/Database.hpp"
-#include "internal/blockchain/node/Node.hpp"
+#include "internal/blockchain/database/Types.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -68,6 +67,11 @@ class Database;
 
 namespace node
 {
+namespace internal
+{
+class Manager;
+}  // namespace internal
+
 class UpdateTransaction;
 }  // namespace node
 }  // namespace blockchain
@@ -86,7 +90,7 @@ public:
         return load_header(best().second);
     }
     auto CurrentCheckpoint() const noexcept -> block::Position;
-    auto DisconnectedHashes() const noexcept -> node::DisconnectedList;
+    auto DisconnectedHashes() const noexcept -> database::DisconnectedList;
     auto HasDisconnectedChildren(const block::Hash& hash) const noexcept
         -> bool;
     auto HaveCheckpoint() const noexcept -> bool;
@@ -101,7 +105,7 @@ public:
     }
     auto RecentHashes(alloc::Resource* alloc) const noexcept
         -> Vector<block::Hash>;
-    auto SiblingHashes() const noexcept -> node::Hashes;
+    auto SiblingHashes() const noexcept -> database::Hashes;
     // Returns null pointer if the header does not exist
     auto TryLoadBitcoinHeader(const block::Hash& hash) const noexcept
         -> std::unique_ptr<block::bitcoin::Header>;
@@ -113,14 +117,14 @@ public:
 
     Headers(
         const api::Session& api,
-        const node::internal::Network& network,
+        const node::internal::Manager& network,
         const common::Database& common,
         const storage::lmdb::LMDB& lmdb,
         const blockchain::Type type) noexcept;
 
 private:
     const api::Session& api_;
-    const node::internal::Network& network_;
+    const node::internal::Manager& network_;
     const common::Database& common_;
     const storage::lmdb::LMDB& lmdb_;
     mutable std::mutex lock_;

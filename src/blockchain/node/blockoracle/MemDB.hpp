@@ -13,7 +13,6 @@
 #include <tuple>
 #include <utility>
 
-#include "internal/blockchain/node/Node.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/node/Types.hpp"
