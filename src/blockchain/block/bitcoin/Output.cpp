@@ -22,6 +22,7 @@
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/core/Amount.hpp"
 #include "internal/core/Factory.hpp"
@@ -494,6 +495,11 @@ auto Output::Print() const noexcept -> UnallocatedCString
     out << script_->Print();
 
     return out.str();
+}
+
+auto Output::Script() const noexcept -> const internal::Script&
+{
+    return *script_;
 }
 
 auto Output::Serialize(const AllocateOutput destination) const noexcept

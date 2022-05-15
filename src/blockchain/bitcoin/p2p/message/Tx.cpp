@@ -12,12 +12,12 @@
 #include <utility>
 
 #include "blockchain/bitcoin/p2p/Header.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/p2p/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/p2p/bitcoin/message/Message.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
+#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/p2p/Types.hpp"
 #include "opentxs/util/Log.hpp"
 

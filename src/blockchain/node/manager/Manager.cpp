@@ -29,7 +29,6 @@
 #include "internal/api/session/Endpoints.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/database/Factory.hpp"
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/blockchain/node/Config.hpp"

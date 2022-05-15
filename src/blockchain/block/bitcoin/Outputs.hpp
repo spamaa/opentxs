@@ -12,7 +12,8 @@
 #include <optional>
 
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Output.hpp"
+#include "internal/blockchain/block/bitcoin/Outputs.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Types.hpp"

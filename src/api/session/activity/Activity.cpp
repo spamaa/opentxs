@@ -18,7 +18,7 @@
 
 #include "Proto.hpp"
 #include "internal/api/session/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
 #include "internal/otx/common/Cheque.hpp"  // IWYU pragma: keep
 #include "internal/otx/common/Item.hpp"    // IWYU pragma: keep

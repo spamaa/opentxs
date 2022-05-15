@@ -23,7 +23,8 @@
 #include <utility>
 
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Output.hpp"
+#include "internal/blockchain/block/bitcoin/Script.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -112,10 +113,7 @@ public:
     {
         return script_->SigningSubscript(chain_);
     }
-    auto Script() const noexcept -> const internal::Script& final
-    {
-        return *script_;
-    }
+    auto Script() const noexcept -> const internal::Script& final;
     auto State() const noexcept -> node::TxoState final
     {
         return cache_.state();

@@ -29,7 +29,7 @@
 #include "blockchain/p2p/peer/Peer.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/blockchain/database/Peer.hpp"
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/blockchain/node/BlockBatch.hpp"

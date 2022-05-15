@@ -12,7 +12,9 @@
 #include <stdexcept>
 
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Header.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/core/FixedByteArray.hpp"

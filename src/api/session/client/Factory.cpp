@@ -20,23 +20,27 @@
 #include "Proto.hpp"
 #include "Proto.tpp"
 #include "internal/api/session/Factory.hpp"
-#if OT_BLOCKCHAIN
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
-#endif  // OT_BLOCKCHAIN
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Header.hpp"
+#include "internal/blockchain/block/bitcoin/Input.hpp"    // IWYU pragma: keep
+#include "internal/blockchain/block/bitcoin/Inputs.hpp"   // IWYU pragma: keep
+#include "internal/blockchain/block/bitcoin/Output.hpp"   // IWYU pragma: keep
+#include "internal/blockchain/block/bitcoin/Outputs.hpp"  // IWYU pragma: keep
+#include "internal/blockchain/block/bitcoin/Script.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"
+#include "internal/blockchain/block/bitcoin/Types.hpp"
 #include "internal/core/contract/peer/Factory.hpp"
 #include "internal/serialization/protobuf/Check.hpp"
 #include "internal/serialization/protobuf/verify/BlockchainBlockHeader.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/session/Client.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
-#if OT_BLOCKCHAIN
 #include "opentxs/blockchain/block/Block.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Outpoint.hpp"
 #include "opentxs/blockchain/block/bitcoin/Script.hpp"
-#endif  // OT_BLOCKCHAIN
 #include "opentxs/core/Amount.hpp"
 #include "opentxs/core/contract/peer/PeerReply.hpp"
 #include "opentxs/core/contract/peer/PeerRequest.hpp"

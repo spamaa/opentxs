@@ -76,7 +76,7 @@ namespace bitcoin
 {
 namespace internal
 {
-struct Transaction;
+class Transaction;
 }  // namespace internal
 
 class Transaction;

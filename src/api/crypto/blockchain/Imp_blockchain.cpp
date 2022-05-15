@@ -17,7 +17,7 @@
 #include "Proto.hpp"
 #include "blockchain/database/common/Database.hpp"
 #include "internal/api/network/Blockchain.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
 #include "internal/util/LogMacros.hpp"

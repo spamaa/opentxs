@@ -38,7 +38,7 @@ namespace bitcoin
 {
 namespace internal
 {
-struct Input;
+class Input;
 }  // namespace internal
 }  // namespace bitcoin
 }  // namespace block

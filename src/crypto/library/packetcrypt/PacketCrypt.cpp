@@ -24,7 +24,7 @@ extern "C" {
 #include <type_traits>
 
 #include "blockchain/block/pkt/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"

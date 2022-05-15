@@ -14,7 +14,7 @@
 #include <type_traits>
 
 #include "blockchain/block/bitcoin/BlockParser.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Header.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/network/blockchain/bitcoin/CompactSize.hpp"
 #include "opentxs/util/Log.hpp"

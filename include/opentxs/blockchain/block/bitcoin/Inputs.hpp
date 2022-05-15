@@ -26,7 +26,7 @@ namespace bitcoin
 {
 namespace internal
 {
-struct Inputs;
+class Inputs;
 }  // namespace internal
 
 class Input;

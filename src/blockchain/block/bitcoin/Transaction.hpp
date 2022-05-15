@@ -12,7 +12,9 @@
 #include <optional>
 
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Inputs.hpp"
+#include "internal/blockchain/block/bitcoin/Outputs.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -60,6 +62,12 @@ namespace block
 {
 namespace bitcoin
 {
+namespace internal
+{
+class Input;
+class Output;
+}  // namespace internal
+
 class Transaction;
 }  // namespace bitcoin
 }  // namespace block

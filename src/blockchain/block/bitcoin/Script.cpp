@@ -19,6 +19,8 @@
 #include <string_view>
 #include <utility>
 
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/session/Crypto.hpp"

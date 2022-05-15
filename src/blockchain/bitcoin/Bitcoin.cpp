@@ -14,7 +14,9 @@
 #include <numeric>
 #include <stdexcept>
 
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Input.hpp"
+#include "internal/blockchain/block/bitcoin/Output.hpp"
+#include "internal/blockchain/block/bitcoin/Script.hpp"
 #include "internal/core/Amount.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"

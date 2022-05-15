@@ -17,6 +17,8 @@
 #include <utility>
 
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Output.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/block/bitcoin/Output.hpp"
 #include "opentxs/blockchain/block/bitcoin/Outputs.hpp"

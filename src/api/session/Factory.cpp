@@ -17,8 +17,10 @@
 #include "internal/api/FactoryAPI.hpp"
 #include "internal/api/crypto/Asymmetric.hpp"
 #include "internal/api/crypto/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Script.hpp"
+#include "internal/blockchain/block/bitcoin/Types.hpp"
 #if OT_BLOCKCHAIN
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #endif  // OT_BLOCKCHAIN
 #include "internal/core/Factory.hpp"
