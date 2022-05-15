@@ -17,7 +17,7 @@
 #include "blockchain/database/common/Database.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/Factory.hpp"
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"

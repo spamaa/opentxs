@@ -31,6 +31,7 @@
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/bitcoin/cfilter/GCS.hpp"
+#include "internal/blockchain/block/Block.hpp"
 #include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/node/BlockOracle.hpp"

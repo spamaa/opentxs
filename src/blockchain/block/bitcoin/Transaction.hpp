@@ -12,6 +12,7 @@
 #include <optional>
 
 #include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/Types.hpp"
 #include "internal/blockchain/block/bitcoin/Inputs.hpp"
 #include "internal/blockchain/block/bitcoin/Outputs.hpp"
 #include "internal/blockchain/block/bitcoin/Transaction.hpp"

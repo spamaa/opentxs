@@ -15,7 +15,7 @@
 
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/Factory.hpp"
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
 #include "internal/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/api/session/Factory.hpp"

@@ -24,7 +24,6 @@
 
 #include "blockchain/block/Block.hpp"
 #include "blockchain/block/bitcoin/BlockParser.hpp"
-#include "internal/blockchain/block/Block.hpp"
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
 #include "internal/blockchain/block/bitcoin/Header.hpp"
 #include "internal/blockchain/block/bitcoin/Transaction.hpp"

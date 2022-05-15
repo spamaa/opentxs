@@ -20,7 +20,7 @@
 #include "blockchain/database/common/Database.hpp"
 #include "blockchain/node/UpdateTransaction.hpp"
 #include "internal/api/session/FactoryAPI.hpp"
-#include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/Factory.hpp"
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
 #include "internal/blockchain/block/bitcoin/Header.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/database/Types.hpp"
