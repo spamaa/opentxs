@@ -85,6 +85,12 @@ namespace block
 {
 namespace bitcoin
 {
+namespace internal
+{
+class Input;
+class Output;
+}  // namespace internal
+
 class Block;
 class Transaction;
 }  // namespace bitcoin

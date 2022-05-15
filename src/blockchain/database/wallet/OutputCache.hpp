@@ -52,7 +52,7 @@ namespace bitcoin
 {
 namespace internal
 {
-struct Output;
+class Output;
 }  // namespace internal
 
 class Output;

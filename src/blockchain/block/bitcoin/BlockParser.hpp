@@ -27,7 +27,6 @@
 #include "blockchain/block/bitcoin/BlockParser.hpp"
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
@@ -60,7 +59,7 @@ namespace bitcoin
 {
 namespace internal
 {
-struct Header;
+class Header;
 }  // namespace internal
 
 class Block;

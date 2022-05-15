@@ -22,7 +22,9 @@
 #include <utility>
 
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Input.hpp"
+#include "internal/blockchain/block/bitcoin/Output.hpp"
+#include "internal/blockchain/block/bitcoin/Script.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/session/Factory.hpp"

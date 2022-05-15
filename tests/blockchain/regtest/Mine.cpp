@@ -8,7 +8,7 @@
 #include <chrono>
 #include <memory>
 
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "ottest/fixtures/blockchain/Regtest.hpp"
 
 namespace ottest

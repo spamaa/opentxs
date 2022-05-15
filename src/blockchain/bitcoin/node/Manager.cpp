@@ -8,7 +8,8 @@
 #include "blockchain/bitcoin/node/Manager.hpp"  // IWYU pragma: associated
 
 #include "Proto.tpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Header.hpp"
 #include "internal/blockchain/node/Factory.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "serialization/protobuf/BlockchainBlockHeader.pb.h"  // IWYU pragma: keep

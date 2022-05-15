@@ -49,7 +49,7 @@ namespace bitcoin
 {
 namespace internal
 {
-struct Header;
+class Header;
 }  // namespace internal
 
 class Transaction;

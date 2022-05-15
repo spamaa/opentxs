@@ -15,7 +15,8 @@
 #include <utility>
 
 #include "1_Internal.hpp"  // IWYU pragma: keep
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Script.hpp"
 #include "ottest/Basic.hpp"  // IWYU pragma: keep
 
 namespace b = ot::blockchain::block::bitcoin;

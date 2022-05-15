@@ -19,7 +19,7 @@
 #include <utility>
 
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"

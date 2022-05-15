@@ -6,12 +6,21 @@
 target_sources(
   opentxs-common
   PRIVATE
-    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Bitcoin.hpp"
-    "Bitcoin.cpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Block.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Factory.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Header.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Input.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Inputs.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Output.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Outputs.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Script.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Transaction.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/bitcoin/Types.hpp"
     "Block.cpp"
     "Block.hpp"
     "BlockParser.cpp"
     "BlockParser.hpp"
+    "Common.cpp"
     "Header.cpp"
     "Header.hpp"
     "Input.cpp"

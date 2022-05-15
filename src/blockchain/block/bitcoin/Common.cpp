@@ -5,7 +5,7 @@
 
 #include "0_stdafx.hpp"    // IWYU pragma: associated
 #include "1_Internal.hpp"  // IWYU pragma: associated
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"  // IWYU pragma: associated
+#include "internal/blockchain/block/bitcoin/Types.hpp"  // IWYU pragma: associated
 
 #include <boost/endian/buffers.hpp>
 #include <cstddef>
@@ -13,7 +13,9 @@
 #include <cstring>
 #include <iterator>
 #include <limits>
+#include <optional>
 #include <stdexcept>
+#include <vector>
 
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/block/bitcoin/Opcodes.hpp"

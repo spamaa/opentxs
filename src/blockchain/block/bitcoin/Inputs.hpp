@@ -12,7 +12,8 @@
 #include <optional>
 
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Input.hpp"
+#include "internal/blockchain/block/bitcoin/Inputs.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Types.hpp"
@@ -32,6 +33,20 @@ namespace opentxs  // NOLINT
 {
 // inline namespace v1
 // {
+namespace blockchain
+{
+namespace block
+{
+namespace bitcoin
+{
+namespace internal
+{
+class Output;
+}  // namespace internal
+}  // namespace bitcoin
+}  // namespace block
+}  // namespace blockchain
+
 namespace proto
 {
 class BlockchainTransaction;

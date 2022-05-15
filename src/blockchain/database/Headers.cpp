@@ -21,7 +21,8 @@
 #include "blockchain/node/UpdateTransaction.hpp"
 #include "internal/api/session/FactoryAPI.hpp"
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Factory.hpp"
+#include "internal/blockchain/block/bitcoin/Header.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/Types.hpp"

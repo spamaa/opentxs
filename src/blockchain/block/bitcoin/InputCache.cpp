@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/bitcoin/Output.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/session/Crypto.hpp"

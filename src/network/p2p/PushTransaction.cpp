@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <utility>
 
-#include "internal/blockchain/block/bitcoin/Bitcoin.hpp"
+#include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/network/p2p/Factory.hpp"
 #include "network/p2p/Base.hpp"
 #include "opentxs/api/session/Factory.hpp"
