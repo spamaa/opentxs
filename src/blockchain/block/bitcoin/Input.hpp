@@ -22,6 +22,7 @@
 #include <utility>
 
 #include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/Types.hpp"
 #include "internal/blockchain/block/bitcoin/Input.hpp"
 #include "internal/blockchain/block/bitcoin/Output.hpp"
 #include "internal/blockchain/block/bitcoin/Script.hpp"

@@ -30,6 +30,7 @@
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/Types.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
 #include "internal/blockchain/node/Wallet.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"

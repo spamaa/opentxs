@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/Types.hpp"
 #include "internal/blockchain/block/bitcoin/Output.hpp"
 #include "internal/blockchain/block/bitcoin/Script.hpp"
 #include "internal/util/Mutex.hpp"

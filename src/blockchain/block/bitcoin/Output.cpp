@@ -21,7 +21,6 @@
 #include "Proto.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
-#include "internal/blockchain/block/Block.hpp"
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/core/Amount.hpp"

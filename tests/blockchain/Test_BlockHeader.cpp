@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "1_Internal.hpp"  // IWYU pragma: keep
-#include "internal/blockchain/block/Block.hpp"
+#include "internal/blockchain/block/Factory.hpp"
 #include "ottest/fixtures/blockchain/Basic.hpp"
 
 namespace b = ot::blockchain;
