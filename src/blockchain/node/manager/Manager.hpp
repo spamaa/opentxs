@@ -67,14 +67,17 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 class Block;
 class Transaction;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Header;
 }  // namespace block
 
@@ -152,7 +155,7 @@ public:
 
     const Type chain_;
 
-    auto AddBlock(const std::shared_ptr<const block::bitcoin::Block> block)
+    auto AddBlock(const std::shared_ptr<const bitcoin::block::Block> block)
         const noexcept -> bool final;
     auto AddPeer(const blockchain::p2p::Address& address) const noexcept
         -> bool final;
@@ -162,7 +165,7 @@ public:
         return block_;
     }
     auto BroadcastTransaction(
-        const block::bitcoin::Transaction& tx,
+        const bitcoin::block::Transaction& tx,
         const bool pushtx) const noexcept -> bool final;
     auto Chain() const noexcept -> Type final { return chain_; }
     auto FeeRate() const noexcept -> Amount final;

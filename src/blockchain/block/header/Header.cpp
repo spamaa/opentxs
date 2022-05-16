@@ -13,8 +13,8 @@
 
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
+#include "internal/blockchain/bitcoin/block/Factory.hpp"
 #include "internal/blockchain/block/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"

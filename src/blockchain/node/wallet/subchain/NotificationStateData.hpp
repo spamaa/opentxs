@@ -65,14 +65,14 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 class Block;
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace crypto
 {
@@ -167,18 +167,18 @@ private:
     auto get_index(const boost::shared_ptr<const SubchainStateData>& me)
         const noexcept -> Index final;
     auto handle_confirmed_matches(
-        const block::bitcoin::Block& block,
+        const bitcoin::block::Block& block,
         const block::Position& position,
         const block::Matches& confirmed,
         const Log& log) const noexcept -> void final;
     auto handle_mempool_matches(
         const block::Matches& matches,
-        std::unique_ptr<const block::bitcoin::Transaction> tx) const noexcept
+        std::unique_ptr<const bitcoin::block::Transaction> tx) const noexcept
         -> void final;
     auto init_keys() const noexcept -> OTPasswordPrompt;
     auto process(
         const block::Match match,
-        const block::bitcoin::Transaction& tx,
+        const bitcoin::block::Transaction& tx,
         const PasswordPrompt& reason) const noexcept -> void;
     auto process(
         const opentxs::PaymentCode& remote,

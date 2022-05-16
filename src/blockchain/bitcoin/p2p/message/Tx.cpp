@@ -17,7 +17,7 @@
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"  // IWYU pragma: keep
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/p2p/Types.hpp"
 #include "opentxs/util/Log.hpp"
 
@@ -102,7 +102,7 @@ auto Tx::payload(AllocateOutput out) const noexcept -> bool
 }
 
 auto Tx::Transaction() const noexcept
-    -> std::unique_ptr<const block::bitcoin::Transaction>
+    -> std::unique_ptr<const blockchain::bitcoin::block::Transaction>
 {
     return api_.Factory().BitcoinTransaction(
         header_->Network(), payload_->Bytes(), false);

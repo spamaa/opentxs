@@ -38,13 +38,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace database
 {
@@ -95,7 +95,7 @@ public:
     auto ProcessBlockRequests(network::zeromq::Message&& in) noexcept -> void;
     auto ReceiveBlock(const network::zeromq::Frame& in) noexcept -> void;
     auto ReceiveBlock(const std::string_view in) noexcept -> void;
-    auto ReceiveBlock(std::shared_ptr<const block::bitcoin::Block> in) noexcept
+    auto ReceiveBlock(std::shared_ptr<const bitcoin::block::Block> in) noexcept
         -> void;
     auto Request(const block::Hash& block) noexcept -> BitcoinBlockResult;
     auto Request(const Vector<block::Hash>& hashes) noexcept
@@ -113,7 +113,7 @@ public:
     ~Cache() final { Shutdown(); }
 
 private:
-    using Promise = std::promise<std::shared_ptr<const block::bitcoin::Block>>;
+    using Promise = std::promise<std::shared_ptr<const bitcoin::block::Block>>;
     using PendingData = std::tuple<Time, Promise, BitcoinBlockResult, bool>;
     using Pending = Map<block::Hash, PendingData>;
     using RequestQueue = Deque<block::Hash>;

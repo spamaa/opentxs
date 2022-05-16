@@ -25,6 +25,7 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Block.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Hash.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Header.hpp"
@@ -32,7 +33,6 @@
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Block.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Time.hpp"
@@ -50,13 +50,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace database
 {
@@ -105,7 +105,7 @@ namespace opentxs::blockchain::node::implementation
 {
 using BlockDMFilter = download::Manager<
     FilterOracle::BlockIndexer,
-    std::shared_ptr<const block::bitcoin::Block>,
+    std::shared_ptr<const bitcoin::block::Block>,
     cfilter::Header,
     cfilter::Type>;
 using BlockWorkerFilter = Worker<FilterOracle::BlockIndexer, api::Session>;

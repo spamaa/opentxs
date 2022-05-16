@@ -56,7 +56,7 @@ Blocks::Blocks(
 }
 
 auto Blocks::LoadBitcoin(const block::Hash& block) const noexcept
-    -> std::shared_ptr<const block::bitcoin::Block>
+    -> std::shared_ptr<const bitcoin::block::Block>
 {
     if (block == genesis_) {
         const auto& hex = params::Chains().at(chain_).genesis_block_hex_;

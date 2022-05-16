@@ -19,13 +19,13 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace node
 {
@@ -64,7 +64,7 @@ public:
     using PendingOutgoing = std::future<SendOutcome>;
 
     virtual auto AddBlock(
-        const std::shared_ptr<const block::bitcoin::Block> block) const noexcept
+        const std::shared_ptr<const bitcoin::block::Block> block) const noexcept
         -> bool = 0;
     virtual auto AddPeer(const blockchain::p2p::Address& address) const noexcept
         -> bool = 0;

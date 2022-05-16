@@ -28,14 +28,14 @@
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
-#include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Input.hpp"
-#include "internal/blockchain/block/bitcoin/Inputs.hpp"
-#include "internal/blockchain/block/bitcoin/Output.hpp"
-#include "internal/blockchain/block/bitcoin/Outputs.hpp"
-#include "internal/blockchain/block/bitcoin/Script.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
-#include "internal/blockchain/block/bitcoin/Types.hpp"
+#include "internal/blockchain/bitcoin/block/Factory.hpp"
+#include "internal/blockchain/bitcoin/block/Input.hpp"
+#include "internal/blockchain/bitcoin/block/Inputs.hpp"
+#include "internal/blockchain/bitcoin/block/Output.hpp"
+#include "internal/blockchain/bitcoin/block/Outputs.hpp"
+#include "internal/blockchain/bitcoin/block/Script.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
+#include "internal/blockchain/bitcoin/block/Types.hpp"
 #include "internal/core/Amount.hpp"
 #include "internal/core/Factory.hpp"
 #include "internal/core/PaymentCode.hpp"
@@ -48,10 +48,10 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
-#include "opentxs/blockchain/block/bitcoin/Opcodes.hpp"
-#include "opentxs/blockchain/block/bitcoin/Output.hpp"
-#include "opentxs/blockchain/block/bitcoin/Script.hpp"
-#include "opentxs/blockchain/block/bitcoin/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Opcodes.hpp"
+#include "opentxs/blockchain/bitcoin/block/Output.hpp"
+#include "opentxs/blockchain/bitcoin/block/Script.hpp"
+#include "opentxs/blockchain/bitcoin/block/Types.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
 #include "opentxs/blockchain/crypto/Element.hpp"
 #include "opentxs/blockchain/crypto/Subchain.hpp"
@@ -109,7 +109,7 @@ struct BitcoinTransactionBuilder::Imp {
 
             auto pOutput = [&] {
                 auto elements = [&] {
-                    namespace bb = opentxs::blockchain::block::bitcoin;
+                    namespace bb = opentxs::blockchain::bitcoin::block;
                     namespace bi = bb::internal;
                     auto out = bb::ScriptElements{};
 
@@ -177,7 +177,7 @@ struct BitcoinTransactionBuilder::Imp {
 
                     return out;
                 }();
-                using Position = block::bitcoin::Script::Position;
+                using Position = bitcoin::block::Script::Position;
                 auto pScript = factory::BitcoinScript(
                     chain_, std::move(elements), Position::Output);
 
@@ -253,14 +253,14 @@ struct BitcoinTransactionBuilder::Imp {
     }
     auto CreateOutputs(const Proposal& proposal) noexcept -> bool
     {
-        namespace bb = opentxs::blockchain::block::bitcoin;
+        namespace bb = opentxs::blockchain::bitcoin::block;
         namespace bi = bb::internal;
 
         auto index = std::int32_t{-1};
 
         for (const auto& output : proposal.output()) {
             auto pScript = std::unique_ptr<bi::Script>{};
-            using Position = block::bitcoin::Script::Position;
+            using Position = bitcoin::block::Script::Position;
 
             if (output.has_raw()) {
                 pScript = factory::BitcoinScript(
@@ -515,8 +515,8 @@ struct BitcoinTransactionBuilder::Imp {
     }
 
 private:
-    using Input = std::unique_ptr<block::bitcoin::internal::Input>;
-    using OutputType = block::bitcoin::internal::Output;
+    using Input = std::unique_ptr<bitcoin::block::internal::Input>;
+    using OutputType = bitcoin::block::internal::Output;
     using Output = std::unique_ptr<OutputType>;
     using Bip143 = std::optional<bitcoin::Bip143Hashes>;
     using Hash = std::array<std::byte, 32>;
@@ -545,10 +545,10 @@ private:
     UnallocatedSet<KeyID> change_keys_;
     UnallocatedSet<KeyID> outgoing_keys_;
 
-    static auto is_segwit(const block::bitcoin::internal::Input& input) noexcept
+    static auto is_segwit(const bitcoin::block::internal::Input& input) noexcept
         -> bool
     {
-        using Type = block::bitcoin::Script::Pattern;
+        using Type = bitcoin::block::Script::Pattern;
 
         switch (input.Spends().Script().Type()) {
             case Type::PayToWitnessPubkeyHash:
@@ -567,11 +567,11 @@ private:
     auto add_signatures(
         const ReadView preimage,
         const blockchain::bitcoin::SigHash& sigHash,
-        block::bitcoin::internal::Input& input) const noexcept -> bool
+        bitcoin::block::internal::Input& input) const noexcept -> bool
     {
         const auto reason = api_.Factory().PasswordPrompt(__func__);
         const auto& output = input.Spends();
-        using Pattern = block::bitcoin::Script::Pattern;
+        using Pattern = bitcoin::block::Script::Pattern;
 
         switch (output.Script().Type()) {
             case Pattern::PayToWitnessPubkeyHash:
@@ -598,8 +598,8 @@ private:
         const ReadView preimage,
         const blockchain::bitcoin::SigHash& sigHash,
         const PasswordPrompt& reason,
-        const block::bitcoin::internal::Output& spends,
-        block::bitcoin::internal::Input& input) const noexcept -> bool
+        const bitcoin::block::internal::Output& spends,
+        bitcoin::block::internal::Input& input) const noexcept -> bool
     {
         const auto& script = spends.Script();
 
@@ -612,7 +612,7 @@ private:
 
         auto keys = UnallocatedVector<OTData>{};
         auto signatures = UnallocatedVector<Space>{};
-        auto views = block::bitcoin::internal::Input::Signatures{};
+        auto views = bitcoin::block::internal::Input::Signatures{};
         const auto& api = api_.Crypto().Blockchain();
 
         for (const auto& id : input.Keys()) {
@@ -684,12 +684,12 @@ private:
         const ReadView preimage,
         const blockchain::bitcoin::SigHash& sigHash,
         const PasswordPrompt& reason,
-        const block::bitcoin::internal::Output& spends,
-        block::bitcoin::internal::Input& input) const noexcept -> bool
+        const bitcoin::block::internal::Output& spends,
+        bitcoin::block::internal::Input& input) const noexcept -> bool
     {
         auto keys = UnallocatedVector<OTData>{};
         auto signatures = UnallocatedVector<Space>{};
-        auto views = block::bitcoin::internal::Input::Signatures{};
+        auto views = bitcoin::block::internal::Input::Signatures{};
         const auto& api = api_.Crypto().Blockchain();
 
         for (const auto& id : input.Keys()) {
@@ -760,12 +760,12 @@ private:
         const ReadView preimage,
         const blockchain::bitcoin::SigHash& sigHash,
         const PasswordPrompt& reason,
-        const block::bitcoin::internal::Output& spends,
-        block::bitcoin::internal::Input& input) const noexcept -> bool
+        const bitcoin::block::internal::Output& spends,
+        bitcoin::block::internal::Input& input) const noexcept -> bool
     {
         auto keys = UnallocatedVector<OTData>{};
         auto signatures = UnallocatedVector<Space>{};
-        auto views = block::bitcoin::internal::Input::Signatures{};
+        auto views = bitcoin::block::internal::Input::Signatures{};
         const auto& api = api_.Crypto().Blockchain();
 
         for (const auto& id : input.Keys()) {
@@ -1086,7 +1086,7 @@ private:
     }
     auto sign_input(
         const int index,
-        block::bitcoin::internal::Input& input,
+        bitcoin::block::internal::Input& input,
         Transaction& txcopy,
         Bip143& bip143) const noexcept -> bool
     {
@@ -1126,7 +1126,7 @@ private:
     }
     auto sign_input_bch(
         const int index,
-        block::bitcoin::internal::Input& input,
+        bitcoin::block::internal::Input& input,
         Bip143& bip143) const noexcept -> bool
     {
         if (false == init_bip143(bip143)) {
@@ -1143,7 +1143,7 @@ private:
     }
     auto sign_input_btc(
         const int index,
-        block::bitcoin::internal::Input& input,
+        bitcoin::block::internal::Input& input,
         Transaction& txcopy) const noexcept -> bool
     {
         if (false == init_txcopy(txcopy)) {
@@ -1168,7 +1168,7 @@ private:
     }
     auto sign_input_segwit(
         const int index,
-        block::bitcoin::internal::Input& input,
+        bitcoin::block::internal::Input& input,
         Bip143& bip143) const noexcept -> bool
     {
         if (false == init_bip143(bip143)) {
@@ -1189,7 +1189,7 @@ private:
         const Match match,
         const blockchain::crypto::Element& element,
         const block::Outpoint& outpoint,
-        const block::bitcoin::internal::Output& output) const noexcept
+        const bitcoin::block::internal::Output& output) const noexcept
         -> crypto::ECKey
     {
         const auto [account, subchain, index] = element.KeyID();

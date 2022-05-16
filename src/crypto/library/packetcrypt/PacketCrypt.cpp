@@ -23,19 +23,19 @@ extern "C" {
 #include <stdexcept>
 #include <type_traits>
 
-#include "blockchain/block/pkt/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Types.hpp"
+#include "blockchain/pkt/block/Block.hpp"
+#include "internal/blockchain/bitcoin/block/Types.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "opentxs/blockchain/bitcoin/block/Block.hpp"
+#include "opentxs/blockchain/bitcoin/block/Input.hpp"
+#include "opentxs/blockchain/bitcoin/block/Inputs.hpp"
+#include "opentxs/blockchain/bitcoin/block/Output.hpp"
+#include "opentxs/blockchain/bitcoin/block/Outputs.hpp"
+#include "opentxs/blockchain/bitcoin/block/Script.hpp"
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
+#include "opentxs/blockchain/bitcoin/block/Types.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
-#include "opentxs/blockchain/block/bitcoin/Block.hpp"
-#include "opentxs/blockchain/block/bitcoin/Input.hpp"
-#include "opentxs/blockchain/block/bitcoin/Inputs.hpp"
-#include "opentxs/blockchain/block/bitcoin/Output.hpp"
-#include "opentxs/blockchain/block/bitcoin/Outputs.hpp"
-#include "opentxs/blockchain/block/bitcoin/Script.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
-#include "opentxs/blockchain/block/bitcoin/Types.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
@@ -47,7 +47,7 @@ namespace be = boost::endian;
 namespace opentxs::crypto::implementation
 {
 struct PacketCrypt::Imp {
-    using PktBlock = blockchain::block::pkt::Block;
+    using PktBlock = blockchain::pkt::block::Block;
     using Context = std::unique_ptr<
         ::PacketCrypt_ValidateCtx_t,
         decltype(&::ValidateCtx_destroy)>;
@@ -75,7 +75,7 @@ struct PacketCrypt::Imp {
             }
 
             const auto height =
-                blockchain::block::bitcoin::internal::DecodeBip34(
+                blockchain::bitcoin::block::internal::DecodeBip34(
                     reader(coinbase));
 
             if (0 > height) {
@@ -164,7 +164,7 @@ struct PacketCrypt::Imp {
             auto commitment = [&]() -> Commitment {
                 for (const auto& output : tx.Outputs()) {
                     const auto& script = output.Script();
-                    using Pattern = blockchain::block::bitcoin::Script::Pattern;
+                    using Pattern = blockchain::bitcoin::block::Script::Pattern;
 
                     if (Pattern::NullData != script.Type()) { continue; }
 
@@ -230,7 +230,7 @@ PacketCrypt::PacketCrypt(const blockchain::node::HeaderOracle& oracle) noexcept
 }
 
 auto PacketCrypt::Validate(
-    const blockchain::block::bitcoin::Block& block) const noexcept -> bool
+    const blockchain::bitcoin::block::Block& block) const noexcept -> bool
 {
     const auto* p = dynamic_cast<const Imp::PktBlock*>(&block);
 

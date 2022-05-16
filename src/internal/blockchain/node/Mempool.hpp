@@ -17,13 +17,13 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 }  // namespace blockchain
 // }  // namespace v1
 }  // namespace opentxs
@@ -37,11 +37,11 @@ public:
     virtual auto Dump() const noexcept
         -> UnallocatedSet<UnallocatedCString> = 0;
     virtual auto Query(ReadView txid) const noexcept
-        -> std::shared_ptr<const block::bitcoin::Transaction> = 0;
+        -> std::shared_ptr<const bitcoin::block::Transaction> = 0;
     virtual auto Submit(ReadView txid) const noexcept -> bool = 0;
     virtual auto Submit(const UnallocatedVector<ReadView>& txids) const noexcept
         -> UnallocatedVector<bool> = 0;
-    virtual auto Submit(std::unique_ptr<const block::bitcoin::Transaction> tx)
+    virtual auto Submit(std::unique_ptr<const bitcoin::block::Transaction> tx)
         const noexcept -> void = 0;
 
     virtual auto Heartbeat() noexcept -> void = 0;

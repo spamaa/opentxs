@@ -63,13 +63,13 @@ class Client;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 }  // namespace blockchain
 
 namespace identifier
@@ -255,7 +255,7 @@ private:
         -> std::optional<AccountActivityRowID>;
     auto process_txid(
         const Data& txid,
-        std::unique_ptr<const blockchain::block::bitcoin::Transaction>
+        std::unique_ptr<const blockchain::bitcoin::block::Transaction>
             tx) noexcept -> std::optional<AccountActivityRowID>;
     auto startup() noexcept -> void final;
 

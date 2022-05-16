@@ -17,13 +17,13 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace node
 {
@@ -39,7 +39,7 @@ namespace opentxs::crypto::implementation
 class PacketCrypt final : public blockchain::block::Validator
 {
 public:
-    auto Validate(const blockchain::block::bitcoin::Block& block) const noexcept
+    auto Validate(const blockchain::bitcoin::block::Block& block) const noexcept
         -> bool final;
 
     PacketCrypt(const blockchain::node::HeaderOracle& oracle) noexcept;

@@ -20,10 +20,10 @@
 #include "blockchain/database/common/Database.hpp"
 #include "blockchain/node/UpdateTransaction.hpp"
 #include "internal/api/session/FactoryAPI.hpp"
+#include "internal/blockchain/bitcoin/block/Factory.hpp"
 #include "internal/blockchain/bitcoin/block/Header.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/block/Factory.hpp"
 #include "internal/blockchain/block/Header.hpp"
-#include "internal/blockchain/block/bitcoin/Factory.hpp"
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/Types.hpp"

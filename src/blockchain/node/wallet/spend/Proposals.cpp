@@ -19,8 +19,8 @@
 #include "Proto.hpp"
 #include "blockchain/node/wallet/spend/BitcoinTransactionBuilder.hpp"
 #include "internal/api/session/FactoryAPI.hpp"
-#include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
+#include "internal/blockchain/bitcoin/block/Factory.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
 #include "internal/blockchain/node/Manager.hpp"
@@ -33,7 +33,7 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Output.hpp"  // IWYU pragma: keep
+#include "opentxs/blockchain/bitcoin/block/Output.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/crypto/PaymentCode.hpp"
 #include "opentxs/blockchain/node/SendResult.hpp"
 #include "opentxs/core/Data.hpp"

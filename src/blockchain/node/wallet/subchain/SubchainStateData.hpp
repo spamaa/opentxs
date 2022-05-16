@@ -46,6 +46,7 @@
 #include "internal/util/Timer.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Script.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
 #include "opentxs/blockchain/block/Block.hpp"
@@ -53,7 +54,6 @@
 #include "opentxs/blockchain/block/Outpoint.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Script.hpp"
 #include "opentxs/blockchain/crypto/Subaccount.hpp"
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/blockchain/node/BlockOracle.hpp"
@@ -84,14 +84,14 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 class Block;
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace crypto
 {
@@ -203,9 +203,9 @@ public:
         database::Wallet::ElementMap& output) const noexcept -> void;
     auto ProcessBlock(
         const block::Position& position,
-        const block::bitcoin::Block& block) const noexcept -> bool;
+        const bitcoin::block::Block& block) const noexcept -> bool;
     auto ProcessTransaction(
-        const block::bitcoin::Transaction& tx,
+        const bitcoin::block::Transaction& tx,
         const Log& log) const noexcept -> void;
     auto ReorgTarget(
         const Lock& headerOracleLock,
@@ -236,7 +236,7 @@ public:
 
 protected:
     using TXOs = database::Wallet::TXOs;
-    auto set_key_data(block::bitcoin::Transaction& tx) const noexcept -> void;
+    auto set_key_data(bitcoin::block::Transaction& tx) const noexcept -> void;
 
     virtual auto do_startup() noexcept -> void;
     virtual auto work() noexcept -> bool;
@@ -257,7 +257,7 @@ private:
     friend Actor<SubchainStateData, SubchainJobs>;
 
     using Transactions =
-        Vector<std::shared_ptr<const block::bitcoin::Transaction>>;
+        Vector<std::shared_ptr<const bitcoin::block::Transaction>>;
     using Task = node::internal::Wallet::Task;
     using Patterns = database::Wallet::Patterns;
     using Targets = GCS::Targets;
@@ -326,13 +326,13 @@ private:
     auto get_targets(const TXOs& utxos, Targets& targets) const noexcept
         -> void;
     virtual auto handle_confirmed_matches(
-        const block::bitcoin::Block& block,
+        const bitcoin::block::Block& block,
         const block::Position& position,
         const block::Matches& confirmed,
         const Log& log) const noexcept -> void = 0;
     virtual auto handle_mempool_matches(
         const block::Matches& matches,
-        std::unique_ptr<const block::bitcoin::Transaction> tx) const noexcept
+        std::unique_ptr<const bitcoin::block::Transaction> tx) const noexcept
         -> void = 0;
     auto reorg_children() const noexcept -> std::size_t;
     auto supported_scripts(const crypto::Element& element) const noexcept

@@ -30,13 +30,16 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Hash;
 }  // namespace block
 
@@ -127,7 +130,7 @@ enum class PeerManagerJobs : OTZMQWorkType {
 };
 
 using BlockJob =
-    download::Batch<std::shared_ptr<const block::bitcoin::Block>, int>;
+    download::Batch<std::shared_ptr<const bitcoin::block::Block>, int>;
 using CfheaderJob =
     download::Batch<cfilter::Hash, cfilter::Header, cfilter::Type>;
 using CfilterJob = download::Batch<GCS, cfilter::Header, cfilter::Type>;

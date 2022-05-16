@@ -35,13 +35,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace database
 {
@@ -78,7 +78,7 @@ class Message;
 namespace opentxs::blockchain::node::blockoracle
 {
 using BlockDMBlock = download::
-    Manager<BlockDownloader, std::shared_ptr<const block::bitcoin::Block>, int>;
+    Manager<BlockDownloader, std::shared_ptr<const bitcoin::block::Block>, int>;
 using BlockWorkerBlock = Worker<BlockDownloader, api::Session>;
 
 class BlockDownloader : public BlockDMBlock, public BlockWorkerBlock

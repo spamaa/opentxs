@@ -85,13 +85,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace crypto
 {

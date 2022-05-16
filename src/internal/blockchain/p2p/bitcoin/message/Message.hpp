@@ -50,18 +50,11 @@ namespace bitcoin
 namespace block
 {
 class Header;
+class Transaction;
 }  // namespace block
 
 class Inventory;
 }  // namespace bitcoin
-
-namespace block
-{
-namespace bitcoin
-{
-class Transaction;
-}  // namespace bitcoin
-}  // namespace block
 
 namespace p2p
 {
@@ -363,7 +356,7 @@ struct Sendheaders : virtual public bitcoin::Message {
 };
 struct Tx : virtual public bitcoin::Message {
     virtual auto Transaction() const noexcept
-        -> std::unique_ptr<const block::bitcoin::Transaction> = 0;
+        -> std::unique_ptr<const blockchain::bitcoin::block::Transaction> = 0;
 
     ~Tx() override = default;
 };

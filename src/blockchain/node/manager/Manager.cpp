@@ -53,12 +53,12 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Wallet.hpp"
+#include "opentxs/blockchain/bitcoin/block/Block.hpp"
+#include "opentxs/blockchain/bitcoin/block/Output.hpp"  // IWYU pragma: keep
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Outpoint.hpp"
-#include "opentxs/blockchain/block/bitcoin/Block.hpp"
-#include "opentxs/blockchain/block/bitcoin/Output.hpp"  // IWYU pragma: keep
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/blockchain/crypto/AddressStyle.hpp"
 #include "opentxs/blockchain/crypto/Element.hpp"
 #include "opentxs/blockchain/crypto/PaymentCode.hpp"
@@ -421,7 +421,7 @@ Base::Base(
     }
 }
 
-auto Base::AddBlock(const std::shared_ptr<const block::bitcoin::Block> pBlock)
+auto Base::AddBlock(const std::shared_ptr<const bitcoin::block::Block> pBlock)
     const noexcept -> bool
 {
     if (!pBlock) {
@@ -490,7 +490,7 @@ auto Base::AddPeer(const blockchain::p2p::Address& address) const noexcept
 }
 
 auto Base::BroadcastTransaction(
-    const block::bitcoin::Transaction& tx,
+    const bitcoin::block::Transaction& tx,
     const bool pushtx) const noexcept -> bool
 {
     mempool_.Submit(tx.clone());

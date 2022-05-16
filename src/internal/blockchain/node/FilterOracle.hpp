@@ -18,13 +18,16 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Hash;
 }  // namespace block
 
@@ -54,7 +57,7 @@ public:
         const cfilter::Type type,
         const block::Position& position,
         alloc::Default alloc) const noexcept -> GCS = 0;
-    virtual auto ProcessBlock(const block::bitcoin::Block& block) const noexcept
+    virtual auto ProcessBlock(const bitcoin::block::Block& block) const noexcept
         -> bool = 0;
     virtual auto ProcessSyncData(
         const block::Hash& prior,

@@ -40,13 +40,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace database
 {
@@ -151,12 +151,12 @@ public:
         const AccountID& account,
         const SubchainID& subchain,
         const Vector<std::uint32_t> outputIndices,
-        const block::bitcoin::Transaction& transaction,
+        const bitcoin::block::Transaction& transaction,
         TXOs& txoConsumed) const noexcept -> bool;
     auto AddOutgoingTransaction(
         const Identifier& proposalID,
         const proto::BlockchainTransactionProposal& proposal,
-        const block::bitcoin::Transaction& transaction) noexcept -> bool;
+        const bitcoin::block::Transaction& transaction) noexcept -> bool;
     auto AdvanceTo(const block::Position& pos) noexcept -> bool;
     auto CancelProposal(const Identifier& id) noexcept -> bool;
     auto FinalizeReorg(MDB_txn* tx, const block::Position& pos) noexcept

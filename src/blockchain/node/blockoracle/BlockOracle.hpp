@@ -58,13 +58,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace node
 {
@@ -123,7 +123,7 @@ public:
         -> BitcoinBlockResults;
     auto SubmitBlock(const ReadView in) const noexcept -> void;
     auto Tip() const noexcept -> block::Position { return db_.BlockTip(); }
-    auto Validate(const block::bitcoin::Block& block) const noexcept -> bool
+    auto Validate(const bitcoin::block::Block& block) const noexcept -> bool
     {
         return validator_->Validate(block);
     }

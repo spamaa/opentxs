@@ -12,13 +12,13 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 }  // namespace blockchain
 // }  // namespace v1
 }  // namespace opentxs
@@ -29,7 +29,8 @@ namespace opentxs::blockchain::block
 class Validator
 {
 public:
-    virtual auto Validate(const bitcoin::Block& block) const noexcept -> bool
+    virtual auto Validate(const bitcoin::block::Block& block) const noexcept
+        -> bool
     {
         return true;
     }

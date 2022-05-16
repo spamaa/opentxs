@@ -27,13 +27,16 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Hash;
 }  // namespace block
 }  // namespace blockchain

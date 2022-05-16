@@ -50,14 +50,17 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 class Block;
 class Transaction;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Header;
 }  // namespace block
 
@@ -166,9 +169,9 @@ public:
         const Height height,
         opentxs::network::p2p::Data& output) const noexcept -> bool;
     auto LoadTransaction(const ReadView txid) const noexcept
-        -> std::unique_ptr<block::bitcoin::Transaction>;
+        -> std::unique_ptr<bitcoin::block::Transaction>;
     auto LoadTransaction(const ReadView txid, proto::BlockchainTransaction& out)
-        const noexcept -> std::unique_ptr<block::bitcoin::Transaction>;
+        const noexcept -> std::unique_ptr<bitcoin::block::Transaction>;
     auto LookupContact(const Data& pubkeyHash) const noexcept
         -> UnallocatedSet<OTIdentifier>;
     auto LookupTransactions(const PatternID pattern) const noexcept
@@ -189,10 +192,10 @@ public:
         const Vector<CFilterParams>& filters) const noexcept -> bool;
     auto StoreSync(const Chain chain, const SyncItems& items) const noexcept
         -> bool;
-    auto StoreTransaction(const block::bitcoin::Transaction& tx) const noexcept
+    auto StoreTransaction(const bitcoin::block::Transaction& tx) const noexcept
         -> bool;
     auto StoreTransaction(
-        const block::bitcoin::Transaction& tx,
+        const bitcoin::block::Transaction& tx,
         proto::BlockchainTransaction& out) const noexcept -> bool;
     auto SyncTip(const Chain chain) const noexcept -> Height;
     auto UpdateContact(const Contact& contact) const noexcept

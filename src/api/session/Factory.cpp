@@ -17,9 +17,9 @@
 #include "internal/api/FactoryAPI.hpp"
 #include "internal/api/crypto/Asymmetric.hpp"
 #include "internal/api/crypto/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Script.hpp"
-#include "internal/blockchain/block/bitcoin/Types.hpp"
+#include "internal/blockchain/bitcoin/block/Factory.hpp"
+#include "internal/blockchain/bitcoin/block/Script.hpp"
+#include "internal/blockchain/bitcoin/block/Types.hpp"
 #if OT_BLOCKCHAIN
 #include "internal/blockchain/p2p/P2P.hpp"
 #endif  // OT_BLOCKCHAIN
@@ -50,9 +50,9 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
 #if OT_BLOCKCHAIN
-#include "opentxs/blockchain/block/bitcoin/Opcodes.hpp"
-#include "opentxs/blockchain/block/bitcoin/Script.hpp"
-#include "opentxs/blockchain/block/bitcoin/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Opcodes.hpp"
+#include "opentxs/blockchain/bitcoin/block/Script.hpp"
+#include "opentxs/blockchain/bitcoin/block/Types.hpp"
 #include "opentxs/blockchain/p2p/Address.hpp"
 #endif  // OT_BLOCKCHAIN
 #include "internal/otx/common/Cheque.hpp"
@@ -383,10 +383,10 @@ auto Factory::BasketContract(
 auto Factory::BitcoinScriptNullData(
     const opentxs::blockchain::Type chain,
     const UnallocatedVector<ReadView>& data) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Script>
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Script>
 {
     namespace b = opentxs::blockchain;
-    namespace bb = opentxs::blockchain::block::bitcoin;
+    namespace bb = opentxs::blockchain::bitcoin::block;
 
     auto elements = bb::ScriptElements{};
     elements.emplace_back(bb::internal::Opcode(bb::OP::RETURN));
@@ -395,7 +395,7 @@ auto Factory::BitcoinScriptNullData(
         elements.emplace_back(bb::internal::PushData(element));
     }
 
-    using Position = opentxs::blockchain::block::bitcoin::Script::Position;
+    using Position = opentxs::blockchain::bitcoin::block::Script::Position;
 
     return factory::BitcoinScript(chain, std::move(elements), Position::Output);
 }
@@ -406,10 +406,10 @@ auto Factory::BitcoinScriptP2MS(
     const std::uint8_t N,
     const UnallocatedVector<const opentxs::crypto::key::EllipticCurve*>&
         publicKeys) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Script>
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Script>
 {
     namespace b = opentxs::blockchain;
-    namespace bb = opentxs::blockchain::block::bitcoin;
+    namespace bb = opentxs::blockchain::bitcoin::block;
 
     if ((0u == M) || (16u < M)) {
         LogError()(OT_PRETTY_CLASS())("Invalid M").Flush();
@@ -439,7 +439,7 @@ auto Factory::BitcoinScriptP2MS(
 
     elements.emplace_back(bb::internal::Opcode(static_cast<bb::OP>(N + 80)));
     elements.emplace_back(bb::internal::Opcode(bb::OP::CHECKMULTISIG));
-    using Position = opentxs::blockchain::block::bitcoin::Script::Position;
+    using Position = opentxs::blockchain::bitcoin::block::Script::Position;
 
     return factory::BitcoinScript(chain, std::move(elements), Position::Output);
 }
@@ -447,14 +447,14 @@ auto Factory::BitcoinScriptP2MS(
 auto Factory::BitcoinScriptP2PK(
     const opentxs::blockchain::Type chain,
     const opentxs::crypto::key::EllipticCurve& key) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Script>
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Script>
 {
-    namespace bb = opentxs::blockchain::block::bitcoin;
+    namespace bb = opentxs::blockchain::bitcoin::block;
 
     auto elements = bb::ScriptElements{};
     elements.emplace_back(bb::internal::PushData(key.PublicKey()));
     elements.emplace_back(bb::internal::Opcode(bb::OP::CHECKSIG));
-    using Position = opentxs::blockchain::block::bitcoin::Script::Position;
+    using Position = opentxs::blockchain::bitcoin::block::Script::Position;
 
     return factory::BitcoinScript(chain, std::move(elements), Position::Output);
 }
@@ -462,10 +462,10 @@ auto Factory::BitcoinScriptP2PK(
 auto Factory::BitcoinScriptP2PKH(
     const opentxs::blockchain::Type chain,
     const opentxs::crypto::key::EllipticCurve& key) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Script>
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Script>
 {
     namespace b = opentxs::blockchain;
-    namespace bb = opentxs::blockchain::block::bitcoin;
+    namespace bb = opentxs::blockchain::bitcoin::block;
 
     auto hash = Space{};
 
@@ -482,18 +482,18 @@ auto Factory::BitcoinScriptP2PKH(
     elements.emplace_back(bb::internal::PushData(reader(hash)));
     elements.emplace_back(bb::internal::Opcode(bb::OP::EQUALVERIFY));
     elements.emplace_back(bb::internal::Opcode(bb::OP::CHECKSIG));
-    using Position = opentxs::blockchain::block::bitcoin::Script::Position;
+    using Position = opentxs::blockchain::bitcoin::block::Script::Position;
 
     return factory::BitcoinScript(chain, std::move(elements), Position::Output);
 }
 
 auto Factory::BitcoinScriptP2SH(
     const opentxs::blockchain::Type chain,
-    const opentxs::blockchain::block::bitcoin::Script& script) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Script>
+    const opentxs::blockchain::bitcoin::block::Script& script) const noexcept
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Script>
 {
     namespace b = opentxs::blockchain;
-    namespace bb = opentxs::blockchain::block::bitcoin;
+    namespace bb = opentxs::blockchain::bitcoin::block;
 
     auto bytes = Space{};
     auto hash = Space{};
@@ -515,7 +515,7 @@ auto Factory::BitcoinScriptP2SH(
     elements.emplace_back(bb::internal::Opcode(bb::OP::HASH160));
     elements.emplace_back(bb::internal::PushData(reader(hash)));
     elements.emplace_back(bb::internal::Opcode(bb::OP::EQUAL));
-    using Position = opentxs::blockchain::block::bitcoin::Script::Position;
+    using Position = opentxs::blockchain::bitcoin::block::Script::Position;
 
     return factory::BitcoinScript(chain, std::move(elements), Position::Output);
 }
@@ -523,10 +523,10 @@ auto Factory::BitcoinScriptP2SH(
 auto Factory::BitcoinScriptP2WPKH(
     const opentxs::blockchain::Type chain,
     const opentxs::crypto::key::EllipticCurve& key) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Script>
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Script>
 {
     namespace b = opentxs::blockchain;
-    namespace bb = opentxs::blockchain::block::bitcoin;
+    namespace bb = opentxs::blockchain::bitcoin::block;
 
     auto hash = Space{};
 
@@ -540,18 +540,18 @@ auto Factory::BitcoinScriptP2WPKH(
     auto elements = bb::ScriptElements{};
     elements.emplace_back(bb::internal::Opcode(bb::OP::ZERO));
     elements.emplace_back(bb::internal::PushData(reader(hash)));
-    using Position = opentxs::blockchain::block::bitcoin::Script::Position;
+    using Position = opentxs::blockchain::bitcoin::block::Script::Position;
 
     return factory::BitcoinScript(chain, std::move(elements), Position::Output);
 }
 
 auto Factory::BitcoinScriptP2WSH(
     const opentxs::blockchain::Type chain,
-    const opentxs::blockchain::block::bitcoin::Script& script) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Script>
+    const opentxs::blockchain::bitcoin::block::Script& script) const noexcept
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Script>
 {
     namespace b = opentxs::blockchain;
-    namespace bb = opentxs::blockchain::block::bitcoin;
+    namespace bb = opentxs::blockchain::bitcoin::block;
 
     auto bytes = Space{};
     auto hash = Space{};
@@ -573,7 +573,7 @@ auto Factory::BitcoinScriptP2WSH(
     auto elements = bb::ScriptElements{};
     elements.emplace_back(bb::internal::Opcode(bb::OP::ZERO));
     elements.emplace_back(bb::internal::PushData(reader(hash)));
-    using Position = opentxs::blockchain::block::bitcoin::Script::Position;
+    using Position = opentxs::blockchain::bitcoin::block::Script::Position;
 
     return factory::BitcoinScript(chain, std::move(elements), Position::Output);
 }

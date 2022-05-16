@@ -29,8 +29,8 @@
 #include "blockchain/database/wallet/Types.hpp"
 #include "internal/api/crypto/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/block/bitcoin/Output.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
+#include "internal/blockchain/bitcoin/block/Output.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/node/SpendPolicy.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -38,14 +38,14 @@
 #include "opentxs/api/session/Crypto.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
+#include "opentxs/blockchain/bitcoin/block/Input.hpp"
+#include "opentxs/blockchain/bitcoin/block/Inputs.hpp"
+#include "opentxs/blockchain/bitcoin/block/Output.hpp"
+#include "opentxs/blockchain/bitcoin/block/Outputs.hpp"
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Outpoint.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Input.hpp"
-#include "opentxs/blockchain/block/bitcoin/Inputs.hpp"
-#include "opentxs/blockchain/block/bitcoin/Output.hpp"
-#include "opentxs/blockchain/block/bitcoin/Outputs.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/blockchain/crypto/Subchain.hpp"
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/blockchain/node/TxoState.hpp"
@@ -244,7 +244,7 @@ public:
         auto& cache = *handle;
 
         try {
-            auto processed = Set<std::shared_ptr<block::bitcoin::Transaction>>{
+            auto processed = Set<std::shared_ptr<bitcoin::block::Transaction>>{
                 transactions.get_allocator()};
             auto tx = lmdb_.TransactionRW();
 
@@ -314,7 +314,7 @@ public:
         const AccountID& account,
         const SubchainID& subchain,
         const Vector<std::uint32_t>& outputIndices,
-        const block::bitcoin::Transaction& original,
+        const bitcoin::block::Transaction& original,
         TXOs& txoCreated) noexcept -> bool
     {
         static const auto block = make_blank<block::Position>::value(api_);
@@ -341,7 +341,7 @@ public:
     auto AddOutgoingTransaction(
         const Identifier& proposalID,
         const proto::BlockchainTransactionProposal& proposal,
-        const block::bitcoin::Transaction& transaction) noexcept -> bool
+        const bitcoin::block::Transaction& transaction) noexcept -> bool
     {
         OT_ASSERT(false == transaction.IsGeneration());
 
@@ -487,7 +487,7 @@ public:
             const auto reason = api_.Factory().PasswordPrompt(
                 "Save an outgoing blockchain transaction");
             auto transactions =
-                Set<std::shared_ptr<block::bitcoin::Transaction>>{
+                Set<std::shared_ptr<bitcoin::block::Transaction>>{
                     transaction.Internal().clone()};
 
             if (!api.Internal().ProcessTransactions(
@@ -1290,7 +1290,7 @@ private:
         const Parent::BlockMatches& blockMatches,
         const node::TxoState consumeState,
         const node::TxoState createState,
-        Set<std::shared_ptr<block::bitcoin::Transaction>>& processed,
+        Set<std::shared_ptr<bitcoin::block::Transaction>>& processed,
         TXOs& txoCreated,
         TXOs& txoConsumed,
         OutputCache& cache,
@@ -1350,8 +1350,8 @@ private:
     }
     auto associate_input(
         const std::size_t index,
-        const block::bitcoin::internal::Output& output,
-        block::bitcoin::internal::Transaction& tx) noexcept(false) -> void
+        const bitcoin::block::internal::Output& output,
+        bitcoin::block::internal::Transaction& tx) noexcept(false) -> void
     {
         if (false == tx.AssociatePreviousOutput(index, output)) {
             throw std::runtime_error{
@@ -1360,7 +1360,7 @@ private:
     }
     auto associate_output(
         const block::Outpoint& outpoint,
-        const block::bitcoin::Output& output,
+        const bitcoin::block::Output& output,
         OutputCache& cache,
         storage::lmdb::LMDB::Transaction& tx) noexcept(false) -> void
     {
@@ -1457,7 +1457,7 @@ private:
         OutputCache& cache,
         MDB_txn* tx,
         const block::Outpoint& id,
-        block::bitcoin::internal::Output& output,
+        bitcoin::block::internal::Output& output,
         const node::TxoState newState,
         const block::Position newPosition) noexcept -> bool
     {
@@ -1651,7 +1651,7 @@ private:
         const block::Position position,
         const AccountID& accountID,
         const SubchainID& subchainID,
-        const block::bitcoin::Output& output) noexcept -> bool
+        const bitcoin::block::Output& output) noexcept -> bool
     {
         if (cache.Exists(id)) {
             cache.GetOutput(id);
@@ -1746,7 +1746,7 @@ private:
     }
     auto parse_inputs(
         const block::Position& block,
-        block::bitcoin::internal::Transaction& inputTx,
+        bitcoin::block::internal::Transaction& inputTx,
         Set<block::Outpoint>& out,
         OutputCache& cache,
         storage::lmdb::LMDB::Transaction& tx) noexcept(false) -> void
@@ -1767,7 +1767,7 @@ private:
     }
     auto parse_outputs(
         const Vector<std::uint32_t>& indices,
-        block::bitcoin::internal::Transaction& inputTx,
+        bitcoin::block::internal::Transaction& inputTx,
         TXOs& out,
         Set<block::Outpoint>& generation) noexcept(false) -> void
     {
@@ -1787,7 +1787,7 @@ private:
         const SubchainID& subchain,
         TXOs& created,
         TXOs& spent,
-        block::bitcoin::internal::Transaction& tx,
+        bitcoin::block::internal::Transaction& tx,
         OutputCache& cache) noexcept(false) -> void
     {
         auto index = std::size_t{0};
@@ -1919,7 +1919,7 @@ auto Output::AddMempoolTransaction(
     const AccountID& account,
     const SubchainID& subchain,
     const Vector<std::uint32_t> outputIndices,
-    const block::bitcoin::Transaction& transaction,
+    const bitcoin::block::Transaction& transaction,
     TXOs& txoCreated) const noexcept -> bool
 {
     return imp_->AddMempoolTransaction(
@@ -1929,7 +1929,7 @@ auto Output::AddMempoolTransaction(
 auto Output::AddOutgoingTransaction(
     const Identifier& proposalID,
     const proto::BlockchainTransactionProposal& proposal,
-    const block::bitcoin::Transaction& transaction) noexcept -> bool
+    const bitcoin::block::Transaction& transaction) noexcept -> bool
 {
     return imp_->AddOutgoingTransaction(proposalID, proposal, transaction);
 }

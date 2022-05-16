@@ -26,15 +26,15 @@
 #include "blockchain/node/wallet/subchain/DeterministicStateData.hpp"
 #include "blockchain/node/wallet/subchain/SubchainStateData.hpp"
 #include "core/Worker.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/node/wallet/Account.hpp"
 #include "internal/blockchain/node/wallet/Accounts.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Input.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/block/Outpoint.hpp"
-#include "opentxs/blockchain/block/bitcoin/Input.hpp"
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
@@ -62,9 +62,9 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 namespace internal
 {
@@ -72,8 +72,8 @@ class Transaction;
 }  // namespace internal
 
 class Output;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace database
 {
@@ -99,8 +99,8 @@ class BitcoinTransactionBuilder
 public:
     using UTXO = std::pair<
         blockchain::block::Outpoint,
-        std::unique_ptr<block::bitcoin::Output>>;
-    using Transaction = std::unique_ptr<block::bitcoin::internal::Transaction>;
+        std::unique_ptr<bitcoin::block::Output>>;
+    using Transaction = std::unique_ptr<bitcoin::block::internal::Transaction>;
     using KeyID = blockchain::crypto::Key;
     using Proposal = proto::BlockchainTransactionProposal;
 

@@ -16,9 +16,9 @@
 
 #include "blockchain/bitcoin/p2p/Header.hpp"
 #include "blockchain/bitcoin/p2p/Message.hpp"
+#include "internal/blockchain/bitcoin/block/Factory.hpp"
 #include "internal/blockchain/bitcoin/block/Header.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/block/Block.hpp"           // IWYU pragma: keep
-#include "internal/blockchain/block/bitcoin/Factory.hpp"
 #include "internal/blockchain/p2p/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/p2p/bitcoin/message/Message.hpp"
 #include "internal/util/LogMacros.hpp"
