@@ -39,12 +39,12 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Block.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Hash.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Header.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
-#include "opentxs/blockchain/block/bitcoin/Block.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
@@ -441,7 +441,7 @@ auto FilterOracle::new_tip(
 }
 
 auto FilterOracle::ProcessBlock(
-    const block::bitcoin::Block& block) const noexcept -> bool
+    const bitcoin::block::Block& block) const noexcept -> bool
 {
     const auto& id = block.ID();
     const auto& header = block.Header();
@@ -672,7 +672,7 @@ auto FilterOracle::ProcessSyncData(
 
 auto FilterOracle::process_block(
     const cfilter::Type filterType,
-    const block::bitcoin::Block& block) const noexcept -> GCS
+    const bitcoin::block::Block& block) const noexcept -> GCS
 {
     const auto& id = block.ID();
     const auto params = blockchain::internal::GetFilterParams(filterType);

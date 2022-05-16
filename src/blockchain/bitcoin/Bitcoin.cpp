@@ -14,9 +14,9 @@
 #include <numeric>
 #include <stdexcept>
 
-#include "internal/blockchain/block/bitcoin/Input.hpp"
-#include "internal/blockchain/block/bitcoin/Output.hpp"
-#include "internal/blockchain/block/bitcoin/Script.hpp"
+#include "internal/blockchain/bitcoin/block/Input.hpp"
+#include "internal/blockchain/bitcoin/block/Output.hpp"
+#include "internal/blockchain/bitcoin/block/Script.hpp"
 #include "internal/core/Amount.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
@@ -125,7 +125,7 @@ auto Bip143Hashes::Preimage(
     const be::little_int32_buf_t& version,
     const be::little_uint32_buf_t& locktime,
     const SigHash& sigHash,
-    const blockchain::block::bitcoin::internal::Input& input) const
+    const blockchain::bitcoin::block::internal::Input& input) const
     noexcept(false) -> Space
 {
     const auto& outpoints = Outpoints(sigHash);

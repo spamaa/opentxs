@@ -70,9 +70,9 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 namespace internal
 {
@@ -80,8 +80,8 @@ class Transaction;
 }  // namespace internal
 
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 }  // namespace blockchain
 
 namespace identifier
@@ -136,7 +136,7 @@ struct BlockchainImp final : public Blockchain::Imp {
     auto ActivityDescription(
         const identifier::Nym& nym,
         const opentxs::blockchain::Type chain,
-        const opentxs::blockchain::block::bitcoin::Transaction& transaction)
+        const opentxs::blockchain::bitcoin::block::Transaction& transaction)
         const noexcept -> UnallocatedCString final;
     auto AssignTransactionMemo(
         const TxidHex& id,
@@ -152,10 +152,10 @@ struct BlockchainImp final : public Blockchain::Imp {
         -> void final;
     auto LoadTransactionBitcoin(const TxidHex& txid) const noexcept
         -> std::unique_ptr<
-            const opentxs::blockchain::block::bitcoin::Transaction> final;
+            const opentxs::blockchain::bitcoin::block::Transaction> final;
     auto LoadTransactionBitcoin(const Txid& txid) const noexcept
         -> std::unique_ptr<
-            const opentxs::blockchain::block::bitcoin::Transaction> final;
+            const opentxs::blockchain::bitcoin::block::Transaction> final;
     auto LookupContacts(const Data& pubkeyHash) const noexcept
         -> ContactList final;
     auto ProcessContact(const Contact& contact) const noexcept -> bool final;
@@ -163,7 +163,7 @@ struct BlockchainImp final : public Blockchain::Imp {
         const noexcept -> bool final;
     auto ProcessTransactions(
         const opentxs::blockchain::Type chain,
-        Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&&
+        Set<std::shared_ptr<opentxs::blockchain::bitcoin::block::Transaction>>&&
             transactions,
         const PasswordPrompt& reason) const noexcept -> bool final;
 
@@ -219,22 +219,22 @@ private:
         const UnallocatedVector<pTxid>& transactions) const noexcept -> void;
     auto broadcast_update_signal(
         const proto::BlockchainTransaction& proto,
-        const opentxs::blockchain::block::bitcoin::Transaction& tx)
+        const opentxs::blockchain::bitcoin::block::Transaction& tx)
         const noexcept -> void;
     auto load_transaction(const Lock& lock, const Txid& id) const noexcept
-        -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>;
+        -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Transaction>;
     auto load_transaction(
         const Lock& lock,
         const Txid& id,
         proto::BlockchainTransaction& out) const noexcept
-        -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>;
+        -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Transaction>;
     auto load_transaction(const Lock& lock, const TxidHex& id) const noexcept
-        -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>;
+        -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Transaction>;
     auto load_transaction(
         const Lock& lock,
         const TxidHex& id,
         proto::BlockchainTransaction& out) const noexcept
-        -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>;
+        -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Transaction>;
     auto notify_new_account(
         const Identifier& id,
         const identifier::Nym& owner,
@@ -246,7 +246,7 @@ private:
     auto reconcile_activity_threads(
         const Lock& lock,
         const proto::BlockchainTransaction& proto,
-        const opentxs::blockchain::block::bitcoin::Transaction& tx)
+        const opentxs::blockchain::bitcoin::block::Transaction& tx)
         const noexcept -> bool;
 };
 }  // namespace opentxs::api::crypto::imp

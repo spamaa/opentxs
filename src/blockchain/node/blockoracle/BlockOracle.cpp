@@ -360,7 +360,7 @@ auto BlockOracle::Tip() const noexcept -> block::Position
     return imp_->Tip();
 }
 
-auto BlockOracle::Validate(const block::bitcoin::Block& block) const noexcept
+auto BlockOracle::Validate(const bitcoin::block::Block& block) const noexcept
     -> bool
 {
     return imp_->Validate(block);

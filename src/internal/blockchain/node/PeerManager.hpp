@@ -19,13 +19,16 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Block;
 class Hash;
 }  // namespace block
@@ -59,7 +62,7 @@ public:
     virtual auto BroadcastBlock(const block::Block& block) const noexcept
         -> bool = 0;
     virtual auto BroadcastTransaction(
-        const block::bitcoin::Transaction& tx) const noexcept -> bool = 0;
+        const bitcoin::block::Transaction& tx) const noexcept -> bool = 0;
     virtual auto Connect() noexcept -> bool = 0;
     virtual auto Disconnect(const int id) const noexcept -> void = 0;
     virtual auto Endpoint(const PeerManagerJobs type) const noexcept

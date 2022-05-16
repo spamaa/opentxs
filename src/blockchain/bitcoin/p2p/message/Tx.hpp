@@ -29,13 +29,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace p2p
 {
@@ -55,7 +55,7 @@ class Tx final : public internal::Tx, public implementation::Message
 {
 public:
     auto Transaction() const noexcept
-        -> std::unique_ptr<const block::bitcoin::Transaction> final;
+        -> std::unique_ptr<const blockchain::bitcoin::block::Transaction> final;
 
     Tx(const api::Session& api,
        const blockchain::Type network,

@@ -27,14 +27,17 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 class Output;
 class Transaction;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Outpoint;
 }  // namespace block
 
@@ -80,16 +83,16 @@ public:
     using Patterns = Vector<Pattern>;
     using MatchingIndices = Vector<Bip32Index>;
     using MatchedTransaction = std::
-        pair<MatchingIndices, std::shared_ptr<block::bitcoin::Transaction>>;
+        pair<MatchingIndices, std::shared_ptr<bitcoin::block::Transaction>>;
     using BlockMatches = Map<block::pTxid, MatchedTransaction>;
     using BatchedMatches = Map<block::Position, BlockMatches>;
     using UTXO = std::pair<
         blockchain::block::Outpoint,
-        std::unique_ptr<block::bitcoin::Output>>;
+        std::unique_ptr<bitcoin::block::Output>>;
     using KeyID = blockchain::crypto::Key;
     using TXOs =
         Map<blockchain::block::Outpoint,
-            std::shared_ptr<const block::bitcoin::Output>>;
+            std::shared_ptr<const bitcoin::block::Output>>;
 
     virtual auto CompletedProposals() const noexcept
         -> UnallocatedSet<OTIdentifier> = 0;
@@ -169,12 +172,12 @@ public:
         const NodeID& account,
         const crypto::Subchain subchain,
         const Vector<std::uint32_t> outputIndices,
-        const block::bitcoin::Transaction& transaction,
+        const bitcoin::block::Transaction& transaction,
         TXOs& txoCreated) noexcept -> bool = 0;
     virtual auto AddOutgoingTransaction(
         const Identifier& proposalID,
         const proto::BlockchainTransactionProposal& proposal,
-        const block::bitcoin::Transaction& transaction) noexcept -> bool = 0;
+        const bitcoin::block::Transaction& transaction) noexcept -> bool = 0;
     virtual auto AddProposal(
         const Identifier& id,
         const proto::BlockchainTransactionProposal& tx) noexcept -> bool = 0;

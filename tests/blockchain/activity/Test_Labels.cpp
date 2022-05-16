@@ -22,7 +22,7 @@ constexpr auto label_2_{"label two"};
 namespace ottest
 {
 using TxSet =
-    ot::Set<std::shared_ptr<ot::blockchain::block::bitcoin::Transaction>>;
+    ot::Set<std::shared_ptr<ot::blockchain::bitcoin::block::Transaction>>;
 
 TEST_F(Test_BlockchainActivity, init)
 {

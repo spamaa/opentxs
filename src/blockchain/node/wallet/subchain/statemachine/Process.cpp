@@ -140,7 +140,7 @@ auto Process::Imp::do_process(const Ready::value_type& data) noexcept -> void
 
 auto Process::Imp::do_process(
     const block::Position position,
-    const std::shared_ptr<const block::bitcoin::Block> block) noexcept -> void
+    const std::shared_ptr<const bitcoin::block::Block> block) noexcept -> void
 {
     do_process_common(position, block);
 
@@ -155,7 +155,7 @@ auto Process::Imp::do_process(
 
 auto Process::Imp::do_process_common(
     const block::Position position,
-    const std::shared_ptr<const block::bitcoin::Block>& block) noexcept -> void
+    const std::shared_ptr<const bitcoin::block::Block>& block) noexcept -> void
 {
     OT_ASSERT(block);
 

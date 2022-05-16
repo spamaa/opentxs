@@ -30,9 +30,9 @@
 #include "internal/api/network/Asio.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/bitcoin/cfilter/GCS.hpp"
 #include "internal/blockchain/block/Block.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/node/BlockOracle.hpp"
 #include "internal/blockchain/node/FilterOracle.hpp"
@@ -49,13 +49,13 @@
 #include "opentxs/api/session/Crypto.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
+#include "opentxs/blockchain/bitcoin/block/Block.hpp"
+#include "opentxs/blockchain/bitcoin/block/Output.hpp"
+#include "opentxs/blockchain/bitcoin/block/Script.hpp"
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
-#include "opentxs/blockchain/block/bitcoin/Block.hpp"
-#include "opentxs/blockchain/block/bitcoin/Output.hpp"
-#include "opentxs/blockchain/block/bitcoin/Script.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
 #include "opentxs/blockchain/crypto/Subaccount.hpp"
 #include "opentxs/blockchain/crypto/Subchain.hpp"  // IWYU pragma: keep
@@ -930,7 +930,7 @@ auto SubchainStateData::process_watchdog_ack(Message&& in) noexcept -> void
 
 auto SubchainStateData::ProcessBlock(
     const block::Position& position,
-    const block::bitcoin::Block& block) const noexcept -> bool
+    const bitcoin::block::Block& block) const noexcept -> bool
 {
     const auto start = Clock::now();
     const auto& name = name_;
@@ -1016,7 +1016,7 @@ auto SubchainStateData::ProcessBlock(
 }
 
 auto SubchainStateData::ProcessTransaction(
-    const block::bitcoin::Transaction& tx,
+    const bitcoin::block::Transaction& tx,
     const Log& log) const noexcept -> void
 {
     auto buf = std::array<std::byte, 4_KiB>{};
@@ -1616,7 +1616,7 @@ auto SubchainStateData::select_targets(
 }
 
 auto SubchainStateData::set_key_data(
-    block::bitcoin::Transaction& tx) const noexcept -> void
+    bitcoin::block::Transaction& tx) const noexcept -> void
 {
     const auto keys = tx.Keys();
     auto data = block::KeyData{};

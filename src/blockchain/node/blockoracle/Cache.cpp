@@ -27,8 +27,8 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Block.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
-#include "opentxs/blockchain/block/bitcoin/Block.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -270,7 +270,7 @@ auto Cache::ReceiveBlock(const std::string_view in) noexcept -> void
 }
 
 auto Cache::ReceiveBlock(
-    std::shared_ptr<const block::bitcoin::Block> in) noexcept -> void
+    std::shared_ptr<const bitcoin::block::Block> in) noexcept -> void
 {
     if (false == bool(in)) {
         LogError()(OT_PRETTY_CLASS())("Invalid block").Flush();

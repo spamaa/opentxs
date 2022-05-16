@@ -26,13 +26,16 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Output;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Outpoint;
 }  // namespace block
 }  // namespace blockchain
@@ -53,7 +56,7 @@ class OPENTXS_EXPORT Wallet
 {
 public:
     using UTXO =
-        std::pair<block::Outpoint, std::unique_ptr<block::bitcoin::Output>>;
+        std::pair<block::Outpoint, std::unique_ptr<bitcoin::block::Output>>;
 
     virtual auto GetBalance() const noexcept -> Balance = 0;
     virtual auto GetBalance(const identifier::Nym& owner) const noexcept

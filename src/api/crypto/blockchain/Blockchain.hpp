@@ -70,13 +70,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 
 namespace node
 {
@@ -140,7 +140,7 @@ public:
     auto ActivityDescription(
         const identifier::Nym& nym,
         const Chain chain,
-        const opentxs::blockchain::block::bitcoin::Transaction& transaction)
+        const opentxs::blockchain::bitcoin::block::Transaction& transaction)
         const noexcept -> UnallocatedCString final;
     auto AssignContact(
         const identifier::Nym& nymID,
@@ -183,10 +183,10 @@ public:
         -> void final;
     auto LoadTransactionBitcoin(const TxidHex& id) const noexcept
         -> std::unique_ptr<
-            const opentxs::blockchain::block::bitcoin::Transaction> final;
+            const opentxs::blockchain::bitcoin::block::Transaction> final;
     auto LoadTransactionBitcoin(const Txid& id) const noexcept
         -> std::unique_ptr<
-            const opentxs::blockchain::block::bitcoin::Transaction> final;
+            const opentxs::blockchain::bitcoin::block::Transaction> final;
     auto LookupAccount(const Identifier& id) const noexcept
         -> AccountData final;
     auto LookupContacts(const UnallocatedCString& address) const noexcept
@@ -241,7 +241,7 @@ public:
         const noexcept -> bool final;
     auto ProcessTransactions(
         const Chain chain,
-        Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&&
+        Set<std::shared_ptr<opentxs::blockchain::bitcoin::block::Transaction>>&&
             transactions,
         const PasswordPrompt& reason) const noexcept -> bool final;
     auto RecipientContact(const Key& key) const noexcept -> OTIdentifier final;

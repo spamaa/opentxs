@@ -15,13 +15,16 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Block;
 class Hash;
 }  // namespace block
@@ -38,7 +41,7 @@ public:
     virtual auto BlockExists(const block::Hash& block) const noexcept
         -> bool = 0;
     virtual auto BlockLoadBitcoin(const block::Hash& block) const noexcept
-        -> std::shared_ptr<const block::bitcoin::Block> = 0;
+        -> std::shared_ptr<const bitcoin::block::Block> = 0;
     virtual auto BlockPolicy() const noexcept -> database::BlockStorage = 0;
     virtual auto BlockTip() const noexcept -> block::Position = 0;
 

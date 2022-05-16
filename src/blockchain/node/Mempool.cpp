@@ -18,8 +18,8 @@
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/message/Message.tpp"
@@ -34,7 +34,7 @@ namespace opentxs::blockchain::node
 {
 struct Mempool::Imp {
     using Transactions =
-        UnallocatedVector<std::unique_ptr<const block::bitcoin::Transaction>>;
+        UnallocatedVector<std::unique_ptr<const bitcoin::block::Transaction>>;
 
     auto Dump() const noexcept -> UnallocatedSet<UnallocatedCString>
     {
@@ -43,7 +43,7 @@ struct Mempool::Imp {
         return active_;
     }
     auto Query(ReadView txid) const noexcept
-        -> std::shared_ptr<const block::bitcoin::Transaction>
+        -> std::shared_ptr<const bitcoin::block::Transaction>
     {
         auto lock = sLock{lock_};
 
@@ -85,7 +85,7 @@ struct Mempool::Imp {
 
         return output;
     }
-    auto Submit(std::unique_ptr<const block::bitcoin::Transaction> tx)
+    auto Submit(std::unique_ptr<const bitcoin::block::Transaction> tx)
         const noexcept -> void
     {
         Submit([&] {
@@ -174,7 +174,7 @@ private:
     using Hash = UnallocatedCString;
     using TransactionMap = robin_hood::unordered_flat_map<
         Hash,
-        std::shared_ptr<const block::bitcoin::Transaction>>;
+        std::shared_ptr<const bitcoin::block::Transaction>>;
     using Data = std::pair<Time, Hash>;
     using Cache = std::queue<Data>;
 
@@ -242,7 +242,7 @@ auto Mempool::Dump() const noexcept -> UnallocatedSet<UnallocatedCString>
 auto Mempool::Heartbeat() noexcept -> void { imp_->Heartbeat(); }
 
 auto Mempool::Query(ReadView txid) const noexcept
-    -> std::shared_ptr<const block::bitcoin::Transaction>
+    -> std::shared_ptr<const bitcoin::block::Transaction>
 {
     return imp_->Query(txid);
 }
@@ -258,7 +258,7 @@ auto Mempool::Submit(const UnallocatedVector<ReadView>& txids) const noexcept
     return imp_->Submit(txids);
 }
 
-auto Mempool::Submit(std::unique_ptr<const block::bitcoin::Transaction> tx)
+auto Mempool::Submit(std::unique_ptr<const bitcoin::block::Transaction> tx)
     const noexcept -> void
 {
     imp_->Submit(std::move(tx));

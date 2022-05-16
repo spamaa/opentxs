@@ -59,13 +59,16 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Block;
 }  // namespace block
 
@@ -252,7 +255,7 @@ public:
         -> bool final;
     auto BroadcastBlock(const block::Block& block) const noexcept -> bool final;
     auto BroadcastTransaction(
-        const block::bitcoin::Transaction& tx) const noexcept -> bool final;
+        const bitcoin::block::Transaction& tx) const noexcept -> bool final;
     auto Connect() noexcept -> bool final;
     auto Disconnect(const int id) const noexcept -> void final;
     auto Endpoint(const PeerManagerJobs type) const noexcept

@@ -21,8 +21,8 @@
 #include "internal/api/crypto/blockchain/Types.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
+#include "internal/blockchain/bitcoin/block/Factory.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/core/Factory.hpp"
@@ -34,8 +34,8 @@
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
 #include "opentxs/blockchain/crypto/AddressStyle.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
@@ -442,7 +442,7 @@ auto BlockchainAccountActivity::process_txid(const Data& txid) noexcept
 
 auto BlockchainAccountActivity::process_txid(
     const Data& txid,
-    std::unique_ptr<const blockchain::block::bitcoin::Transaction> pTX) noexcept
+    std::unique_ptr<const blockchain::bitcoin::block::Transaction> pTX) noexcept
     -> std::optional<AccountActivityRowID>
 {
     const auto rowID = AccountActivityRowID{

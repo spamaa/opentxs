@@ -38,6 +38,7 @@
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/block/Header.hpp"
+#include "opentxs/blockchain/bitcoin/block/Input.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Hash.hpp"
@@ -46,7 +47,6 @@
 #include "opentxs/blockchain/block/Outpoint.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Input.hpp"
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/blockchain/node/Types.hpp"
 #include "opentxs/core/Amount.hpp"
@@ -77,18 +77,14 @@ namespace bitcoin
 {
 namespace block
 {
+class Block;
 class Header;
+class Transaction;
 }  // namespace block
 }  // namespace bitcoin
 
 namespace block
 {
-namespace bitcoin
-{
-class Block;
-class Transaction;
-}  // namespace bitcoin
-
 class Block;
 class Header;
 }  // namespace block
@@ -159,7 +155,7 @@ public:
         const NodeID& account,
         const crypto::Subchain subchain,
         const Vector<std::uint32_t> outputIndices,
-        const block::bitcoin::Transaction& transaction,
+        const bitcoin::block::Transaction& transaction,
         TXOs& txoCreated) noexcept -> bool final
     {
         return wallet_.AddMempoolTransaction(
@@ -168,7 +164,7 @@ public:
     auto AddOutgoingTransaction(
         const Identifier& proposalID,
         const proto::BlockchainTransactionProposal& proposal,
-        const block::bitcoin::Transaction& transaction) noexcept -> bool final
+        const bitcoin::block::Transaction& transaction) noexcept -> bool final
     {
         return wallet_.AddOutgoingTransaction(
             proposalID, proposal, transaction);
@@ -203,7 +199,7 @@ public:
         return common_.BlockExists(block);
     }
     auto BlockLoadBitcoin(const block::Hash& block) const noexcept
-        -> std::shared_ptr<const block::bitcoin::Block> final
+        -> std::shared_ptr<const bitcoin::block::Block> final
     {
         return blocks_.LoadBitcoin(block);
     }

@@ -18,7 +18,7 @@
 
 #include "Proto.hpp"
 #include "internal/api/session/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
 #include "internal/otx/common/Cheque.hpp"  // IWYU pragma: keep
 #include "internal/otx/common/Item.hpp"    // IWYU pragma: keep
@@ -32,8 +32,8 @@
 #include "opentxs/api/session/Storage.hpp"
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/api/session/Workflow.hpp"
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"  // IWYU pragma: keep
 #include "opentxs/core/Contact.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/contract/Unit.hpp"
@@ -110,7 +110,7 @@ auto Activity::activity_preload_thread(
 auto Activity::add_blockchain_transaction(
     const eLock& lock,
     const identifier::Nym& nym,
-    const blockchain::block::bitcoin::Transaction& transaction) const noexcept
+    const blockchain::bitcoin::block::Transaction& transaction) const noexcept
     -> bool
 {
     const auto incoming = transaction.AssociatedRemoteContacts(contact_, nym);
@@ -205,7 +205,7 @@ auto Activity::add_blockchain_transaction(
 #endif  // OT_BLOCKCHAIN
 
 auto Activity::AddBlockchainTransaction(
-    const blockchain::block::bitcoin::Transaction& transaction) const noexcept
+    const blockchain::bitcoin::block::Transaction& transaction) const noexcept
     -> bool
 {
 #if OT_BLOCKCHAIN

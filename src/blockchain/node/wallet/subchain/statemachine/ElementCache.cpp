@@ -14,8 +14,8 @@
 #include <type_traits>
 
 #include "internal/util/LogMacros.hpp"
+#include "opentxs/blockchain/bitcoin/block/Output.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/block/Outpoint.hpp"        // IWYU pragma: keep
-#include "opentxs/blockchain/block/bitcoin/Output.hpp"  // IWYU pragma: keep
 #include "opentxs/util/Log.hpp"
 
 namespace opentxs::blockchain::node::wallet

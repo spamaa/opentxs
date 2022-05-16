@@ -64,14 +64,14 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Block;
-}  // namespace bitcoin
 }  // namespace block
-//
+}  // namespace bitcoin
+
 namespace database
 {
 class Cfilter;
@@ -162,7 +162,7 @@ public:
         const cfilter::Type type,
         const block::Position& position,
         alloc::Default alloc) const noexcept -> GCS final;
-    auto ProcessBlock(const block::bitcoin::Block& block) const noexcept
+    auto ProcessBlock(const bitcoin::block::Block& block) const noexcept
         -> bool final;
     auto ProcessBlock(BlockIndexerData& data) const noexcept -> void;
     auto ProcessSyncData(
@@ -223,7 +223,7 @@ private:
         const block::Position& tip) const noexcept -> void;
     auto process_block(
         const cfilter::Type type,
-        const block::bitcoin::Block& block) const noexcept -> GCS;
+        const bitcoin::block::Block& block) const noexcept -> GCS;
     auto reset_tips_to(
         const cfilter::Type type,
         const block::Position& position,

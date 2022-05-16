@@ -5,9 +5,9 @@
 
 #include "0_stdafx.hpp"    // IWYU pragma: associated
 #include "1_Internal.hpp"  // IWYU pragma: associated
-#include "internal/blockchain/block/bitcoin/Factory.hpp"  // IWYU pragma: associated
+#include "internal/blockchain/bitcoin/block/Factory.hpp"  // IWYU pragma: associated
 
-#include "blockchain/block/bitcoin/header/Header.hpp"
+#include "blockchain/bitcoin/block/header/Header.hpp"
 
 namespace opentxs::factory
 {

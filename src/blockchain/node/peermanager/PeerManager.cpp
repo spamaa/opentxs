@@ -14,7 +14,7 @@
 
 #include "core/Worker.hpp"
 #include "internal/api/network/Blockchain.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/node/Factory.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"  // IWYU pragma: keep
 #include "internal/util/LogMacros.hpp"
@@ -23,9 +23,9 @@
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/block/Block.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/blockchain/p2p/Address.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -170,7 +170,7 @@ auto PeerManager::BroadcastBlock(const block::Block& block) const noexcept
 }
 
 auto PeerManager::BroadcastTransaction(
-    const block::bitcoin::Transaction& tx) const noexcept -> bool
+    const bitcoin::block::Transaction& tx) const noexcept -> bool
 {
     if (false == running_.load()) { return false; }
 

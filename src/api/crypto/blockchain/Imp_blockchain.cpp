@@ -17,7 +17,7 @@
 #include "Proto.hpp"
 #include "blockchain/database/common/Database.hpp"
 #include "internal/api/network/Blockchain.hpp"
-#include "internal/blockchain/block/bitcoin/Transaction.hpp"
+#include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -31,8 +31,8 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Storage.hpp"
+#include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
-#include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/blockchain/crypto/SubaccountType.hpp"
 #include "opentxs/core/Amount.hpp"
 #include "opentxs/core/Data.hpp"
@@ -149,7 +149,7 @@ auto BlockchainImp::ActivityDescription(
 auto BlockchainImp::ActivityDescription(
     const identifier::Nym& nym,
     const opentxs::blockchain::Type chain,
-    const opentxs::blockchain::block::bitcoin::Transaction& tx) const noexcept
+    const opentxs::blockchain::bitcoin::block::Transaction& tx) const noexcept
     -> UnallocatedCString
 {
     auto output = std::stringstream{};
@@ -255,7 +255,7 @@ auto BlockchainImp::broadcast_update_signal(
 
 auto BlockchainImp::broadcast_update_signal(
     const proto::BlockchainTransaction& proto,
-    const opentxs::blockchain::block::bitcoin::Transaction& tx) const noexcept
+    const opentxs::blockchain::bitcoin::block::Transaction& tx) const noexcept
     -> void
 {
     const auto chains = tx.Chains();
@@ -311,7 +311,7 @@ auto BlockchainImp::KeyGenerated(
 }
 
 auto BlockchainImp::LoadTransactionBitcoin(const TxidHex& txid) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Transaction>
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Transaction>
 {
     auto lock = Lock{lock_};
 
@@ -319,7 +319,7 @@ auto BlockchainImp::LoadTransactionBitcoin(const TxidHex& txid) const noexcept
 }
 
 auto BlockchainImp::LoadTransactionBitcoin(const Txid& txid) const noexcept
-    -> std::unique_ptr<const opentxs::blockchain::block::bitcoin::Transaction>
+    -> std::unique_ptr<const opentxs::blockchain::bitcoin::block::Transaction>
 {
     auto lock = Lock{lock_};
 
@@ -328,7 +328,7 @@ auto BlockchainImp::LoadTransactionBitcoin(const Txid& txid) const noexcept
 
 auto BlockchainImp::load_transaction(const Lock& lock, const TxidHex& txid)
     const noexcept
-    -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>
+    -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Transaction>
 {
     auto proto = proto::BlockchainTransaction{};
 
@@ -339,14 +339,14 @@ auto BlockchainImp::load_transaction(
     const Lock& lock,
     const TxidHex& txid,
     proto::BlockchainTransaction& out) const noexcept
-    -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>
+    -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Transaction>
 {
     return load_transaction(lock, api_.Factory().DataFromHex(txid), out);
 }
 
 auto BlockchainImp::load_transaction(const Lock& lock, const Txid& txid)
     const noexcept
-    -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>
+    -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Transaction>
 {
     auto proto = proto::BlockchainTransaction{};
 
@@ -357,7 +357,7 @@ auto BlockchainImp::load_transaction(
     const Lock& lock,
     const Txid& txid,
     proto::BlockchainTransaction& out) const noexcept
-    -> std::unique_ptr<opentxs::blockchain::block::bitcoin::Transaction>
+    -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Transaction>
 {
     return api_.Network().Blockchain().Internal().Database().LoadTransaction(
         txid.Bytes(), out);
@@ -411,7 +411,7 @@ auto BlockchainImp::ProcessMergedContact(
 
 auto BlockchainImp::ProcessTransactions(
     const opentxs::blockchain::Type chain,
-    Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&& in,
+    Set<std::shared_ptr<opentxs::blockchain::bitcoin::block::Transaction>>&& in,
     const PasswordPrompt& reason) const noexcept -> bool
 {
     const auto& db = api_.Network().Blockchain().Internal().Database();
@@ -479,7 +479,7 @@ auto BlockchainImp::reconcile_activity_threads(
 auto BlockchainImp::reconcile_activity_threads(
     const Lock& lock,
     const proto::BlockchainTransaction& proto,
-    const opentxs::blockchain::block::bitcoin::Transaction& tx) const noexcept
+    const opentxs::blockchain::bitcoin::block::Transaction& tx) const noexcept
     -> bool
 {
     if (!activity_.AddBlockchainTransaction(tx)) { return false; }

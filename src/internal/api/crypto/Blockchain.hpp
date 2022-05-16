@@ -81,7 +81,7 @@ public:
         const Contact& child) const noexcept -> bool = 0;
     virtual auto ProcessTransactions(
         const Chain chain,
-        Set<std::shared_ptr<opentxs::blockchain::block::bitcoin::Transaction>>&&
+        Set<std::shared_ptr<opentxs::blockchain::bitcoin::block::Transaction>>&&
             transactions,
         const PasswordPrompt& reason) const noexcept -> bool = 0;
     /// Throws std::runtime_error if type is invalid

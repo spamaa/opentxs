@@ -21,13 +21,16 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Transaction;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Hash;
 }  // namespace block
 
@@ -65,7 +68,7 @@ class Manager : virtual public node::Manager
 {
 public:
     virtual auto BroadcastTransaction(
-        const block::bitcoin::Transaction& tx,
+        const bitcoin::block::Transaction& tx,
         const bool pushtx = false) const noexcept -> bool = 0;
     virtual auto Chain() const noexcept -> Type = 0;
     // amount represents satoshis per 1000 bytes
