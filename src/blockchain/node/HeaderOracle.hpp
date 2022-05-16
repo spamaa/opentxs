@@ -39,13 +39,16 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Header;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Header;
 }  // namespace block
 
@@ -133,7 +136,7 @@ public:
     auto IsInBestChain(const block::Position& position) const noexcept
         -> bool final;
     auto LoadBitcoinHeader(const block::Hash& hash) const noexcept
-        -> std::unique_ptr<block::bitcoin::Header> final;
+        -> std::unique_ptr<bitcoin::block::Header> final;
     auto LoadHeader(const block::Hash& hash) const noexcept
         -> std::unique_ptr<block::Header> final;
     auto RecentHashes(alloc::Resource* alloc) const noexcept -> Hashes final;

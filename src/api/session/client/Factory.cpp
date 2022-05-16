@@ -22,7 +22,6 @@
 #include "internal/api/session/Factory.hpp"
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/block/bitcoin/Factory.hpp"
-#include "internal/blockchain/block/bitcoin/Header.hpp"
 #include "internal/blockchain/block/bitcoin/Input.hpp"    // IWYU pragma: keep
 #include "internal/blockchain/block/bitcoin/Inputs.hpp"   // IWYU pragma: keep
 #include "internal/blockchain/block/bitcoin/Output.hpp"   // IWYU pragma: keep
@@ -36,6 +35,7 @@
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/session/Client.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/block/Block.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"

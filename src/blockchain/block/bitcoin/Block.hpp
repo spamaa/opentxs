@@ -44,15 +44,23 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 namespace internal
 {
 class Header;
 }  // namespace internal
 
+class Header;
+}  // namespace block
+}  // namespace bitcoin
+
+namespace block
+{
+namespace bitcoin
+{
 class Transaction;
 }  // namespace bitcoin
 }  // namespace block
@@ -123,7 +131,7 @@ public:
     Block(
         const api::Session& api,
         const blockchain::Type chain,
-        std::unique_ptr<const internal::Header> header,
+        std::unique_ptr<const blockchain::bitcoin::block::Header> header,
         TxidIndex&& index,
         TransactionMap&& transactions,
         std::optional<CalculatedSize>&& size = {}) noexcept(false);
@@ -135,8 +143,8 @@ protected:
 private:
     static const value_type null_tx_;
 
-    const std::unique_ptr<const internal::Header> header_p_;
-    const internal::Header& header_;
+    const std::unique_ptr<const blockchain::bitcoin::block::Header> header_p_;
+    const blockchain::bitcoin::block::Header& header_;
     const TxidIndex index_;
     const TransactionMap transactions_;
     mutable std::optional<CalculatedSize> size_;

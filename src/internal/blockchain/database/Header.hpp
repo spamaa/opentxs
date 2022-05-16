@@ -19,13 +19,16 @@ namespace opentxs  // NOLINT
 // {
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Header;
+}  // namespace block
 }  // namespace bitcoin
 
+namespace block
+{
 class Hash;
 class Header;
 }  // namespace block
@@ -65,7 +68,7 @@ public:
     virtual auto SiblingHashes() const noexcept -> Hashes = 0;
     // Returns null pointer if the header does not exist
     virtual auto TryLoadBitcoinHeader(const block::Hash& hash) const noexcept
-        -> std::unique_ptr<block::bitcoin::Header> = 0;
+        -> std::unique_ptr<bitcoin::block::Header> = 0;
     // Returns null pointer if the header does not exist
     virtual auto TryLoadHeader(const block::Hash& hash) const noexcept
         -> std::unique_ptr<block::Header> = 0;

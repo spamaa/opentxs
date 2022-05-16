@@ -50,6 +50,7 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Hash.hpp"
@@ -58,7 +59,6 @@
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/block/bitcoin/Block.hpp"
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/blockchain/block/bitcoin/Transaction.hpp"
 #include "opentxs/blockchain/node/BlockOracle.hpp"
 #include "opentxs/blockchain/node/FilterOracle.hpp"
@@ -1280,7 +1280,8 @@ auto Peer::process_getheaders(
     auto previous = node::HeaderOracle::Hashes{};
     std::copy(in.begin(), in.end(), std::back_inserter(previous));
     const auto hashes = headers_.BestHashes(previous, in.StopHash(), 2000);
-    auto headers = UnallocatedVector<std::unique_ptr<block::bitcoin::Header>>{};
+    auto headers = UnallocatedVector<
+        std::unique_ptr<blockchain::bitcoin::block::Header>>{};
     std::transform(
         hashes.begin(),
         hashes.end(),

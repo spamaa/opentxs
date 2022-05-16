@@ -37,6 +37,7 @@
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Hash.hpp"
@@ -45,7 +46,6 @@
 #include "opentxs/blockchain/block/Outpoint.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/blockchain/block/bitcoin/Input.hpp"
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/blockchain/node/Types.hpp"
@@ -73,12 +73,19 @@ class Session;
 
 namespace blockchain
 {
+namespace bitcoin
+{
+namespace block
+{
+class Header;
+}  // namespace block
+}  // namespace bitcoin
+
 namespace block
 {
 namespace bitcoin
 {
 class Block;
-class Header;
 class Transaction;
 }  // namespace bitcoin
 
@@ -552,7 +559,7 @@ public:
     }
     // Returns null pointer if the header does not exist
     auto TryLoadBitcoinHeader(const block::Hash& hash) const noexcept
-        -> std::unique_ptr<block::bitcoin::Header> final
+        -> std::unique_ptr<bitcoin::block::Header> final
     {
         return headers_.TryLoadBitcoinHeader(hash);
     }

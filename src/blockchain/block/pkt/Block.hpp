@@ -34,15 +34,23 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
+{
+namespace block
 {
 namespace internal
 {
 class Header;
 }  // namespace internal
 
+class Header;
+}  // namespace block
+}  // namespace bitcoin
+
+namespace block
+{
+namespace bitcoin
+{
 class Block;
 }  // namespace bitcoin
 }  // namespace block
@@ -64,7 +72,7 @@ public:
     Block(
         const api::Session& api,
         const blockchain::Type chain,
-        std::unique_ptr<const bitcoin::internal::Header> header,
+        std::unique_ptr<const blockchain::bitcoin::block::Header> header,
         Proofs&& proofs,
         TxidIndex&& index,
         TransactionMap&& transactions,

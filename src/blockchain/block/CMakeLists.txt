@@ -3,8 +3,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+add_subdirectory(bitcoin)
+
 if(OT_BLOCKCHAIN_EXPORT)
-  add_subdirectory(bitcoin)
+  add_subdirectory(header)
   add_subdirectory(pkt)
 endif()
 
@@ -22,22 +24,18 @@ if(OT_BLOCKCHAIN_EXPORT)
     PRIVATE
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/Block.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/Factory.hpp"
-      "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/Header.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/Types.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/block/Validator.hpp"
       "Block.cpp"
       "Block.hpp"
       "Common.cpp"
       "Hash.cpp"
-      "Header.cpp"
-      "Header.hpp"
   )
   list(
     APPEND
     cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/block/Block.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/block/Hash.hpp"
-    "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/block/Header.hpp"
   )
 endif()
 

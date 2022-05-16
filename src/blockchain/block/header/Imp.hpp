@@ -7,15 +7,17 @@
 
 #include <memory>
 
+#include "blockchain/block/header/Header.hpp"
+#include "internal/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/NumericHash.hpp"
 #include "opentxs/blockchain/bitcoin/Work.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/blockchain/block/bitcoin/Header.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Numbers.hpp"
@@ -32,13 +34,13 @@ class Session;
 
 namespace blockchain
 {
-namespace block
-{
 namespace bitcoin
 {
+namespace block
+{
 class Header;
-}  // namespace bitcoin
 }  // namespace block
+}  // namespace bitcoin
 }  // namespace blockchain
 // }  // namespace v1
 }  // namespace opentxs
@@ -46,13 +48,12 @@ class Header;
 
 namespace opentxs::blockchain::block::implementation
 {
-class Header : virtual public block::Header
+class Header : virtual public block::Header::Imp
 {
 public:
-    auto as_Bitcoin() const noexcept
-        -> std::unique_ptr<bitcoin::Header> override
+    auto clone() const noexcept -> std::unique_ptr<Imp> override
     {
-        return {};
+        return std::unique_ptr<Imp>(new Header(*this));
     }
     auto Difficulty() const noexcept -> OTWork final { return work_; }
     auto EffectiveState() const noexcept -> Status final;
@@ -67,21 +68,20 @@ public:
     auto ParentHash() const noexcept -> const block::Hash& final;
     auto ParentWork() const noexcept -> OTWork final { return inherit_work_; }
     auto Position() const noexcept -> block::Position final;
-    using block::Header::Serialize;
+    using block::Header::Imp::Serialize;
     auto Serialize(SerializedType& out) const noexcept -> bool override;
     auto Type() const noexcept -> blockchain::Type final { return type_; }
     auto Valid() const noexcept -> bool final;
     auto Work() const noexcept -> OTWork final;
 
-    void CompareToCheckpoint(const block::Position& checkpoint) noexcept final;
-    void InheritHeight(const block::Header& parent) final;
-    void InheritState(const block::Header& parent) final;
-    void InheritWork(const blockchain::Work& work) noexcept final;
-    void RemoveBlacklistState() noexcept final;
-    void RemoveCheckpointState() noexcept final;
-    void SetDisconnectedState() noexcept final;
-
-    ~Header() override = default;
+    auto CompareToCheckpoint(const block::Position& checkpoint) noexcept
+        -> void final;
+    auto InheritHeight(const block::Header& parent) -> void final;
+    auto InheritState(const block::Header& parent) -> void final;
+    auto InheritWork(const blockchain::Work& work) noexcept -> void final;
+    auto RemoveBlacklistState() noexcept -> void final;
+    auto RemoveCheckpointState() noexcept -> void final;
+    auto SetDisconnectedState() noexcept -> void final;
 
 protected:
     static const VersionNumber default_version_{1};

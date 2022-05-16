@@ -125,7 +125,8 @@ auto Bip143Hashes::Preimage(
     const be::little_int32_buf_t& version,
     const be::little_uint32_buf_t& locktime,
     const SigHash& sigHash,
-    const block::bitcoin::internal::Input& input) const noexcept(false) -> Space
+    const blockchain::block::bitcoin::internal::Input& input) const
+    noexcept(false) -> Space
 {
     const auto& outpoints = Outpoints(sigHash);
     const auto& sequences = Sequences(sigHash);

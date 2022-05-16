@@ -14,8 +14,8 @@
 #include <type_traits>
 
 #include "blockchain/block/bitcoin/BlockParser.hpp"
-#include "internal/blockchain/block/bitcoin/Header.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "opentxs/blockchain/bitcoin/block/Header.hpp"
 #include "opentxs/network/blockchain/bitcoin/CompactSize.hpp"
 #include "opentxs/util/Log.hpp"
 
@@ -105,7 +105,7 @@ namespace opentxs::blockchain::block::pkt
 Block::Block(
     const api::Session& api,
     const blockchain::Type chain,
-    std::unique_ptr<const bitcoin::internal::Header> header,
+    std::unique_ptr<const blockchain::bitcoin::block::Header> header,
     Proofs&& proofs,
     TxidIndex&& index,
     TransactionMap&& transactions,

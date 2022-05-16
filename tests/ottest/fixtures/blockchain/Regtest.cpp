@@ -835,23 +835,21 @@ auto Regtest_fixture_base::Mine(
     auto previousHeader =
         headerOracle.LoadHeader(headerOracle.BestHash(ancestor))->as_Bitcoin();
 
-    OT_ASSERT(previousHeader);
-
     for (auto i = std::size_t{0u}; i < count; ++i) {
         auto promise = mined_blocks_.allocate();
 
         OT_ASSERT(gen);
 
-        auto tx = gen(previousHeader->Height() + 1);
+        auto tx = gen(previousHeader.Height() + 1);
 
         OT_ASSERT(tx);
 
         auto block = miner_.Factory().BitcoinBlock(
-            *previousHeader,
+            previousHeader,
             tx,
-            previousHeader->nBits(),
+            previousHeader.nBits(),
             extra,
-            previousHeader->Version(),
+            previousHeader.Version(),
             [start{ot::Clock::now()}] {
                 return (ot::Clock::now() - start) > std::chrono::minutes(2);
             });
@@ -864,8 +862,6 @@ auto Regtest_fixture_base::Mine(
         OT_ASSERT(added);
 
         previousHeader = block->Header().as_Bitcoin();
-
-        OT_ASSERT(previousHeader);
     }
 
     auto output = true;
@@ -877,9 +873,9 @@ auto Regtest_fixture_base::Mine(
 
         const auto [height, hash] = future.get();
 
-        EXPECT_EQ(hash, previousHeader->Hash());
+        EXPECT_EQ(hash, previousHeader.Hash());
 
-        output &= (hash == previousHeader->Hash());
+        output &= (hash == previousHeader.Hash());
     }
 
     for (auto& future : wallets) {

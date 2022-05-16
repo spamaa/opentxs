@@ -34,6 +34,16 @@ namespace blockchain
 {
 namespace bitcoin
 {
+namespace block
+{
+namespace internal
+{
+class Header;
+}  // namespace internal
+
+class Header;
+}  // namespace block
+
 class Inventory;
 struct EncodedInput;
 struct EncodedOutpoint;
@@ -47,7 +57,6 @@ namespace bitcoin
 {
 namespace internal
 {
-class Header;
 class Input;
 class Inputs;
 class Output;
@@ -57,7 +66,6 @@ class Transaction;
 }  // namespace internal
 
 class Block;
-class Header;
 class Input;
 class Inputs;
 class Output;
@@ -127,23 +135,23 @@ auto BitcoinBlockHeader(
     const std::int32_t version,
     opentxs::blockchain::block::Hash&& merkle,
     const AbortFunction abort) noexcept
-    -> std::unique_ptr<blockchain::block::bitcoin::internal::Header>;
+    -> std::unique_ptr<blockchain::bitcoin::block::Header>;
 auto BitcoinBlockHeader(
     const api::Session& api,
     const proto::BlockchainBlockHeader& serialized) noexcept
-    -> std::unique_ptr<blockchain::block::bitcoin::internal::Header>;
+    -> std::unique_ptr<blockchain::bitcoin::block::Header>;
 auto BitcoinBlockHeader(
     const api::Session& api,
     const blockchain::Type chain,
     const ReadView bytes) noexcept
-    -> std::unique_ptr<blockchain::block::bitcoin::internal::Header>;
+    -> std::unique_ptr<blockchain::bitcoin::block::Header>;
 auto BitcoinBlockHeader(
     const api::Session& api,
     const blockchain::Type chain,
     const blockchain::block::Hash& hash,
     const blockchain::block::Hash& parent,
     const blockchain::block::Height height) noexcept
-    -> std::unique_ptr<blockchain::block::bitcoin::internal::Header>;
+    -> std::unique_ptr<blockchain::bitcoin::block::Header>;
 auto BitcoinScript(
     const blockchain::Type chain,
     const ReadView bytes,
