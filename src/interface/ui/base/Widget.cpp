@@ -48,6 +48,7 @@ Widget::Widget(
     , ui_(api_.UI())
     , callbacks_()
     , listeners_()
+    , need_clear_callbacks_(true)
 {
     if (cb) { SetCallback(cb); }
 }
@@ -55,6 +56,7 @@ Widget::Widget(
 auto Widget::ClearCallbacks() const noexcept -> void
 {
     ui_.Internal().ClearUICallbacks(widget_id_);
+    need_clear_callbacks_ = false;
 }
 
 auto Widget::SetCallback(SimpleCallback cb) const noexcept -> void
@@ -85,5 +87,8 @@ auto Widget::UpdateNotify() const noexcept -> void
     ui_.Internal().ActivateUICallback(WidgetID());
 }
 
-Widget::~Widget() { ClearCallbacks(); }
+Widget::~Widget()
+{
+    if (need_clear_callbacks_) { Widget::ClearCallbacks(); }
+}
 }  // namespace opentxs::ui::implementation

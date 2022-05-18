@@ -501,6 +501,7 @@ auto SeedTree::startup() noexcept -> void
 SeedTree::~SeedTree()
 {
     wait_for_startup();
+    ClearCallbacks();
     signal_shutdown().get();
 }
 }  // namespace opentxs::ui::implementation

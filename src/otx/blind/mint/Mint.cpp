@@ -42,6 +42,7 @@ namespace opentxs::otx::blind
 {
 Mint::Imp::Imp(const api::Session& api) noexcept
     : otx::blind::internal::Mint(api)
+    , need_release_(true)
 {
 }
 
@@ -49,6 +50,7 @@ Mint::Imp::Imp(
     const api::Session& api,
     const identifier::UnitDefinition& unit) noexcept
     : otx::blind::internal::Mint(api, unit)
+    , need_release_(true)
 {
 }
 
@@ -63,6 +65,13 @@ auto Mint::Imp::InstrumentDefinitionID() const
     static const auto blank = api_.Factory().UnitID();
 
     return blank.get();
+}
+
+auto Mint::Imp::Release_Mint() -> void { need_release_ = false; }
+
+Mint::Imp::~Imp()
+{
+    if (need_release_) { Imp::Release_Mint(); }
 }
 }  // namespace opentxs::otx::blind
 

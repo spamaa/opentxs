@@ -440,7 +440,7 @@ auto CheckStringsExistInOrder(
     const UnallocatedCString& threeStr,
     const char* szFuncName) -> bool
 {
-    if (nullptr == szFuncName) szFuncName = __func__;
+    if (nullptr == szFuncName) { szFuncName = __func__; }
 
     auto ot_strFolder = String::Factory(strFolder),
          ot_oneStr = String::Factory(oneStr),
@@ -452,24 +452,24 @@ auto CheckStringsExistInOrder(
             if (!ot_oneStr->Exists()) {
                 if ((!ot_twoStr->Exists()) && (!ot_threeStr->Exists())) {
                 } else {
-                    LogError()(__func__)(
+                    LogError()(szFuncName)(
                         ": ot_twoStr or ot_threeStr exist, when "
                         "ot_oneStr doesn't exist!")
                         .Flush();
                     OT_FAIL;
                 }
             } else if ((!ot_twoStr->Exists()) && (ot_threeStr->Exists())) {
-                LogError()(__func__)(": ot_twoStr or ot_threeStr exist, when "
-                                     "ot_oneStr doesn't exist!")
+                LogError()(szFuncName)(": ot_twoStr or ot_threeStr exist, when "
+                                       "ot_oneStr doesn't exist!")
                     .Flush();
                 OT_FAIL;
             }
         } else {
-            LogError()(__func__)(": ot_strFolder must always exist!").Flush();
+            LogError()(szFuncName)(": ot_strFolder must always exist!").Flush();
             OT_FAIL;
         }
     } else {
-        LogError()(__func__)(": dataFolder must always exist!").Flush();
+        LogError()(szFuncName)(": dataFolder must always exist!").Flush();
         OT_FAIL;
     }
     return true;
@@ -610,8 +610,9 @@ auto QueryString(
          ot_threeStr = String::Factory(threeStr);
 
     if (!CheckStringsExistInOrder(
-            dataFolder, strFolder, oneStr, twoStr, threeStr))
+            dataFolder, strFolder, oneStr, twoStr, threeStr)) {
         return UnallocatedCString("");
+    }
 
     if (!ot_oneStr->Exists()) {
         OT_ASSERT_MSG(
@@ -623,7 +624,7 @@ auto QueryString(
 
     Storage* pStorage = details::s_pStorage;
 
-    if (nullptr == pStorage) return UnallocatedCString("");
+    if (nullptr == pStorage) { return UnallocatedCString(""); }
 
     return pStorage->QueryString(
         api,
@@ -849,7 +850,7 @@ auto EraseValueByKey(
 
 auto Storable::Create(StoredObjectType eType, PackType thePackType) -> Storable*
 {
-    if (nullptr == details::pFunctionMap) return nullptr;
+    if (nullptr == details::pFunctionMap) { return nullptr; }
 
     Storable* pStorable = nullptr;
 
@@ -863,7 +864,7 @@ auto Storable::Create(StoredObjectType eType, PackType thePackType) -> Storable*
 
     auto it = details::pFunctionMap->find(theKey);
 
-    if (details::pFunctionMap->end() == it) return nullptr;
+    if (details::pFunctionMap->end() == it) { return nullptr; }
 
     InstantiateFunc* pFunc = it->second;
 
@@ -907,7 +908,7 @@ auto OTPacker::GetType() const -> PackType
     if (typeid(*this) == typeid(PackerMsgpack)) return PACK_MESSAGE_PACK;
 #endif
 #if defined(OTDB_PROTOCOL_BUFFERS)
-    if (typeid(*this) == typeid(PackerPB)) return PACK_PROTOCOL_BUFFERS;
+    if (typeid(*this) == typeid(PackerPB)) { return PACK_PROTOCOL_BUFFERS; }
 #endif
     return PACK_TYPE_ERROR;
 }
@@ -962,7 +963,7 @@ auto OTPacker::Unpack(PackedBuffer& inBuf, Storable& outObj) -> bool
 {
     auto* pStorable = dynamic_cast<IStorable*>(&outObj);
 
-    if (nullptr == pStorable) return false;
+    if (nullptr == pStorable) { return false; }
 
     // outObj is the OUTPUT OBJECT.
     // If we're unable to unpack the contents of inBuf
@@ -1000,7 +1001,7 @@ auto OTPacker::Unpack(PackedBuffer& inBuf, UnallocatedCString& outObj) -> bool
     // If we're unable to unpack the contents of inBuf
     // into outObj, return false.
     //
-    if (!inBuf.UnpackString(outObj)) return false;
+    if (!inBuf.UnpackString(outObj)) { return false; }
 
     return true;
 }
@@ -1360,14 +1361,15 @@ auto IStorablePB::onPack(
     // check here to make sure theBuffer is the right TYPE.
     auto* pBuffer = dynamic_cast<BufferPB*>(&theBuffer);
 
-    if (nullptr == pBuffer)  // Buffer is wrong type!!
+    if (nullptr == pBuffer) {  // Buffer is wrong type!!
         return false;
+    }
 
     ::google::protobuf::MessageLite* pMessage = getPBMessage();
 
-    if (nullptr == pMessage) return false;
+    if (nullptr == pMessage) { return false; }
 
-    if (!pMessage->SerializeToString(&(pBuffer->m_buffer))) return false;
+    if (!pMessage->SerializeToString(&(pBuffer->m_buffer))) { return false; }
 
     return true;
 }
@@ -1379,14 +1381,15 @@ auto IStorablePB::onUnpack(
     // check here to make sure theBuffer is the right TYPE.
     auto* pBuffer = dynamic_cast<BufferPB*>(&theBuffer);
 
-    if (nullptr == pBuffer)  // Buffer is wrong type!!
+    if (nullptr == pBuffer) {  // Buffer is wrong type!!
         return false;
+    }
 
     ::google::protobuf::MessageLite* pMessage = getPBMessage();
 
-    if (nullptr == pMessage) return false;
+    if (nullptr == pMessage) { return false; }
 
-    if (!pMessage->ParseFromString(pBuffer->m_buffer)) return false;
+    if (!pMessage->ParseFromString(pBuffer->m_buffer)) { return false; }
 
     return true;
 }
@@ -1406,16 +1409,17 @@ auto BufferPB::PackString(const UnallocatedCString& theString) -> bool
 
     ::google::protobuf::MessageLite* pMessage = theWrapper.getPBMessage();
 
-    if (nullptr == pMessage) return false;
+    if (nullptr == pMessage) { return false; }
 
     auto* pBuffer = dynamic_cast<String_InternalPB*>(pMessage);
 
-    if (nullptr == pBuffer)  // Buffer is wrong type!!
+    if (nullptr == pBuffer) {  // Buffer is wrong type!!
         return false;
+    }
 
     pBuffer->set_value(theString);
 
-    if (!pBuffer->SerializeToString(&m_buffer)) return false;
+    if (!pBuffer->SerializeToString(&m_buffer)) { return false; }
 
     return true;
 }
@@ -1426,14 +1430,15 @@ auto BufferPB::UnpackString(UnallocatedCString& theString) -> bool
 
     ::google::protobuf::MessageLite* pMessage = theWrapper.getPBMessage();
 
-    if (nullptr == pMessage) return false;
+    if (nullptr == pMessage) { return false; }
 
     auto* pBuffer = dynamic_cast<String_InternalPB*>(pMessage);
 
-    if (nullptr == pBuffer)  // Buffer is wrong type!!
+    if (nullptr == pBuffer) {  // Buffer is wrong type!!
         return false;
+    }
 
-    if (!pBuffer->ParseFromString(m_buffer)) return false;
+    if (!pBuffer->ParseFromString(m_buffer)) { return false; }
 
     theString = pBuffer->value();
 
@@ -1617,8 +1622,9 @@ void StringPB::hookAfterUnpack()
 template <>
 void BlobPB::hookBeforePack()
 {
-    if (m_memBuffer.size() > 0)
+    if (m_memBuffer.size() > 0) {
         __pb_obj.set_value(m_memBuffer.data(), m_memBuffer.size());
+    }
 }
 template <>
 void BlobPB::hookAfterUnpack()
@@ -2181,10 +2187,11 @@ auto Storage::Create(const StorageType& eStorageType, const PackType& ePackType)
 
         // Now they're married.
         pStore->SetPacker(*pPacker);
-    } else
+    } else {
         LogError()(OT_PRETTY_STATIC(Storage))(
             "Failed, since pStore is nullptr.")
             .Flush();
+    }
 
     return pStore;  // Possible to return nullptr.
 }
@@ -2195,14 +2202,16 @@ auto Storage::GetType() const -> StorageType
     // that the coder using the API has subclassed Storage, and
     // that this is a custom Storage type invented by the API user.
 
-    if (typeid(*this) == typeid(StorageFS)) return STORE_FILESYSTEM;
-    //    else if (typeid(*this) == typeid(StorageCouchDB))
-    //        return STORE_COUCH_DB;
-    //  Etc.
-    //
-    else
+    if (typeid(*this) == typeid(StorageFS)) {
+        return STORE_FILESYSTEM;
+        //    else if (typeid(*this) == typeid(StorageCouchDB))
+        //        return STORE_COUCH_DB;
+        //  Etc.
+        //
+    } else {
         return STORE_TYPE_SUBCLASS;  // The Java coder using API must have
-                                     // subclassed Storage himself.
+    }
+    // subclassed Storage himself.
 }
 
 auto Storage::StoreString(
@@ -2231,11 +2240,11 @@ auto Storage::StoreString(
 
     OTPacker* pPacker = GetPacker();
 
-    if (nullptr == pPacker) return false;
+    if (nullptr == pPacker) { return false; }
 
     PackedBuffer* pBuffer = pPacker->Pack(strContents);
 
-    if (nullptr == pBuffer) return false;
+    if (nullptr == pBuffer) { return false; }
 
     const bool bSuccess = onStorePackedBuffer(
         api,
@@ -2265,11 +2274,11 @@ auto Storage::QueryString(
 
     OTPacker* pPacker = GetPacker();
 
-    if (nullptr == pPacker) return theString;
+    if (nullptr == pPacker) { return theString; }
 
     PackedBuffer* pBuffer = pPacker->CreateBuffer();
 
-    if (nullptr == pBuffer) return theString;
+    if (nullptr == pBuffer) { return theString; }
 
     // Below this point, responsible for pBuffer.
 
@@ -2328,8 +2337,9 @@ auto Storage::QueryPlainString(
     UnallocatedCString theString("");
 
     if (!onQueryPlainString(
-            api, theString, dataFolder, strFolder, oneStr, twoStr, threeStr))
+            api, theString, dataFolder, strFolder, oneStr, twoStr, threeStr)) {
         theString = "";
+    }
 
     return theString;
 }
@@ -2388,11 +2398,11 @@ auto Storage::QueryObject(
 {
     OTPacker* pPacker = GetPacker();
 
-    if (nullptr == pPacker) return nullptr;
+    if (nullptr == pPacker) { return nullptr; }
 
     PackedBuffer* pBuffer = pPacker->CreateBuffer();
 
-    if (nullptr == pBuffer) return nullptr;
+    if (nullptr == pBuffer) { return nullptr; }
 
     // Below this point, responsible for pBuffer.
 
@@ -2486,15 +2496,15 @@ auto Storage::DecodeObject(
     const StoredObjectType& theObjectType,
     const UnallocatedCString& strInput) -> Storable*
 {
-    if (strInput.size() < 1) return nullptr;
+    if (strInput.size() < 1) { return nullptr; }
 
     OTPacker* pPacker = GetPacker();
 
-    if (nullptr == pPacker) return nullptr;
+    if (nullptr == pPacker) { return nullptr; }
 
     PackedBuffer* pBuffer = pPacker->CreateBuffer();
 
-    if (nullptr == pBuffer) return nullptr;
+    if (nullptr == pBuffer) { return nullptr; }
 
     // Below this point, responsible for pBuffer.
 
@@ -2548,10 +2558,11 @@ auto Storage::EraseValueByKey(
     bool bSuccess =
         onEraseValueByKey(api, dataFolder, strFolder, oneStr, twoStr, threeStr);
 
-    if (!bSuccess)
+    if (!bSuccess) {
         LogError()(OT_PRETTY_CLASS())("Failed trying to erase a value "
                                       "(while calling onEraseValueByKey).")
             .Flush();
+    }
 
     return bSuccess;
 }
@@ -2721,10 +2732,11 @@ ot_exit_block:
         const bool bFileExists = api.Internal().Legacy().FileExists(
             String::Factory(strPath.c_str()), lFileLength);
 
-        if (bFileExists)
+        if (bFileExists) {
             return lFileLength;
-        else
+        } else {
             return 0;
+        }
     }
 }
 
@@ -2905,9 +2917,9 @@ auto StorageFS::onQueryPlainString(
 
     bool bSuccess = fin.good();
 
-    if (bSuccess)
+    if (bSuccess) {
         theBuffer = buffer.str();  // here's the actual output of this function.
-    else {
+    } else {
         theBuffer = "";
         return false;
     }

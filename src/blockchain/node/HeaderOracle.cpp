@@ -217,7 +217,6 @@ auto HeaderOracle::add_header(
 
     auto& header = update.Stage(std::move(pHeader));
     const auto& current = update.Stage();
-    const auto [currentHeight, currentHash] = current.Position();
     const auto* pParent = is_disconnected(header.ParentHash(), update);
 
     if (nullptr == pParent) {

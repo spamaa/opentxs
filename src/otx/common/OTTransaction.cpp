@@ -315,7 +315,7 @@ OTTransaction::OTTransaction(
 
     SetNymID(theNymID);
 
-    if (nullptr != pNumList) m_Numlist = *pNumList;
+    if (nullptr != pNumList) { m_Numlist = *pNumList; }
 }
 
 // Todo: eliminate this function since there is already a list of strings at
@@ -326,89 +326,90 @@ auto OTTransaction::GetTypeFromString(const String& strType) -> transactionType
 {
     transactionType theType = transactionType::error_state;
 
-    if (strType.Compare("blank"))
+    if (strType.Compare("blank")) {
         theType = transactionType::blank;
 
-    else if (strType.Compare("message"))
+    } else if (strType.Compare("message")) {
         theType = transactionType::message;
-    else if (strType.Compare("notice"))
+    } else if (strType.Compare("notice")) {
         theType = transactionType::notice;
-    else if (strType.Compare("replyNotice"))
+    } else if (strType.Compare("replyNotice")) {
         theType = transactionType::replyNotice;
-    else if (strType.Compare("successNotice"))
+    } else if (strType.Compare("successNotice")) {
         theType = transactionType::successNotice;
 
-    else if (strType.Compare("pending"))
+    } else if (strType.Compare("pending")) {
         theType = transactionType::pending;
 
-    else if (strType.Compare("transferReceipt"))
+    } else if (strType.Compare("transferReceipt")) {
         theType = transactionType::transferReceipt;
-    else if (strType.Compare("voucherReceipt"))
+    } else if (strType.Compare("voucherReceipt")) {
         theType = transactionType::voucherReceipt;
-    else if (strType.Compare("chequeReceipt"))
+    } else if (strType.Compare("chequeReceipt")) {
         theType = transactionType::chequeReceipt;
-    else if (strType.Compare("marketReceipt"))
+    } else if (strType.Compare("marketReceipt")) {
         theType = transactionType::marketReceipt;
-    else if (strType.Compare("paymentReceipt"))
+    } else if (strType.Compare("paymentReceipt")) {
         theType = transactionType::paymentReceipt;
-    else if (strType.Compare("finalReceipt"))
+    } else if (strType.Compare("finalReceipt")) {
         theType = transactionType::finalReceipt;
-    else if (strType.Compare("basketReceipt"))
+    } else if (strType.Compare("basketReceipt")) {
         theType = transactionType::basketReceipt;
 
-    else if (strType.Compare("instrumentNotice"))
+    } else if (strType.Compare("instrumentNotice")) {
         theType = transactionType::instrumentNotice;
-    else if (strType.Compare("instrumentRejection"))
+    } else if (strType.Compare("instrumentRejection")) {
         theType = transactionType::instrumentRejection;
 
-    else if (strType.Compare("processNymbox"))
+    } else if (strType.Compare("processNymbox")) {
         theType = transactionType::processNymbox;
-    else if (strType.Compare("atProcessNymbox"))
+    } else if (strType.Compare("atProcessNymbox")) {
         theType = transactionType::atProcessNymbox;
-    else if (strType.Compare("processInbox"))
+    } else if (strType.Compare("processInbox")) {
         theType = transactionType::processInbox;
-    else if (strType.Compare("atProcessInbox"))
+    } else if (strType.Compare("atProcessInbox")) {
         theType = transactionType::atProcessInbox;
-    else if (strType.Compare("transfer"))
+    } else if (strType.Compare("transfer")) {
         theType = transactionType::transfer;
-    else if (strType.Compare("atTransfer"))
+    } else if (strType.Compare("atTransfer")) {
         theType = transactionType::atTransfer;
-    else if (strType.Compare("deposit"))
+    } else if (strType.Compare("deposit")) {
         theType = transactionType::deposit;
-    else if (strType.Compare("atDeposit"))
+    } else if (strType.Compare("atDeposit")) {
         theType = transactionType::atDeposit;
-    else if (strType.Compare("withdrawal"))
+    } else if (strType.Compare("withdrawal")) {
         theType = transactionType::withdrawal;
-    else if (strType.Compare("atWithdrawal"))
+    } else if (strType.Compare("atWithdrawal")) {
         theType = transactionType::atWithdrawal;
-    else if (strType.Compare("marketOffer"))
+    } else if (strType.Compare("marketOffer")) {
         theType = transactionType::marketOffer;
-    else if (strType.Compare("atMarketOffer"))
+    } else if (strType.Compare("atMarketOffer")) {
         theType = transactionType::atMarketOffer;
-    else if (strType.Compare("paymentPlan"))
+    } else if (strType.Compare("paymentPlan")) {
         theType = transactionType::paymentPlan;
-    else if (strType.Compare("atPaymentPlan"))
+    } else if (strType.Compare("atPaymentPlan")) {
         theType = transactionType::atPaymentPlan;
-    else if (strType.Compare("smartContract"))
+    } else if (strType.Compare("smartContract")) {
         theType = transactionType::smartContract;
-    else if (strType.Compare("atSmartContract"))
+    } else if (strType.Compare("atSmartContract")) {
         theType = transactionType::atSmartContract;
-    else if (strType.Compare("cancelCronItem"))
+    } else if (strType.Compare("cancelCronItem")) {
         theType = transactionType::cancelCronItem;
-    else if (strType.Compare("atCancelCronItem"))
+    } else if (strType.Compare("atCancelCronItem")) {
         theType = transactionType::atCancelCronItem;
-    else if (strType.Compare("exchangeBasket"))
+    } else if (strType.Compare("exchangeBasket")) {
         theType = transactionType::exchangeBasket;
-    else if (strType.Compare("atExchangeBasket"))
+    } else if (strType.Compare("atExchangeBasket")) {
         theType = transactionType::atExchangeBasket;
-    else if (strType.Compare("payDividend"))
+    } else if (strType.Compare("payDividend")) {
         theType = transactionType::payDividend;
-    else if (strType.Compare("atPayDividend"))
+    } else if (strType.Compare("atPayDividend")) {
         theType = transactionType::atPayDividend;
-    else if (strType.Compare("incomingCash"))
+    } else if (strType.Compare("incomingCash")) {
         theType = transactionType::incomingCash;
-    else
+    } else {
         theType = transactionType::error_state;
+    }
 
     return theType;
 }
@@ -954,21 +955,23 @@ auto OTTransaction::HarvestOpeningNumber(
 
                                 if (strPaymentPlan->Exists() &&
                                     thePlan->LoadContractFromString(
-                                        strPaymentPlan))
+                                        strPaymentPlan)) {
                                     return thePlan->GetRecipientOpeningNum();
-                                else
+                                } else {
                                     LogError()(OT_PRETTY_CLASS())(
                                         "Error: Unable to load "
                                         "paymentPlan object from "
                                         "paymentPlan "
                                         "transaction item.")
                                         .Flush();
-                            } else
+                                }
+                            } else {
                                 LogError()(OT_PRETTY_CLASS())(
                                     "Error: Unable to find "
                                     "paymentPlan item in paymentPlan "
                                     "transaction.")
                                     .Flush();
+                            }
                             return 0;
                         }
 
@@ -1802,7 +1805,6 @@ auto OTTransaction::VerifyBalanceReceipt(
     // CHECK IF IT'S NEWER AND SET A POINTER BASED ON THIS.
     // the item from that transaction that actually has the issued list we'll be
     // using.
-    Item* pItemWithIssuedList;
     std::unique_ptr<Item> pTransactionItem;
     const bool newer = tranOut.GetDateSigned() > GetDateSigned();
 
@@ -1878,8 +1880,6 @@ auto OTTransaction::VerifyBalanceReceipt(
                 .Flush();
             return false;
         }
-
-        pItemWithIssuedList = pTransactionItem.get();
     }
 
     auto account = api_.Wallet().Internal().Account(GetRealAccountID());
@@ -1971,6 +1971,7 @@ auto OTTransaction::VerifyBalanceReceipt(
     auto serialized = String::Factory();
     const bool useTransactionItem = (false != bool(pTransactionItem)) &&
                                     (tranOut.GetDateSigned() > GetDateSigned());
+    Item* pItemWithIssuedList;
 
     if (useTransactionItem) {
         pItemWithIssuedList = pTransactionItem.get();
@@ -2980,8 +2981,9 @@ auto OTTransaction::DeleteBoxReceipt(Ledger& theLedger) -> bool
             strFolder1name,
             strFolder2name,
             strFolder3name,
-            strFilename))
+            strFilename)) {
         return false;  // This already logs -- no need to log twice, here.
+    }
 
     // See if the box receipt exists before trying to save over it...
     //
@@ -3060,13 +3062,14 @@ auto OTTransaction::DeleteBoxReceipt(Ledger& theLedger) -> bool
         strFolder2name->Get(),
         strFolder3name->Get(),
         strFilename->Get());
-    if (!bDeleted)
+    if (!bDeleted) {
         LogError()(OT_PRETTY_CLASS())("Error deleting (writing over) file: ")(
             strFolder1name)(api::Legacy::PathSeparator())(
             strFolder2name)(api::Legacy::PathSeparator())(
             strFolder3name)(api::Legacy::PathSeparator())(
             strFilename)(". Contents: ")(m_strRawFile)(".")
             .Flush();
+    }
 
     return bDeleted;
 }
@@ -3096,8 +3099,9 @@ auto OTTransaction::SaveBoxReceipt(std::int64_t lLedgerType) -> bool
             strFolder1name,
             strFolder2name,
             strFolder3name,
-            strFilename))
+            strFilename)) {
         return false;  // This already logs -- no need to log twice, here.
+    }
 
     // See if the box receipt exists before trying to save over it...
     //
@@ -3142,13 +3146,14 @@ auto OTTransaction::SaveBoxReceipt(std::int64_t lLedgerType) -> bool
         strFolder3name->Get(),
         strFilename->Get());
 
-    if (!bSaved)
+    if (!bSaved) {
         LogError()(OT_PRETTY_CLASS())("Error writing file: ")(
             strFolder1name)(api::Legacy::PathSeparator())(
             strFolder2name)(api::Legacy::PathSeparator())(
             strFolder3name)(api::Legacy::PathSeparator())(
             strFilename)(". Contents: ")(m_strRawFile)(".")
             .Flush();
+    }
 
     return bSaved;
 }
@@ -3283,17 +3288,18 @@ auto OTTransaction::VerifyItems(
         const auto pItem = it;
         OT_ASSERT(false != bool(pItem));
 
-        if (GetTransactionNum() != pItem->GetTransactionNum()) return false;
+        if (GetTransactionNum() != pItem->GetTransactionNum()) { return false; }
 
-        if (NYM_ID != pItem->GetNymID()) return false;
+        if (NYM_ID != pItem->GetNymID()) { return false; }
 
-        if (!pItem->VerifySignature(theNym))  // NO need to call
-                                              // VerifyAccount since
-                                              // VerifyContractID is
-                                              // ALREADY called and now
-                                              // here's
-                                              // VerifySignature().
+        if (!pItem->VerifySignature(theNym)) {  // NO need to call
+                                                // VerifyAccount since
+                                                // VerifyContractID is
+                                                // ALREADY called and now
+                                                // here's
+                                                // VerifySignature().
             return false;
+        }
     }
 
     return true;
@@ -3340,7 +3346,7 @@ auto OTTransaction::GetItem(itemType theType) -> std::shared_ptr<Item>
         const auto pItem = it;
         OT_ASSERT(false != bool(pItem));
 
-        if (pItem->GetType() == theType) return pItem;
+        if (pItem->GetType() == theType) { return pItem; }
     }
 
     return nullptr;
@@ -3362,7 +3368,7 @@ auto OTTransaction::GetItemInRefTo(std::int64_t lReference)
         auto pItem = it;
         OT_ASSERT(false != bool(pItem));
 
-        if (pItem->GetReferenceToNum() == lReference) return pItem;
+        if (pItem->GetReferenceToNum() == lReference) { return pItem; }
     }
 
     return nullptr;
@@ -3380,7 +3386,7 @@ auto OTTransaction::GetItemCountInRefTo(std::int64_t lReference) -> std::int32_t
         const auto pItem = it;
         OT_ASSERT(false != bool(pItem));
 
-        if (pItem->GetReferenceToNum() == lReference) nCount++;
+        if (pItem->GetReferenceToNum() == lReference) { nCount++; }
     }
 
     return nCount;
@@ -3459,8 +3465,8 @@ auto OTTransaction::GetSuccess(
     bool bHasSuccess = false;
     bool bIsSuccess = false;
     // --------------------------------------
-    if (nullptr == pbHasSuccess) pbHasSuccess = &bHasSuccess;
-    if (nullptr == pbIsSuccess) pbIsSuccess = &bIsSuccess;
+    if (nullptr == pbHasSuccess) { pbHasSuccess = &bHasSuccess; }
+    if (nullptr == pbIsSuccess) { pbIsSuccess = &bIsSuccess; }
     // --------------------------------------
     // Below this point, the above pointers are always good.
     // (AKA they're not nullptr.)
@@ -3661,9 +3667,10 @@ auto OTTransaction::GetSuccess(
         // status if *pbHasSuccess is true. And IF it is, then we KNOW the item
         // is acknowledged, since we would already have returned above if it had
         // been rejected.
-        if (*pbHasSuccess)
+        if (*pbHasSuccess) {
             *pbIsSuccess =
                 true;  // If it were false we would already have returned above.
+        }
 
         return bReturnValue;
 
@@ -3725,10 +3732,11 @@ auto OTTransaction::GetSuccess(
                     return false;
                 }
 
-                if (bFoundAnActionItem)
+                if (bFoundAnActionItem) {
                     break;
-                else
+                } else {
                     continue;
+                }
                 // -------------------------------------------------
                 /*
                  atProcessNymbox,   // process nymbox reply   // comes from
@@ -3800,10 +3808,11 @@ auto OTTransaction::GetSuccess(
                     return false;
                 }
 
-                if (bFoundABalanceAgreement)
+                if (bFoundABalanceAgreement) {
                     break;
-                else
+                } else {
                     continue;
+                }
             // -------------------------------------------------
             // RECEIPTS
 
@@ -3899,9 +3908,10 @@ auto OTTransaction::GetSuccess(
     // if *pbHasSuccess is true. And IF it is, then we KNOW the item is
     // acknowledged, since we would already have returned above if it had been
     // rejected.
-    if (*pbHasSuccess)
+    if (*pbHasSuccess) {
         *pbIsSuccess =
             true;  // If it were false we would already have returned above.
+    }
 
     return bReturnValue;
 }
@@ -3962,8 +3972,9 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
             bReplyTransSuccess,
             pNumList);
 
-        if ((-1) == nAbbrevRetVal)
+        if ((-1) == nAbbrevRetVal) {
             return (-1);  // The function already logs appropriately.
+        }
 
         m_bIsAbbreviated = true;
 
@@ -3982,12 +3993,13 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
         m_DATE_SIGNED = the_DATE_SIGNED;
         m_Type = static_cast<transactionType>(theType);
 
-        if (strHash->Exists())
+        if (strHash->Exists()) {
             m_Hash->SetString(strHash);
-        else
+        } else {
             LogError()(OT_PRETTY_CLASS())("Missing receiptHash on "
                                           "abbreviated record.")
                 .Flush();
+        }
 
         return 1;
     }
@@ -4006,9 +4018,9 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
 
         const auto strType = String::Factory(xml->getAttributeValue("type"));
 
-        if (strType->Exists())
+        if (strType->Exists()) {
             m_Type = OTTransaction::GetTypeFromString(strType);
-        else {
+        } else {
             LogConsole()(OT_PRETTY_CLASS())("Failure: unknown "
                                             "transaction type: ")(strType)(".")
                 .Flush();
@@ -4017,10 +4029,11 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
 
         auto strCancelled =
             String::Factory(xml->getAttributeValue("cancelled"));
-        if (strCancelled->Exists() && strCancelled->Compare("true"))
+        if (strCancelled->Exists() && strCancelled->Compare("true")) {
             m_bCancelled = true;
-        else
+        } else {
             m_bCancelled = false;
+        }
 
         auto strDateSigned =
             String::Factory(xml->getAttributeValue("dateSigned"));
@@ -4070,8 +4083,9 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
             const auto strRequestNum =
                 String::Factory(xml->getAttributeValue("requestNumber"));
 
-            if (strRequestNum->Exists())
+            if (strRequestNum->Exists()) {
                 m_lRequestNumber = strRequestNum->ToLong();
+            }
 
             const auto strTransSuccess =
                 String::Factory(xml->getAttributeValue("transSuccess"));
@@ -4085,10 +4099,11 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                 String::Factory(xml->getAttributeValue("totalListOfNumbers"));
             m_Numlist.Release();
 
-            if (strTotalList->Exists())
+            if (strTotalList->Exists()) {
                 m_Numlist.Add(strTotalList);  // (Comma-separated list of
-                                              // numbers now becomes
-                                              // UnallocatedSet<std::int64_t>.)
+            }
+            // numbers now becomes
+            // UnallocatedSet<std::int64_t>.)
         }
 
         auto inboxHash = xml->getAttributeValue("inboxHash"),
@@ -4133,10 +4148,11 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
             SetRealNotaryID(NOTARY_ID);
         }
 
-        if (strOrigin->Exists()) SetNumberOfOrigin(strOrigin->ToLong());
-        if (strOriginType->Exists())
+        if (strOrigin->Exists()) { SetNumberOfOrigin(strOrigin->ToLong()); }
+        if (strOriginType->Exists()) {
             SetOriginType(
                 OTTransactionType::GetOriginTypeFromString(strOriginType));
+        }
 
         SetTransactionNum(strTransNum->ToLong());
         SetReferenceToNum(strInRefTo->ToLong());
@@ -4198,7 +4214,7 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                 api_.Factory().InternalSession().Item(GetNymID(), *this)};
             OT_ASSERT(false != bool(pItem));
 
-            if (!m_bLoadSecurely) pItem->SetLoadInsecure();
+            if (!m_bLoadSecurely) { pItem->SetLoadInsecure(); }
 
             // If we're able to successfully base64-decode the string and load
             // it up as
@@ -4295,8 +4311,9 @@ void OTTransaction::UpdateContents(const PasswordPrompt& reason)
         // and successNotices.
         if (m_Numlist.Count() > 0) {
             auto strNumbers = String::Factory();
-            if (m_Numlist.Output(strNumbers))
+            if (m_Numlist.Output(strNumbers)) {
                 tag.add_attribute("totalListOfNumbers", strNumbers->Get());
+            }
         }
     }
 
@@ -4464,14 +4481,16 @@ void OTTransaction::SaveAbbrevPaymentInboxRecord(
     switch (m_Type) {
         case transactionType::incomingCash:
         case transactionType::instrumentNotice:
-            if (IsAbbreviated())
+            if (IsAbbreviated()) {
                 lDisplayValue = GetAbbrevDisplayAmount();
-            else
+            } else {
                 lDisplayValue = GetReceiptAmount(reason);
+            }
             break;
         case transactionType::instrumentRejection:
-            if (IsAbbreviated())  // not the actual value of 0.
+            if (IsAbbreviated()) {  // not the actual value of 0.
                 lDisplayValue = GetAbbrevDisplayAmount();
+            }
             break;
         default:  // All other types are irrelevant for payment inbox reports
             LogError()(OT_PRETTY_CLASS())("Unexpected ")(GetTypeString())(
@@ -4502,9 +4521,10 @@ void OTTransaction::SaveAbbrevPaymentInboxRecord(
     auto strHash = String::Factory();
 
     // If this is already an abbreviated record, then save the existing hash.
-    if (IsAbbreviated()) m_Hash->GetString(strHash);
-    // Otherwise if it's a full record, then calculate the hash and save it.
-    else {
+    if (IsAbbreviated()) {
+        m_Hash->GetString(strHash);
+        // Otherwise if it's a full record, then calculate the hash and save it.
+    } else {
         auto idReceiptHash =
             Identifier::Factory();  // a hash of the actual transaction is
                                     // stored with its
@@ -4547,24 +4567,27 @@ void OTTransaction::SaveAbbrevExpiredBoxRecord(
         // PAYMENT INBOX / PAYMENT OUTBOX
         case transactionType::incomingCash:
         case transactionType::instrumentNotice:
-            if (IsAbbreviated())  // not the actual value of 0.
+            if (IsAbbreviated()) {  // not the actual value of 0.
                 lDisplayValue = GetAbbrevDisplayAmount();
-            else
+            } else {
                 lDisplayValue = GetReceiptAmount(reason);
+            }
             break;
         case transactionType::instrumentRejection:
-            if (IsAbbreviated())  // not the actual value of 0.
+            if (IsAbbreviated()) {  // not the actual value of 0.
                 lDisplayValue = GetAbbrevDisplayAmount();
-            else
+            } else {
                 lDisplayValue = 0;
+            }
             break;
         case transactionType::notice:  // A notice from the server. Used in
                                        // Nymbox. Probably contains an updated
                                        // smart contract.
-            if (IsAbbreviated())       // not the actual value of 0.
+            if (IsAbbreviated()) {     // not the actual value of 0.
                 lDisplayValue = GetAbbrevDisplayAmount();
-            else
+            } else {
                 lDisplayValue = 0;
+            }
             break;
         default:  // All other types are irrelevant for inbox reports
         {
@@ -4597,9 +4620,10 @@ void OTTransaction::SaveAbbrevExpiredBoxRecord(
     auto strHash = String::Factory();
 
     // If this is already an abbreviated record, then save the existing hash.
-    if (IsAbbreviated()) m_Hash->GetString(strHash);
-    // Otherwise if it's a full record, then calculate the hash and save it.
-    else {
+    if (IsAbbreviated()) {
+        m_Hash->GetString(strHash);
+        // Otherwise if it's a full record, then calculate the hash and save it.
+    } else {
         auto idReceiptHash =
             Identifier::Factory();  // a hash of the actual transaction is
                                     // stored with its
@@ -4813,9 +4837,10 @@ void OTTransaction::SaveAbbrevRecordBoxRecord(
     auto strHash = String::Factory();
 
     // If this is already an abbreviated record, then save the existing hash.
-    if (IsAbbreviated()) m_Hash->GetString(strHash);
-    // Otherwise if it's a full record, then calculate the hash and save it.
-    else {
+    if (IsAbbreviated()) {
+        m_Hash->GetString(strHash);
+        // Otherwise if it's a full record, then calculate the hash and save it.
+    } else {
         auto idReceiptHash =
             Identifier::Factory();  // a hash of the actual transaction is
                                     // stored with its
@@ -4854,8 +4879,9 @@ void OTTransaction::SaveAbbrevRecordBoxRecord(
     pTag->add_attribute("inReferenceTo", std::to_string(GetReferenceToNum()));
 
     if ((transactionType::finalReceipt == m_Type) ||
-        (transactionType::basketReceipt == m_Type))
+        (transactionType::basketReceipt == m_Type)) {
         pTag->add_attribute("closingNum", std::to_string(GetClosingNum()));
+    }
 
     parent.add_tag(pTag);
 }
@@ -4885,7 +4911,7 @@ void OTTransaction::SaveAbbreviatedNymboxRecord(
                                               // successfully been signed out.
         {
             // This is always 0, except for blanks and successNotices.
-            if (m_Numlist.Count() > 0) m_Numlist.Output(strListOfBlanks);
+            if (m_Numlist.Count() > 0) { m_Numlist.Output(strListOfBlanks); }
         }
             [[fallthrough]];
         case transactionType::replyNotice: {  // A copy of a server reply to a
@@ -4913,10 +4939,11 @@ void OTTransaction::SaveAbbreviatedNymboxRecord(
         case transactionType::incomingCash:
         case transactionType::instrumentNotice: {  // A financial instrument
                                                    // sent from/to another nym.
-            if (IsAbbreviated())
+            if (IsAbbreviated()) {
                 lDisplayValue = GetAbbrevDisplayAmount();
-            else
+            } else {
                 lDisplayValue = GetReceiptAmount(reason);
+            }
 
         } break;  // (These last two are just passing through, on their way to
                   // the paymentInbox.)
@@ -4953,9 +4980,10 @@ void OTTransaction::SaveAbbreviatedNymboxRecord(
     auto strHash = String::Factory();
 
     // If this is already an abbreviated record, then save the existing hash.
-    if (IsAbbreviated()) m_Hash->GetString(strHash);
-    // Otherwise if it's a full record, then calculate the hash and save it.
-    else {
+    if (IsAbbreviated()) {
+        m_Hash->GetString(strHash);
+        // Otherwise if it's a full record, then calculate the hash and save it.
+    } else {
         auto idReceiptHash =
             Identifier::Factory();  // a hash of the actual transaction is
                                     // stored with its
@@ -4984,11 +5012,12 @@ void OTTransaction::SaveAbbreviatedNymboxRecord(
     // notice in a nymbox, the way you can with a final
     // receipt notice. Probably can remove that line.
     if ((transactionType::finalReceipt == m_Type) ||
-        (transactionType::basketReceipt == m_Type))
+        (transactionType::basketReceipt == m_Type)) {
         pTag->add_attribute("closingNum", std::to_string(GetClosingNum()));
-    else {
-        if (strListOfBlanks->Exists())
+    } else {
+        if (strListOfBlanks->Exists()) {
             pTag->add_attribute("totalListOfNumbers", strListOfBlanks->Get());
+        }
         if (bAddRequestNumber) {
             pTag->add_attribute(
                 "requestNumber", std::to_string(m_lRequestNumber));
@@ -5063,9 +5092,10 @@ void OTTransaction::SaveAbbreviatedOutboxRecord(
     auto strHash = String::Factory();
 
     // If this is already an abbreviated record, then save the existing hash.
-    if (IsAbbreviated()) m_Hash->GetString(strHash);
-    // Otherwise if it's a full record, then calculate the hash and save it.
-    else {
+    if (IsAbbreviated()) {
+        m_Hash->GetString(strHash);
+        // Otherwise if it's a full record, then calculate the hash and save it.
+    } else {
         auto idReceiptHash =
             Identifier::Factory();  // a hash of the actual transaction is
                                     // stored with its
@@ -5228,9 +5258,10 @@ void OTTransaction::SaveAbbreviatedInboxRecord(
     auto strHash = String::Factory();
 
     // If this is already an abbreviated record, then save the existing hash.
-    if (IsAbbreviated()) m_Hash->GetString(strHash);
-    // Otherwise if it's a full record, then calculate the hash and save it.
-    else {
+    if (IsAbbreviated()) {
+        m_Hash->GetString(strHash);
+        // Otherwise if it's a full record, then calculate the hash and save it.
+    } else {
         auto idReceiptHash =
             Identifier::Factory();  // a hash of the actual transaction is
                                     // stored with its
@@ -5269,8 +5300,9 @@ void OTTransaction::SaveAbbreviatedInboxRecord(
     pTag->add_attribute("inReferenceTo", std::to_string(GetReferenceToNum()));
 
     if ((transactionType::finalReceipt == m_Type) ||
-        (transactionType::basketReceipt == m_Type))
+        (transactionType::basketReceipt == m_Type)) {
         pTag->add_attribute("closingNum", std::to_string(GetClosingNum()));
+    }
 
     parent.add_tag(pTag);
 }
@@ -5399,8 +5431,9 @@ void OTTransaction::ProduceInboxReportItem(
         // corresponds to must be closed!
         //
         if ((transactionType::finalReceipt == m_Type) ||
-            (transactionType::basketReceipt == m_Type))
+            (transactionType::basketReceipt == m_Type)) {
             pReportItem->SetClosingNum(GetClosingNum());
+        }
 
         theBalanceItem.AddItem(std::shared_ptr<Item>(
             pReportItem.release()));  // Now theBalanceItem will handle
@@ -5492,7 +5525,7 @@ void OTTransaction::ProduceOutboxReportItem(
 //
 auto OTTransaction::GetReceiptAmount(const PasswordPrompt& reason) -> Amount
 {
-    if (IsAbbreviated()) return GetAbbrevAdjustment();
+    if (IsAbbreviated()) { return GetAbbrevAdjustment(); }
 
     Amount lAdjustment = 0;
 
@@ -5951,7 +5984,7 @@ void OTTransaction::CalculateNumberOfOrigin()
 ///
 auto OTTransaction::GetReferenceNumForDisplay() -> std::int64_t
 {
-    if (IsAbbreviated()) return GetAbbrevInRefDisplay();
+    if (IsAbbreviated()) { return GetAbbrevInRefDisplay(); }
 
     std::int64_t lReferenceNum = 0;
 
@@ -6014,8 +6047,9 @@ auto OTTransaction::GetReferenceNumForDisplay() -> std::int64_t
                             openingNumsInOrderOfSigning =
                                 pSmartContract->openingNumsInOrderOfSigning();
 
-                        if (openingNumsInOrderOfSigning.size() > 0)
+                        if (openingNumsInOrderOfSigning.size() > 0) {
                             lReferenceNum = openingNumsInOrderOfSigning[0];
+                        }
                     }
                     // -------------------------------------------
                 }
@@ -6085,7 +6119,7 @@ auto OTTransaction::GetReferenceNumForDisplay() -> std::int64_t
 
 auto OTTransaction::GetSenderNymIDForDisplay(Identifier& theReturnID) -> bool
 {
-    if (IsAbbreviated()) return false;
+    if (IsAbbreviated()) { return false; }
 
     bool bSuccess = false;
 
@@ -6094,7 +6128,7 @@ auto OTTransaction::GetSenderNymIDForDisplay(Identifier& theReturnID) -> bool
     auto strReference = String::Factory();
     GetReferenceString(strReference);
 
-    if (strReference->GetLength() < 2) return false;
+    if (strReference->GetLength() < 2) { return false; }
 
     switch (GetType()) {
         case transactionType::notice:  // for paymentPlans AND smartcontracts.
@@ -6102,14 +6136,14 @@ auto OTTransaction::GetSenderNymIDForDisplay(Identifier& theReturnID) -> bool
             auto strUpdatedCronItem = String::Factory();
             const auto pItem = GetItem(itemType::notice);
 
-            if (false != bool(pItem))
+            if (false != bool(pItem)) {
                 pItem->GetNote(strUpdatedCronItem);
-            else if (strReference->Exists())
+            } else if (strReference->Exists()) {
                 strUpdatedCronItem = strReference;  // Here we make-do with the
                                                     // original version of the
                                                     // cron item, instead of the
                                                     // updated version.
-            else {
+            } else {
                 LogError()(OT_PRETTY_CLASS())(
                     "Failed trying to get notice item from notice "
                     "transaction. "
@@ -6126,7 +6160,7 @@ auto OTTransaction::GetSenderNymIDForDisplay(Identifier& theReturnID) -> bool
 
             if (nullptr != pSmart)  // if it's a smart contract...
             {
-                if (!pSmart->GetLastSenderNymID().Exists()) return false;
+                if (!pSmart->GetLastSenderNymID().Exists()) { return false; }
 
                 // WARNING: This may not be correct. I believe
                 // GetLastSenderNymID refers to the most recent Nym who has PAID
@@ -6162,9 +6196,9 @@ auto OTTransaction::GetSenderNymIDForDisplay(Identifier& theReturnID) -> bool
             auto strUpdatedCronItem = String::Factory();
             const auto pItem = GetItem(itemType::paymentReceipt);
 
-            if (false != bool(pItem))
+            if (false != bool(pItem)) {
                 pItem->GetAttachment(strUpdatedCronItem);
-            else {
+            } else {
                 LogError()(OT_PRETTY_CLASS())(
                     "Failed trying to get paymentReceipt item from "
                     "paymentReceipt transaction.")
@@ -6179,7 +6213,7 @@ auto OTTransaction::GetSenderNymIDForDisplay(Identifier& theReturnID) -> bool
 
             if (nullptr != pSmart)  // if it's a smart contract...
             {
-                if (!pSmart->GetLastSenderNymID().Exists()) return false;
+                if (!pSmart->GetLastSenderNymID().Exists()) { return false; }
 
                 theReturnID.SetString(pSmart->GetLastSenderNymID());
                 return !theReturnID.empty();
@@ -6309,10 +6343,11 @@ auto OTTransaction::GetSenderNymIDForDisplay(Identifier& theReturnID) -> bool
                     strCheque)(".")
                     .Flush();
             } else {
-                if (transactionType::chequeReceipt == GetType())
+                if (transactionType::chequeReceipt == GetType()) {
                     theReturnID.SetString(theCheque->GetSenderNymID().str());
-                else
+                } else {
                     theReturnID.SetString(theCheque->GetRemitterNymID().str());
+                }
 
                 bSuccess = true;
             }
@@ -6338,7 +6373,7 @@ auto OTTransaction::GetSenderNymIDForDisplay(Identifier& theReturnID) -> bool
 
 auto OTTransaction::GetRecipientNymIDForDisplay(Identifier& theReturnID) -> bool
 {
-    if (IsAbbreviated()) return false;
+    if (IsAbbreviated()) { return false; }
 
     bool bSuccess = false;
 
@@ -6354,14 +6389,14 @@ auto OTTransaction::GetRecipientNymIDForDisplay(Identifier& theReturnID) -> bool
             auto strUpdatedCronItem = String::Factory();
             const auto pItem = GetItem(itemType::notice);
 
-            if (false != bool(pItem))
+            if (false != bool(pItem)) {
                 pItem->GetNote(strUpdatedCronItem);
-            else if (strReference->Exists())
+            } else if (strReference->Exists()) {
                 strUpdatedCronItem = strReference;  // Better than  nothing.
                                                     // This is the original
-            // version of the payment plan, instead of
-            // the updated version. (Or smart contract.)
-            else {
+                // version of the payment plan, instead of
+                // the updated version. (Or smart contract.)
+            } else {
                 LogError()(OT_PRETTY_CLASS())(
                     "Failed trying to get notice item from notice "
                     "transaction, and couldn't find the instrument this "
@@ -6378,7 +6413,7 @@ auto OTTransaction::GetRecipientNymIDForDisplay(Identifier& theReturnID) -> bool
 
             if (nullptr != pSmart)  // if it's a smart contract...
             {
-                if (!pSmart->GetLastRecipientNymID().Exists()) return false;
+                if (!pSmart->GetLastRecipientNymID().Exists()) { return false; }
 
                 // WARNING: This might not be appropriate for a ::notice.
                 // GetLastRecipientNymID I believe refers to the last Nym to
@@ -6413,9 +6448,9 @@ auto OTTransaction::GetRecipientNymIDForDisplay(Identifier& theReturnID) -> bool
             auto strUpdatedCronItem = String::Factory();
             const auto pItem = GetItem(itemType::paymentReceipt);
 
-            if (false != bool(pItem))
+            if (false != bool(pItem)) {
                 pItem->GetAttachment(strUpdatedCronItem);
-            else {
+            } else {
                 LogError()(OT_PRETTY_CLASS())(
                     "Failed trying to get paymentReceipt item from "
                     "paymentReceipt transaction.")
@@ -6431,7 +6466,7 @@ auto OTTransaction::GetRecipientNymIDForDisplay(Identifier& theReturnID) -> bool
 
             if (nullptr != pSmart)  // if it's a smart contract...
             {
-                if (!pSmart->GetLastRecipientNymID().Exists()) return false;
+                if (!pSmart->GetLastRecipientNymID().Exists()) { return false; }
 
                 theReturnID.SetString(pSmart->GetLastRecipientNymID());
                 return !theReturnID.empty();
@@ -6514,9 +6549,10 @@ auto OTTransaction::GetRecipientNymIDForDisplay(Identifier& theReturnID) -> bool
         }
     }
     // -------------------------------------------------------
-    if (false == bool(pOriginalItem))
+    if (false == bool(pOriginalItem)) {
         return false;  // Should never happen, since we always expect one based
-                       // on the transaction type.
+    }
+    // on the transaction type.
     // -------------------------------------------------------
     switch (GetType()) {
         case transactionType::transferReceipt: {
@@ -6591,7 +6627,7 @@ auto OTTransaction::GetRecipientNymIDForDisplay(Identifier& theReturnID) -> bool
 
 auto OTTransaction::GetSenderAcctIDForDisplay(Identifier& theReturnID) -> bool
 {
-    if (IsAbbreviated()) return false;
+    if (IsAbbreviated()) { return false; }
 
     bool bSuccess = false;
 
@@ -6600,20 +6636,21 @@ auto OTTransaction::GetSenderAcctIDForDisplay(Identifier& theReturnID) -> bool
     auto strReference = String::Factory();
     GetReferenceString(strReference);
 
-    if (strReference->GetLength() < 2) return false;
+    if (strReference->GetLength() < 2) { return false; }
 
     switch (GetType()) {
         case transactionType::paymentReceipt: {
             auto strUpdatedCronItem = String::Factory();
             const auto pItem = GetItem(itemType::paymentReceipt);
 
-            if (false != bool(pItem))
+            if (false != bool(pItem)) {
                 pItem->GetAttachment(strUpdatedCronItem);
-            else
+            } else {
                 LogError()(OT_PRETTY_CLASS())(
                     "Failed trying to get paymentReceipt item from "
                     "paymentReceipt transaction.")
                     .Flush();
+            }
 
             const auto pCronItem{
                 api_.Factory().InternalSession().CronItem(strUpdatedCronItem)};
@@ -6622,7 +6659,7 @@ auto OTTransaction::GetSenderAcctIDForDisplay(Identifier& theReturnID) -> bool
 
             if (nullptr != pSmart)  // if it's a smart contract...
             {
-                if (!pSmart->GetLastSenderAcctID().Exists()) return false;
+                if (!pSmart->GetLastSenderAcctID().Exists()) { return false; }
 
                 theReturnID.SetString(pSmart->GetLastSenderAcctID());
                 return true;
@@ -6705,10 +6742,11 @@ auto OTTransaction::GetSenderAcctIDForDisplay(Identifier& theReturnID) -> bool
                     ". ")(strCheque)(".")
                     .Flush();
             } else {
-                if (transactionType::chequeReceipt == GetType())
+                if (transactionType::chequeReceipt == GetType()) {
                     theReturnID.Assign(theCheque->GetSenderAcctID());
-                else
+                } else {
                     theReturnID.Assign(theCheque->GetRemitterAcctID());
+                }
 
                 bSuccess = true;
             }
@@ -6736,7 +6774,7 @@ auto OTTransaction::GetSenderAcctIDForDisplay(Identifier& theReturnID) -> bool
 auto OTTransaction::GetRecipientAcctIDForDisplay(Identifier& theReturnID)
     -> bool
 {
-    if (IsAbbreviated()) return false;
+    if (IsAbbreviated()) { return false; }
 
     bool bSuccess = false;
 
@@ -6750,13 +6788,14 @@ auto OTTransaction::GetRecipientAcctIDForDisplay(Identifier& theReturnID)
             auto strUpdatedCronItem = String::Factory();
             const auto pItem = GetItem(itemType::paymentReceipt);
 
-            if (false != bool(pItem))
+            if (false != bool(pItem)) {
                 pItem->GetAttachment(strUpdatedCronItem);
-            else
+            } else {
                 LogError()(OT_PRETTY_CLASS())(
                     "Failed trying to get paymentReceipt item from "
                     "paymentReceipt transaction.")
                     .Flush();
+            }
 
             const auto pCronItem{
                 api_.Factory().InternalSession().CronItem(strUpdatedCronItem)};
@@ -6766,7 +6805,9 @@ auto OTTransaction::GetRecipientAcctIDForDisplay(Identifier& theReturnID)
 
             if (nullptr != pSmart)  // if it's a smart contract...
             {
-                if (!pSmart->GetLastRecipientAcctID().Exists()) return false;
+                if (!pSmart->GetLastRecipientAcctID().Exists()) {
+                    return false;
+                }
 
                 theReturnID.SetString(pSmart->GetLastRecipientAcctID());
                 return true;
@@ -6802,9 +6843,10 @@ auto OTTransaction::GetRecipientAcctIDForDisplay(Identifier& theReturnID)
             return false;
     }
 
-    if (false == bool(pOriginalItem))
+    if (false == bool(pOriginalItem)) {
         return false;  // Should never happen, since we always expect one based
-                       // on the transaction type.
+    }
+    // on the transaction type.
 
     switch (GetType()) {
         case transactionType::transferReceipt: {
@@ -6865,7 +6907,7 @@ auto OTTransaction::GetRecipientAcctIDForDisplay(Identifier& theReturnID)
 
 auto OTTransaction::GetMemo(String& strMemo) -> bool
 {
-    if (IsAbbreviated()) return false;
+    if (IsAbbreviated()) { return false; }
 
     bool bSuccess = false;
 
@@ -6879,13 +6921,14 @@ auto OTTransaction::GetMemo(String& strMemo) -> bool
             auto strUpdatedCronItem = String::Factory();
             const auto pItem = GetItem(itemType::paymentReceipt);
 
-            if (false != bool(pItem))
+            if (false != bool(pItem)) {
                 pItem->GetAttachment(strUpdatedCronItem);
-            else
+            } else {
                 LogError()(OT_PRETTY_CLASS())(
                     "Failed trying to get paymentReceipt item from "
                     "paymentReceipt transaction.")
                     .Flush();
+            }
 
             const auto pCronItem{
                 api_.Factory().InternalSession().CronItem(strUpdatedCronItem)};
@@ -6900,8 +6943,9 @@ auto OTTransaction::GetMemo(String& strMemo) -> bool
                 return false;
             } else if (nullptr != pPlan)  // else if it is a payment plan.
             {
-                if (pPlan->GetConsideration().Exists())
+                if (pPlan->GetConsideration().Exists()) {
                     strMemo.Set(pPlan->GetConsideration());
+                }
 
                 return true;
             } else  // else if it's any other kind of cron item.
@@ -6932,9 +6976,10 @@ auto OTTransaction::GetMemo(String& strMemo) -> bool
             return false;
     }
 
-    if (false == bool(pOriginalItem))
+    if (false == bool(pOriginalItem)) {
         return false;  // Should never happen, since we always expect one based
-                       // on the transaction type.
+    }
+    // on the transaction type.
 
     switch (GetType()) {
         case transactionType::transferReceipt: {
