@@ -128,7 +128,7 @@ public:
     auto LoadContract() -> bool override { return {}; }
     auto LoadMint(const char*) -> bool override { return {}; }
     auto Release() -> void override {}
-    auto Release_Mint() -> void override {}
+    auto Release_Mint() -> void override;
     auto ReleaseDenominations() -> void override {}
     auto SaveMint(const char* szAppend = nullptr) -> bool override
     {
@@ -164,9 +164,11 @@ public:
     Imp(const api::Session& api,
         const identifier::UnitDefinition& unit) noexcept;
 
-    ~Imp() override = default;
+    ~Imp() override;
 
 private:
+    bool need_release_;
+
     Imp() = delete;
 };
 }  // namespace opentxs::otx::blind

@@ -501,8 +501,9 @@ auto Account::Debit(const Amount& amount) -> bool
 
     // fail if integer overflow
     if ((amount > 0 && oldBalance < Amount{INT64_MIN} + amount) ||
-        (amount < 0 && oldBalance > Amount{INT64_MAX} + amount))
+        (amount < 0 && oldBalance > Amount{INT64_MAX} + amount)) {
         return false;
+    }
 
     // This is where issuer accounts get a pass. They just go negative.
     //
@@ -534,8 +535,9 @@ auto Account::Credit(const Amount& amount) -> bool
 
     // fail if integer overflow
     if ((amount > 0 && oldBalance > Amount{INT64_MAX} - amount) ||
-        (amount < 0 && oldBalance < Amount{INT64_MIN} - amount))
+        (amount < 0 && oldBalance < Amount{INT64_MIN} - amount)) {
         return false;
+    }
 
     // If the balance gets too big, it may flip to negative due to us using
     // std::int64_t std::int32_t.

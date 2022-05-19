@@ -484,7 +484,7 @@ public:
 
     virtual ~Storage()
     {
-        if (nullptr != m_pPacker) delete m_pPacker;
+        if (nullptr != m_pPacker) { delete m_pPacker; }
         m_pPacker = nullptr;
     }
 
@@ -798,7 +798,7 @@ public:
         const UnallocatedCString& strValue)
     {
         auto ii = the_map.find(strKey);
-        if (ii != the_map.end()) the_map.erase(ii);
+        if (ii != the_map.end()) { the_map.erase(ii); }
         the_map[strKey] = strValue;
     }
 
@@ -806,7 +806,7 @@ public:
     {
         UnallocatedCString ret_val("");
         auto ii = the_map.find(strKey);
-        if (ii != the_map.end()) ret_val = (*ii).second;
+        if (ii != the_map.end()) { ret_val = (*ii).second; }
         return ret_val;
     }
 

@@ -172,6 +172,7 @@ private:
     const api::session::UI& ui_;
     UnallocatedVector<OTZMQListenCallback> callbacks_;
     UnallocatedVector<OTZMQSubscribeSocket> listeners_;
+    mutable bool need_clear_callbacks_;
 
     Widget() = delete;
     Widget(const Widget&) = delete;

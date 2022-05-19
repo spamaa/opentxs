@@ -19,6 +19,7 @@ class QObject;
 
 namespace opentxs
 {
+// NOLINTBEGIN(clang-analyzer-optin.performance.Padding)
 struct Options::Imp final {
     Set<blockchain::Type> blockchain_disabled_chains_;
     Set<CString> blockchain_ipv4_bind_;
@@ -81,4 +82,5 @@ private:
     auto operator=(const Imp&) -> Imp& = delete;
     auto operator=(Imp&&) -> Imp& = delete;
 };
+// NOLINTEND(clang-analyzer-optin.performance.Padding)
 }  // namespace opentxs

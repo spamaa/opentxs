@@ -985,6 +985,7 @@ auto ActivityThread::validate_account(
 ActivityThread::~ActivityThread()
 {
     wait_for_startup();
+    ClearCallbacks();
     signal_shutdown().get();
 }
 }  // namespace opentxs::ui::implementation
