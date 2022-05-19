@@ -45,12 +45,12 @@ signals:
     void enabledChanged(int enabledCount);
 
 public:
+    // NOLINTBEGIN(modernize-use-trailing-return-type)
     /// chain is an opentxs::blockchain::Type, retrievable as TypeRole
-    // NOLINTNEXTLINE(modernize-use-trailing-return-type)
     Q_INVOKABLE bool disableChain(const int chain) noexcept;
     /// chain is an opentxs::blockchain::Type, retrievable as TypeRole
-    // NOLINTNEXTLINE(modernize-use-trailing-return-type)
     Q_INVOKABLE bool enableChain(const int chain) noexcept;
+    // NOLINTEND(modernize-use-trailing-return-type)
 
 public:
     enum Roles {
@@ -80,6 +80,7 @@ private:
 
     BlockchainSelectionQt(const BlockchainSelectionQt&) = delete;
     BlockchainSelectionQt(BlockchainSelectionQt&&) = delete;
-    BlockchainSelectionQt& operator=(const BlockchainSelectionQt&) = delete;
-    BlockchainSelectionQt& operator=(BlockchainSelectionQt&&) = delete;
+    auto operator=(const BlockchainSelectionQt&)
+        -> BlockchainSelectionQt& = delete;
+    auto operator=(BlockchainSelectionQt&&) -> BlockchainSelectionQt& = delete;
 };

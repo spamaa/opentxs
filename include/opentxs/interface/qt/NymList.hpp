@@ -58,6 +58,6 @@ private:
     NymListQt() = delete;
     NymListQt(const NymListQt&) = delete;
     NymListQt(NymListQt&&) = delete;
-    NymListQt& operator=(const NymListQt&) = delete;
-    NymListQt& operator=(NymListQt&&) = delete;
+    auto operator=(const NymListQt&) -> NymListQt& = delete;
+    auto operator=(NymListQt&&) -> NymListQt& = delete;
 };

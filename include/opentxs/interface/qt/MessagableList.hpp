@@ -54,6 +54,6 @@ private:
     MessagableListQt() = delete;
     MessagableListQt(const MessagableListQt&) = delete;
     MessagableListQt(MessagableListQt&&) = delete;
-    MessagableListQt& operator=(const MessagableListQt&) = delete;
-    MessagableListQt& operator=(MessagableListQt&&) = delete;
+    auto operator=(const MessagableListQt&) -> MessagableListQt& = delete;
+    auto operator=(MessagableListQt&&) -> MessagableListQt& = delete;
 };

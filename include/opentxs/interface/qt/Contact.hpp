@@ -44,9 +44,9 @@ signals:
 
 public:
     // Tree layout
-    QString displayName() const noexcept;
-    QString contactID() const noexcept;
-    QString paymentCode() const noexcept;
+    auto displayName() const noexcept -> QString;
+    auto contactID() const noexcept -> QString;
+    auto paymentCode() const noexcept -> QString;
 
     ContactQt(internal::Contact& parent) noexcept;
 
@@ -60,6 +60,6 @@ private:
     ContactQt() = delete;
     ContactQt(const ContactQt&) = delete;
     ContactQt(ContactQt&&) = delete;
-    ContactQt& operator=(const ContactQt&) = delete;
-    ContactQt& operator=(ContactQt&&) = delete;
+    auto operator=(const ContactQt&) -> ContactQt& = delete;
+    auto operator=(ContactQt&&) -> ContactQt& = delete;
 };

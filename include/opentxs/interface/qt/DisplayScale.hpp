@@ -40,9 +40,9 @@ class OPENTXS_EXPORT opentxs::ui::DisplayScaleQt final
     Q_OBJECT
 
 public:
-    int rowCount(const QModelIndex& parent = QModelIndex()) const final;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole)
-        const final;
+    auto rowCount(const QModelIndex& parent = QModelIndex()) const -> int final;
+    auto data(const QModelIndex& index, int role = Qt::DisplayRole) const
+        -> QVariant final;
 
     DisplayScaleQt(const display::Definition&) noexcept;
     DisplayScaleQt(const DisplayScaleQt&) noexcept;
@@ -54,6 +54,6 @@ private:
 
     DisplayScaleQt() = delete;
     DisplayScaleQt(DisplayScaleQt&&) = delete;
-    DisplayScaleQt& operator=(const DisplayScaleQt&) = delete;
-    DisplayScaleQt& operator=(DisplayScaleQt&&) = delete;
+    auto operator=(const DisplayScaleQt&) -> DisplayScaleQt& = delete;
+    auto operator=(DisplayScaleQt&&) -> DisplayScaleQt& = delete;
 };

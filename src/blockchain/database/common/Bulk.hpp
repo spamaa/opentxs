@@ -74,7 +74,7 @@ private:
     Bulk() = delete;
     Bulk(const Bulk&) = delete;
     Bulk(Bulk&&) = delete;
-    Bulk& operator=(const Bulk&) = delete;
-    Bulk& operator=(Bulk&&) = delete;
+    auto operator=(const Bulk&) -> Bulk& = delete;
+    auto operator=(Bulk&&) -> Bulk& = delete;
 };
 }  // namespace opentxs::blockchain::database::common

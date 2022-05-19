@@ -451,7 +451,7 @@ void Notary::mint() const
     while (running_) {
         Sleep(250ms);
 
-        if (false == opentxs::server::ServerSettings::__cmd_get_mint) {
+        if (false == opentxs::server::ServerSettings::_cmd_get_mint) {
             continue;
         }
 

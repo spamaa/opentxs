@@ -113,12 +113,14 @@ private:
 
             if (address.is_v4()) {
                 const auto bytes = address.to_v4().to_bytes();
-                auto* it = reinterpret_cast<const std::byte*>(bytes.data());
+                const auto* it =
+                    reinterpret_cast<const std::byte*>(bytes.data());
 
                 return Space{it, std::next(it, bytes.size())};
             } else {
                 const auto bytes = address.to_v6().to_bytes();
-                auto* it = reinterpret_cast<const std::byte*>(bytes.data());
+                const auto* it =
+                    reinterpret_cast<const std::byte*>(bytes.data());
 
                 return Space{it, std::next(it, bytes.size())};
             }

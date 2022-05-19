@@ -47,7 +47,7 @@ private:
 
     Context(const Context&) = delete;
     Context(Context&&) = delete;
-    Context& operator=(const Context&) = delete;
-    Context& operator=(Context&&) = delete;
+    auto operator=(const Context&) -> Context& = delete;
+    auto operator=(Context&&) -> Context& = delete;
 };
 }  // namespace opentxs::api::network::asio

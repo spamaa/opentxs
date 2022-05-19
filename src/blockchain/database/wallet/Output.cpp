@@ -1301,8 +1301,8 @@ private:
         auto spent = TXOs{txoCreated.get_allocator()};
         auto generation = Set<block::Outpoint>{txoCreated.get_allocator()};
 
-        for (auto& [txid, transaction] : blockMatches) {
-            auto& [indices, pTx] = transaction;
+        for (const auto& [txid, transaction] : blockMatches) {
+            const auto& [indices, pTx] = transaction;
             log(OT_PRETTY_CLASS())("parsing transaction ")(txid->asHex())
                 .Flush();
 
@@ -1319,8 +1319,8 @@ private:
         // outputs created in this block are known prior to associating inputs
         // to previous outputs.
 
-        for (auto& [txid, transaction] : blockMatches) {
-            auto& [indices, pTx] = transaction;
+        for (const auto& [txid, transaction] : blockMatches) {
+            const auto& [indices, pTx] = transaction;
             auto& modified = pTx->Internal();
             process_inputs(log, subchain, created, spent, modified, cache);
         }
@@ -1753,7 +1753,7 @@ private:
     {
         auto proposals = UnallocatedSet<OTIdentifier>{};
 
-        for (auto& input : inputTx.Inputs()) {
+        for (const auto& input : inputTx.Inputs()) {
             const auto& outpoint = input.PreviousOutput();
 
             if (false ==
@@ -1792,7 +1792,7 @@ private:
     {
         auto index = std::size_t{0};
 
-        for (auto& input : tx.Inputs()) {
+        for (const auto& input : tx.Inputs()) {
             const auto& outpoint = input.PreviousOutput();
             auto relevant{false};
 

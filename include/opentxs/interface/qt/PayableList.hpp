@@ -53,6 +53,6 @@ private:
 
     PayableListQt(const PayableListQt&) = delete;
     PayableListQt(PayableListQt&&) = delete;
-    PayableListQt& operator=(const PayableListQt&) = delete;
-    PayableListQt& operator=(PayableListQt&&) = delete;
+    auto operator=(const PayableListQt&) -> PayableListQt& = delete;
+    auto operator=(PayableListQt&&) -> PayableListQt& = delete;
 };

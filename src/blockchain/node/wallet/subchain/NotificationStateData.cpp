@@ -260,9 +260,9 @@ auto NotificationStateData::process(
                     OT_ASSERT(view.has_value());
 
                     const auto& value = view.value();
-                    auto* start =
+                    const auto* start =
                         reinterpret_cast<const std::byte*>(value.data());
-                    auto* stop = std::next(start, value.size());
+                    const auto* stop = std::next(start, value.size());
                     out.emplace_back(start, stop);
                 }
 

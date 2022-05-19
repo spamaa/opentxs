@@ -46,7 +46,7 @@ protected:
 private:
     UI(const UI&) = delete;
     UI(UI&&) = delete;
-    UI& operator=(const UI&) = delete;
-    UI& operator=(UI&&) = delete;
+    auto operator=(const UI&) -> UI& = delete;
+    auto operator=(UI&&) -> UI& = delete;
 };
 }  // namespace opentxs::api::session::internal

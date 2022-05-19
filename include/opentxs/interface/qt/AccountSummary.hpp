@@ -62,6 +62,6 @@ private:
 
     AccountSummaryQt(const AccountSummaryQt&) = delete;
     AccountSummaryQt(AccountSummaryQt&&) = delete;
-    AccountSummaryQt& operator=(const AccountSummaryQt&) = delete;
-    AccountSummaryQt& operator=(AccountSummaryQt&&) = delete;
+    auto operator=(const AccountSummaryQt&) -> AccountSummaryQt& = delete;
+    auto operator=(AccountSummaryQt&&) -> AccountSummaryQt& = delete;
 };

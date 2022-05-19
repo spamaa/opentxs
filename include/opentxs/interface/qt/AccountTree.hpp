@@ -64,6 +64,6 @@ private:
 
     AccountTreeQt(const AccountTreeQt&) = delete;
     AccountTreeQt(AccountTreeQt&&) = delete;
-    AccountTreeQt& operator=(const AccountTreeQt&) = delete;
-    AccountTreeQt& operator=(AccountTreeQt&&) = delete;
+    auto operator=(const AccountTreeQt&) -> AccountTreeQt& = delete;
+    auto operator=(AccountTreeQt&&) -> AccountTreeQt& = delete;
 };

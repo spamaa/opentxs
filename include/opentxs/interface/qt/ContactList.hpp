@@ -37,11 +37,12 @@ class OPENTXS_EXPORT opentxs::ui::ContactListQt final : public qt::Model
     Q_OBJECT
 
 public:
-    // NOLINTNEXTLINE(modernize-use-trailing-return-type)
+    // NOLINTBEGIN(modernize-use-trailing-return-type)
     Q_INVOKABLE QString addContact(
         const QString& label,
         const QString& paymentCode = "",
         const QString& nymID = "") const noexcept;
+    // NOLINTEND(modernize-use-trailing-return-type)
 
 public:
     enum Roles {
@@ -67,6 +68,6 @@ private:
     ContactListQt() = delete;
     ContactListQt(const ContactListQt&) = delete;
     ContactListQt(ContactListQt&&) = delete;
-    ContactListQt& operator=(const ContactListQt&) = delete;
-    ContactListQt& operator=(ContactListQt&&) = delete;
+    auto operator=(const ContactListQt&) -> ContactListQt& = delete;
+    auto operator=(ContactListQt&&) -> ContactListQt& = delete;
 };

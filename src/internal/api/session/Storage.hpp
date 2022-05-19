@@ -39,7 +39,7 @@ public:
 
     auto Internal() noexcept -> internal::Storage& final { return *this; }
 
-    virtual ~Storage() override = default;
+    ~Storage() override = default;
 
 protected:
     Storage() = default;

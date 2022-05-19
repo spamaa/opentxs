@@ -495,7 +495,7 @@ auto Activity::Mail(
     const PeerObject& text) const noexcept -> UnallocatedCString
 {
     return Mail(nym, mail, box, [&]() -> UnallocatedCString {
-        if (auto& out = text.Message(); out) {
+        if (const auto& out = text.Message(); out) {
 
             return *out;
         } else {
@@ -687,7 +687,7 @@ auto Activity::PreloadThread(
 auto Activity::publish(const identifier::Nym& nymID, const Identifier& threadID)
     const noexcept -> void
 {
-    auto& socket = get_publisher(nymID);
+    const auto& socket = get_publisher(nymID);
     socket.Send([&] {
         auto work = opentxs::network::zeromq::tagged_message(
             WorkType::ActivityThreadUpdated);

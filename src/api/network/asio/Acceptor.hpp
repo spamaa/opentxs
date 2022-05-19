@@ -71,7 +71,7 @@ private:
     Acceptor() = delete;
     Acceptor(const Acceptor&) = delete;
     Acceptor(Acceptor&&) = delete;
-    Acceptor& operator=(const Acceptor&) = delete;
-    Acceptor& operator=(Acceptor&&) = delete;
+    auto operator=(const Acceptor&) -> Acceptor& = delete;
+    auto operator=(Acceptor&&) -> Acceptor& = delete;
 };
 }  // namespace opentxs::api::network::asio

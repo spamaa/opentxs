@@ -2222,7 +2222,7 @@ auto OTX::set_introduction_server(
 void OTX::start_introduction_server(const identifier::Nym& nymID) const
 {
     try {
-        auto& serverID = IntroductionServer();
+        const auto& serverID = IntroductionServer();
 
         if (serverID.empty()) { return; }
 

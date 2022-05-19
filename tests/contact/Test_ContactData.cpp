@@ -73,62 +73,62 @@ public:
         std::uint32_t targetVersion = 0);
 };
 
-ot::identity::wot::claim::Data add_contract(
+auto add_contract(
     const ot::identity::wot::claim::Data& data,
     const ot::UnallocatedCString& id,
     const ot::UnitType type,
     const bool active,
-    const bool primary);
-ot::identity::wot::claim::Data add_contract(
+    const bool primary) -> ot::identity::wot::claim::Data;
+auto add_contract(
     const ot::identity::wot::claim::Data& data,
     const ot::UnallocatedCString& id,
     const ot::UnitType type,
     const bool active,
-    const bool primary)
+    const bool primary) -> ot::identity::wot::claim::Data
 {
     return data.AddContract(id, type, active, primary);
 }
 
-ot::identity::wot::claim::Data add_email(
+auto add_email(
     const ot::identity::wot::claim::Data& data,
     const ot::UnallocatedCString& id,
     const bool active,
-    const bool primary);
-ot::identity::wot::claim::Data add_email(
+    const bool primary) -> ot::identity::wot::claim::Data;
+auto add_email(
     const ot::identity::wot::claim::Data& data,
     const ot::UnallocatedCString& id,
     const bool active,
-    const bool primary)
+    const bool primary) -> ot::identity::wot::claim::Data
 {
     return data.AddEmail(id, active, primary);
 }
 
-ot::identity::wot::claim::Data add_payment_code(
+auto add_payment_code(
     const ot::identity::wot::claim::Data& data,
     const ot::UnallocatedCString& id,
     const ot::UnitType type,
     const bool active,
-    const bool primary);
-ot::identity::wot::claim::Data add_payment_code(
+    const bool primary) -> ot::identity::wot::claim::Data;
+auto add_payment_code(
     const ot::identity::wot::claim::Data& data,
     const ot::UnallocatedCString& id,
     const ot::UnitType type,
     const bool active,
-    const bool primary)
+    const bool primary) -> ot::identity::wot::claim::Data
 {
     return data.AddPaymentCode(id, type, active, primary);
 }
 
-ot::identity::wot::claim::Data add_phone_number(
+auto add_phone_number(
     const ot::identity::wot::claim::Data& data,
     const ot::UnallocatedCString& id,
     const bool active,
-    const bool primary);
-ot::identity::wot::claim::Data add_phone_number(
+    const bool primary) -> ot::identity::wot::claim::Data;
+auto add_phone_number(
     const ot::identity::wot::claim::Data& data,
     const ot::UnallocatedCString& id,
     const bool active,
-    const bool primary)
+    const bool primary) -> ot::identity::wot::claim::Data
 {
     return data.AddPhoneNumber(id, active, primary);
 }

@@ -31,7 +31,7 @@ struct Endpoint::Imp {
 
 private:
     Imp(Imp&&) = delete;
-    Imp& operator=(const Imp&) = delete;
-    Imp& operator=(Imp&&) = delete;
+    auto operator=(const Imp&) -> Imp& = delete;
+    auto operator=(Imp&&) -> Imp& = delete;
 };
 }  // namespace opentxs::network::asio

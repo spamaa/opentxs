@@ -70,7 +70,7 @@ private:
     Acceptors() = delete;
     Acceptors(const Acceptors&) = delete;
     Acceptors(Acceptors&&) = delete;
-    Acceptors& operator=(const Acceptors&) = delete;
-    Acceptors& operator=(Acceptors&&) = delete;
+    auto operator=(const Acceptors&) -> Acceptors& = delete;
+    auto operator=(Acceptors&&) -> Acceptors& = delete;
 };
 }  // namespace opentxs::api::network::asio

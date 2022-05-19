@@ -50,7 +50,7 @@ protected:
     {
     }
 
-    ~RouterRouterF()
+    ~RouterRouterF() override
     {
         running_ = false;
 
@@ -60,8 +60,8 @@ protected:
 private:
     RouterRouterF(const RouterRouterF&) = delete;
     RouterRouterF(RouterRouterF&&) = delete;
-    RouterRouterF& operator=(const RouterRouterF&) = delete;
-    RouterRouterF& operator=(RouterRouterF&&) = delete;
+    auto operator=(const RouterRouterF&) -> RouterRouterF& = delete;
+    auto operator=(RouterRouterF&&) -> RouterRouterF& = delete;
 
     auto thread() noexcept -> void
     {

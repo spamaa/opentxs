@@ -96,7 +96,7 @@ private:
 
     User(const User&) = delete;
     User(User&&) = delete;
-    User& operator=(const User&) = delete;
-    User& operator=(User&&) = delete;
+    auto operator=(const User&) -> User& = delete;
+    auto operator=(User&&) -> User& = delete;
 };
 }  // namespace ottest

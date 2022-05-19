@@ -72,7 +72,7 @@ auto SubchainID::FilterType() const noexcept -> cfilter::Type
         auto type = cfilter::Type{};
         static constexpr auto offset = sizeof(crypto::Subchain);
         static constexpr auto size = sizeof(type);
-        const auto start = std::next(data_.data(), offset);
+        const auto* const start = std::next(data_.data(), offset);
         std::memcpy(&type, start, size);
         filter_ = type;
     }
@@ -88,7 +88,7 @@ auto SubchainID::SubaccountID(const api::Session& api) const noexcept
     if (false == subaccount_.has_value()) {
         static constexpr auto offset = fixed_;
         const auto size = data_.size() - offset;
-        const auto start = std::next(data_.data(), offset);
+        const auto* const start = std::next(data_.data(), offset);
         auto& id = subaccount_.emplace(api.Factory().Identifier());
 
         if (0u < size) { id->Assign(start, size); }
@@ -104,7 +104,7 @@ auto SubchainID::Type() const noexcept -> crypto::Subchain
         auto type = crypto::Subchain{};
         static constexpr auto offset = std::size_t{0};
         static constexpr auto size = sizeof(type);
-        const auto start = std::next(data_.data(), offset);
+        const auto* const start = std::next(data_.data(), offset);
         std::memcpy(&type, start, size);
         subchain_ = type;
     }
@@ -121,7 +121,7 @@ auto SubchainID::Version() const noexcept -> VersionNumber
         static constexpr auto offset =
             sizeof(crypto::Subchain) + sizeof(cfilter::Type);
         static constexpr auto size = sizeof(type);
-        const auto start = std::next(data_.data(), offset);
+        const auto* const start = std::next(data_.data(), offset);
         std::memcpy(&type, start, size);
         version_ = type;
     }

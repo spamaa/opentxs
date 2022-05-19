@@ -35,7 +35,7 @@ private:
 
     Buffers(const Buffers&) = delete;
     Buffers(Buffers&&) = delete;
-    Buffers& operator=(const Buffers&) = delete;
-    Buffers& operator=(Buffers&&) = delete;
+    auto operator=(const Buffers&) -> Buffers& = delete;
+    auto operator=(Buffers&&) -> Buffers& = delete;
 };
 }  // namespace opentxs::api::network::asio

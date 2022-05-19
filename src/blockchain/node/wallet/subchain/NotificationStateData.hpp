@@ -190,7 +190,8 @@ private:
     NotificationStateData() = delete;
     NotificationStateData(const NotificationStateData&) = delete;
     NotificationStateData(NotificationStateData&&) = delete;
-    NotificationStateData& operator=(const NotificationStateData&) = delete;
-    NotificationStateData& operator=(NotificationStateData&&) = delete;
+    auto operator=(const NotificationStateData&)
+        -> NotificationStateData& = delete;
+    auto operator=(NotificationStateData&&) -> NotificationStateData& = delete;
 };
 }  // namespace opentxs::blockchain::node::wallet

@@ -68,7 +68,7 @@ protected:
 private:
     Subchain(const Subchain&) = delete;
     Subchain(Subchain&&) = delete;
-    Subchain& operator=(const Subchain&) = delete;
-    Subchain& operator=(Subchain&&) = delete;
+    auto operator=(const Subchain&) -> Subchain& = delete;
+    auto operator=(Subchain&&) -> Subchain& = delete;
 };
 }  // namespace opentxs::blockchain::node::wallet

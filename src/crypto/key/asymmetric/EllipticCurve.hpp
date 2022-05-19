@@ -98,7 +98,7 @@ public:
         Space& output,
         const PasswordPrompt& reason) const noexcept -> bool final;
 
-    virtual ~EllipticCurve() override = default;
+    ~EllipticCurve() override = default;
 
 protected:
     const crypto::EcdsaProvider& ecdsa_;

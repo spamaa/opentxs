@@ -43,14 +43,15 @@ class OPENTXS_EXPORT opentxs::ui::SeedValidator final : public QValidator
     Q_OBJECT
 
 public:
+    // NOLINTBEGIN(modernize-use-trailing-return-type)
     using Phrase = QVector<QString>;
 
-    // NOLINTNEXTLINE(modernize-use-trailing-return-type)
     Q_INVOKABLE bool checkPhrase(const Phrase& phrase) const;
+    // NOLINTEND(modernize-use-trailing-return-type)
 
 public:
-    void fixup(QString& input) const final;
-    State validate(QString& input, int& pos) const final;
+    auto fixup(QString& input) const -> void final;
+    auto validate(QString& input, int& pos) const -> State final;
 
     SeedValidator(
         const api::session::Client&,
@@ -67,6 +68,6 @@ private:
     SeedValidator() = delete;
     SeedValidator(const SeedValidator&) = delete;
     SeedValidator(SeedValidator&&) = delete;
-    SeedValidator& operator=(const SeedValidator&) = delete;
-    SeedValidator& operator=(SeedValidator&&) = delete;
+    auto operator=(const SeedValidator&) -> SeedValidator& = delete;
+    auto operator=(SeedValidator&&) -> SeedValidator& = delete;
 };
