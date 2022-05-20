@@ -40,15 +40,14 @@ public:
     virtual auto Type() const noexcept -> AccountType = 0;
     virtual auto Unit() const noexcept -> UnitType = 0;
 
-    ~AccountTreeItem() override = default;
-
-protected:
-    AccountTreeItem() noexcept = default;
-
-private:
     AccountTreeItem(const AccountTreeItem&) = delete;
     AccountTreeItem(AccountTreeItem&&) = delete;
     auto operator=(const AccountTreeItem&) -> AccountTreeItem& = delete;
     auto operator=(AccountTreeItem&&) -> AccountTreeItem& = delete;
+
+    ~AccountTreeItem() override = default;
+
+protected:
+    AccountTreeItem() noexcept = default;
 };
 }  // namespace opentxs::ui

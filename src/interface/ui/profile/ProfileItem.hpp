@@ -99,6 +99,12 @@ public:
         const ProfileSubsectionRowID& rowID,
         const ProfileSubsectionSortKey& sortKey,
         CustomData& custom) noexcept;
+    ProfileItem() = delete;
+    ProfileItem(const ProfileItem&) = delete;
+    ProfileItem(ProfileItem&&) = delete;
+    auto operator=(const ProfileItem&) -> ProfileItem& = delete;
+    auto operator=(ProfileItem&&) -> ProfileItem& = delete;
+
     ~ProfileItem() final = default;
 
 private:
@@ -110,11 +116,5 @@ private:
     auto reindex(
         const ProfileSubsectionSortKey& key,
         CustomData& custom) noexcept -> bool final;
-
-    ProfileItem() = delete;
-    ProfileItem(const ProfileItem&) = delete;
-    ProfileItem(ProfileItem&&) = delete;
-    auto operator=(const ProfileItem&) -> ProfileItem& = delete;
-    auto operator=(ProfileItem&&) -> ProfileItem& = delete;
 };
 }  // namespace opentxs::ui::implementation

@@ -90,14 +90,13 @@ public:
     auto setActiveNym(QString) noexcept -> void;
 
     OPENTXS_NO_EXPORT IdentityManagerQt(Imp* imp) noexcept;
+    IdentityManagerQt(const IdentityManagerQt&) = delete;
     OPENTXS_NO_EXPORT IdentityManagerQt(IdentityManagerQt&& rhs) noexcept;
+    auto operator=(const IdentityManagerQt&) -> IdentityManagerQt& = delete;
+    auto operator=(IdentityManagerQt&&) -> IdentityManagerQt& = delete;
 
     ~IdentityManagerQt() override;
 
 private:
     Imp* imp_;
-
-    IdentityManagerQt(const IdentityManagerQt&) = delete;
-    auto operator=(const IdentityManagerQt&) -> IdentityManagerQt& = delete;
-    auto operator=(IdentityManagerQt&&) -> IdentityManagerQt& = delete;
 };

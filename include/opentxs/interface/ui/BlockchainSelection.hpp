@@ -39,15 +39,14 @@ public:
         -> bool = 0;
     virtual auto Enable(const blockchain::Type type) const noexcept -> bool = 0;
 
-    ~BlockchainSelection() override = default;
-
-protected:
-    BlockchainSelection() noexcept = default;
-
-private:
     BlockchainSelection(const BlockchainSelection&) = delete;
     BlockchainSelection(BlockchainSelection&&) = delete;
     auto operator=(const BlockchainSelection&) -> BlockchainSelection& = delete;
     auto operator=(BlockchainSelection&&) -> BlockchainSelection& = delete;
+
+    ~BlockchainSelection() override = default;
+
+protected:
+    BlockchainSelection() noexcept = default;
 };
 }  // namespace opentxs::ui

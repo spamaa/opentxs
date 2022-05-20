@@ -46,14 +46,13 @@ public:
 
     DisplayScaleQt(const display::Definition&) noexcept;
     DisplayScaleQt(const DisplayScaleQt&) noexcept;
+    DisplayScaleQt() = delete;
+    DisplayScaleQt(DisplayScaleQt&&) = delete;
+    auto operator=(const DisplayScaleQt&) -> DisplayScaleQt& = delete;
+    auto operator=(DisplayScaleQt&&) -> DisplayScaleQt& = delete;
 
     ~DisplayScaleQt() final = default;
 
 private:
     const display::Definition& data_;
-
-    DisplayScaleQt() = delete;
-    DisplayScaleQt(DisplayScaleQt&&) = delete;
-    auto operator=(const DisplayScaleQt&) -> DisplayScaleQt& = delete;
-    auto operator=(DisplayScaleQt&&) -> DisplayScaleQt& = delete;
 };

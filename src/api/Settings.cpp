@@ -63,10 +63,6 @@ const OTString Settings::blank_{String::Factory()};
 
 class Settings::SettingsPvt
 {
-private:
-    SettingsPvt(const SettingsPvt&);
-    auto operator=(const SettingsPvt&) -> SettingsPvt&;
-
 public:
     CSimpleIniA iniSimple;
 
@@ -74,6 +70,8 @@ public:
         : iniSimple()
     {
     }
+    SettingsPvt(const SettingsPvt&) = delete;
+    auto operator=(const SettingsPvt&) -> SettingsPvt& = delete;
 };
 
 Settings::Settings(const api::Legacy& legacy, const String& strConfigFilePath)

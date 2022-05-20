@@ -39,6 +39,7 @@
 
 namespace opentxs
 {
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 char const* const TypeStringsPayment[] = {
 
     // OTCheque is derived from OTTrackable, which is derived from OTInstrument,

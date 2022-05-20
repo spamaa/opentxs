@@ -36,15 +36,14 @@ public:
     virtual auto IsPrimary() const noexcept -> bool = 0;
     virtual auto Value() const noexcept -> UnallocatedCString = 0;
 
-    ~ContactItem() override = default;
-
-protected:
-    ContactItem() noexcept = default;
-
-private:
     ContactItem(const ContactItem&) = delete;
     ContactItem(ContactItem&&) = delete;
     auto operator=(const ContactItem&) -> ContactItem& = delete;
     auto operator=(ContactItem&&) -> ContactItem& = delete;
+
+    ~ContactItem() override = default;
+
+protected:
+    ContactItem() noexcept = default;
 };
 }  // namespace opentxs::ui

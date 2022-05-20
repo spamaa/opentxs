@@ -77,6 +77,7 @@ enum StorageType  // STORAGE TYPE
     STORE_TYPE_SUBCLASS    // (Subclass provided by API client via SWIG.)
 };
 
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 extern const char* StoredObjectTypeStrings[];
 
 enum StoredObjectType {
@@ -368,10 +369,6 @@ class Storage
 private:
     OTPacker* m_pPacker{nullptr};
 
-    Storage(Storage&&) = delete;
-    auto operator=(const Storage&) -> Storage& = delete;
-    auto operator=(Storage&&) -> Storage& = delete;
-
 protected:
     Storage()
         : m_pPacker(nullptr)
@@ -482,6 +479,10 @@ public:
         const UnallocatedCString& oneStr,
         const UnallocatedCString& twoStr,
         const UnallocatedCString& threeStr) -> std::int64_t = 0;
+
+    Storage(Storage&&) = delete;
+    auto operator=(const Storage&) -> Storage& = delete;
+    auto operator=(Storage&&) -> Storage& = delete;
 
     virtual ~Storage()
     {

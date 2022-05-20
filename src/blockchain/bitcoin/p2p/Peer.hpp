@@ -111,6 +111,11 @@ public:
         const ProtocolVersion protocol = 0,
         const bool relay = true,
         const UnallocatedSet<p2p::Service>& localServices = {}) noexcept;
+    Peer() = delete;
+    Peer(const Peer&) = delete;
+    Peer(Peer&&) = delete;
+    auto operator=(const Peer&) -> Peer& = delete;
+    auto operator=(Peer&&) -> Peer& = delete;
 
     ~Peer() final;
 
@@ -298,11 +303,5 @@ private:
     auto process_version(
         std::unique_ptr<HeaderType> header,
         const zmq::Frame& payload) -> void;
-
-    Peer() = delete;
-    Peer(const Peer&) = delete;
-    Peer(Peer&&) = delete;
-    auto operator=(const Peer&) -> Peer& = delete;
-    auto operator=(Peer&&) -> Peer& = delete;
 };
 }  // namespace opentxs::blockchain::p2p::bitcoin::implementation

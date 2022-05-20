@@ -60,6 +60,11 @@ public:
     auto validate(QString& input, int& pos) const -> State final;
 
     AmountValidator(implementation::AccountActivity& parent) noexcept;
+    AmountValidator() = delete;
+    AmountValidator(const AmountValidator&) = delete;
+    AmountValidator(AmountValidator&&) = delete;
+    auto operator=(const AmountValidator&) -> AmountValidator& = delete;
+    auto operator=(AmountValidator&&) -> AmountValidator& = delete;
 
     ~AmountValidator() final;
 
@@ -67,10 +72,4 @@ private:
     struct Imp;
 
     std::unique_ptr<Imp> imp_;
-
-    AmountValidator() = delete;
-    AmountValidator(const AmountValidator&) = delete;
-    AmountValidator(AmountValidator&&) = delete;
-    auto operator=(const AmountValidator&) -> AmountValidator& = delete;
-    auto operator=(AmountValidator&&) -> AmountValidator& = delete;
 };

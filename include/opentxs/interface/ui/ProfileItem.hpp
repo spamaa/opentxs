@@ -41,15 +41,14 @@ public:
         -> bool = 0;
     virtual auto Value() const noexcept -> UnallocatedCString = 0;
 
-    ~ProfileItem() override = default;
-
-protected:
-    ProfileItem() noexcept = default;
-
-private:
     ProfileItem(const ProfileItem&) = delete;
     ProfileItem(ProfileItem&&) = delete;
     auto operator=(const ProfileItem&) -> ProfileItem& = delete;
     auto operator=(ProfileItem&&) -> ProfileItem& = delete;
+
+    ~ProfileItem() override = default;
+
+protected:
+    ProfileItem() noexcept = default;
 };
 }  // namespace opentxs::ui

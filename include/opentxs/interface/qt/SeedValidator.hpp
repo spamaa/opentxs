@@ -57,6 +57,11 @@ public:
         const api::session::Client&,
         std::uint8_t,
         std::uint8_t) noexcept;
+    SeedValidator() = delete;
+    SeedValidator(const SeedValidator&) = delete;
+    SeedValidator(SeedValidator&&) = delete;
+    auto operator=(const SeedValidator&) -> SeedValidator& = delete;
+    auto operator=(SeedValidator&&) -> SeedValidator& = delete;
 
     ~SeedValidator() final;
 
@@ -64,10 +69,4 @@ private:
     struct Imp;
 
     std::unique_ptr<Imp> imp_;
-
-    SeedValidator() = delete;
-    SeedValidator(const SeedValidator&) = delete;
-    SeedValidator(SeedValidator&&) = delete;
-    auto operator=(const SeedValidator&) -> SeedValidator& = delete;
-    auto operator=(SeedValidator&&) -> SeedValidator& = delete;
 };

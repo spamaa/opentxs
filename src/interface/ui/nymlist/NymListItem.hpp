@@ -68,6 +68,12 @@ public:
         const api::session::Client& api,
         const NymListRowID& rowID,
         const NymListSortKey& key) noexcept;
+    NymListItem() = delete;
+    NymListItem(const NymListItem&) = delete;
+    NymListItem(NymListItem&&) = delete;
+    auto operator=(const NymListItem&) -> NymListItem& = delete;
+    auto operator=(NymListItem&&) -> NymListItem& = delete;
+
     ~NymListItem() override = default;
 
 protected:
@@ -77,11 +83,5 @@ protected:
 
 private:
     libguarded::ordered_guarded<NymListSortKey, std::shared_mutex> name_;
-
-    NymListItem() = delete;
-    NymListItem(const NymListItem&) = delete;
-    NymListItem(NymListItem&&) = delete;
-    auto operator=(const NymListItem&) -> NymListItem& = delete;
-    auto operator=(NymListItem&&) -> NymListItem& = delete;
 };
 }  // namespace opentxs::ui::implementation

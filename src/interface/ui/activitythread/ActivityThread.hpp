@@ -153,6 +153,11 @@ public:
         const identifier::Nym& nymID,
         const Identifier& threadID,
         const SimpleCallback& cb) noexcept;
+    ActivityThread() = delete;
+    ActivityThread(const ActivityThread&) = delete;
+    ActivityThread(ActivityThread&&) = delete;
+    auto operator=(const ActivityThread&) -> ActivityThread& = delete;
+    auto operator=(ActivityThread&&) -> ActivityThread& = delete;
 
     ~ActivityThread() final;
 
@@ -218,11 +223,5 @@ private:
     auto update_messagability(otx::client::Messagability value) noexcept
         -> bool;
     auto update_payment_codes() noexcept -> bool;
-
-    ActivityThread() = delete;
-    ActivityThread(const ActivityThread&) = delete;
-    ActivityThread(ActivityThread&&) = delete;
-    auto operator=(const ActivityThread&) -> ActivityThread& = delete;
-    auto operator=(ActivityThread&&) -> ActivityThread& = delete;
 };
 }  // namespace opentxs::ui::implementation

@@ -232,6 +232,12 @@ public:
         std::atomic_int& errors,
         const block::Position& ancestor) noexcept -> void final;
 
+    SubchainStateData() = delete;
+    SubchainStateData(const SubchainStateData&) = delete;
+    SubchainStateData(SubchainStateData&&) = delete;
+    auto operator=(const SubchainStateData&) -> SubchainStateData& = delete;
+    auto operator=(SubchainStateData&&) -> SubchainStateData& = delete;
+
     ~SubchainStateData() override;
 
 protected:
@@ -400,11 +406,5 @@ private:
         CString&& toScan,
         CString&& toProgress,
         allocator_type alloc) noexcept;
-
-    SubchainStateData() = delete;
-    SubchainStateData(const SubchainStateData&) = delete;
-    SubchainStateData(SubchainStateData&&) = delete;
-    auto operator=(const SubchainStateData&) -> SubchainStateData& = delete;
-    auto operator=(SubchainStateData&&) -> SubchainStateData& = delete;
 };
 }  // namespace opentxs::blockchain::node::wallet

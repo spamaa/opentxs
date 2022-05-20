@@ -63,16 +63,15 @@ public:
         std::int8_t,
         const Identifier&,
         implementation::AccountActivity&) noexcept;
-
-    OPENTXS_NO_EXPORT ~DestinationValidator() final;
-
-private:
-    std::unique_ptr<Imp> imp_;
-
     DestinationValidator() = delete;
     DestinationValidator(const DestinationValidator&) = delete;
     DestinationValidator(DestinationValidator&&) = delete;
     auto operator=(const DestinationValidator&)
         -> DestinationValidator& = delete;
     auto operator=(DestinationValidator&&) -> DestinationValidator& = delete;
+
+    OPENTXS_NO_EXPORT ~DestinationValidator() final;
+
+private:
+    std::unique_ptr<Imp> imp_;
 };

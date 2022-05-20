@@ -34,15 +34,14 @@ public:
     virtual auto Next() const noexcept
         -> opentxs::SharedPimpl<opentxs::ui::ContactListItem> = 0;
 
-    ~MessagableList() override = default;
-
-protected:
-    MessagableList() noexcept = default;
-
-private:
     MessagableList(const MessagableList&) = delete;
     MessagableList(MessagableList&&) = delete;
     auto operator=(const MessagableList&) -> MessagableList& = delete;
     auto operator=(MessagableList&&) -> MessagableList& = delete;
+
+    ~MessagableList() override = default;
+
+protected:
+    MessagableList() noexcept = default;
 };
 }  // namespace opentxs::ui

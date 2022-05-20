@@ -26,12 +26,10 @@ struct Endpoint::Imp {
     Imp(Type type, ReadView raw, Port port) noexcept(false);
     Imp() noexcept;
     Imp(const Imp& rhs) noexcept;
-
-    ~Imp();
-
-private:
     Imp(Imp&&) = delete;
     auto operator=(const Imp&) -> Imp& = delete;
     auto operator=(Imp&&) -> Imp& = delete;
+
+    ~Imp();
 };
 }  // namespace opentxs::network::asio

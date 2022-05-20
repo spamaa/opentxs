@@ -7,6 +7,7 @@
 #include <ostream>
 #include <string>
 
+// NOLINTBEGIN(modernize-avoid-c-arrays)
 // parametrized test at global namespace
 struct ParametrizedTestAtGlobalNamespaceStruct {
     ::std::string mName;
@@ -157,3 +158,4 @@ TEST_P(ParametrizedTestAtNamedNamespaceClass, simpleParametrizedTest)
 }
 
 }  // namespace ottest::DummyTest
+// NOLINTEND(modernize-avoid-c-arrays)

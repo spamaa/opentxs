@@ -177,8 +177,6 @@ public:
     auto LoadCron() -> bool;
     auto SaveCron() -> bool;
 
-    ~OTCron() final;
-
     void InitCron();
 
     void Release() final;
@@ -188,6 +186,10 @@ public:
     /** Before transmission or serialization, this is where the ledger saves its
      * contents */
     void UpdateContents(const PasswordPrompt& reason) final;
+
+    OTCron() = delete;
+
+    ~OTCron() final;
 
 private:
     using ot_super = Contract;
@@ -220,7 +222,5 @@ private:
     Nym_p m_pServerNym{nullptr};
 
     explicit OTCron(const api::Session& server);
-
-    OTCron() = delete;
 };
 }  // namespace opentxs

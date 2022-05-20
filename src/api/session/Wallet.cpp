@@ -290,7 +290,7 @@ auto Wallet::Account(const Identifier& accountID) const -> SharedAccount
     try {
         auto& [rowMutex, pAccount] = account(mapLock, accountID, false);
 
-        if (pAccount) { return SharedAccount(pAccount.get(), rowMutex); }
+        if (pAccount) { return {pAccount.get(), rowMutex}; }
     } catch (...) {
 
         return {};
@@ -534,7 +534,7 @@ auto Wallet::CreateAccount(
                 this->save(reason, id, in, lock, success);
             };
 
-            return ExclusiveAccount(&pAccount, rowMutex, callback);
+            return {&pAccount, rowMutex, callback};
         }
     } catch (...) {
 
@@ -585,10 +585,7 @@ auto Wallet::IssuerAccount(const identifier::UnitDefinition& unitID) const
             auto& [rowMutex, pAccount] = account(mapLock, accountID, false);
 
             if (pAccount) {
-                if (pAccount->IsIssuer()) {
-
-                    return SharedAccount(pAccount.get(), rowMutex);
-                }
+                if (pAccount->IsIssuer()) { return {pAccount.get(), rowMutex}; }
             }
         }
     } catch (...) {
@@ -620,7 +617,7 @@ auto Wallet::mutable_Account(
                 this->save(reason, id, in, lock, success);
             };
 
-            return ExclusiveAccount(&pAccount, rowMutex, save, callback);
+            return {&pAccount, rowMutex, save, callback};
         }
     } catch (...) {
 
@@ -1006,7 +1003,7 @@ auto Wallet::mutable_Issuer(
         this->save(lock, in);
     };
 
-    return Editor<otx::client::Issuer>(lock, pIssuer.get(), callback);
+    return {lock, pIssuer.get(), callback};
 }
 
 auto Wallet::issuer(
@@ -1329,8 +1326,7 @@ auto Wallet::mutable_Nym(
         this->save(nymData, lock);
     };
 
-    return NymData(
-        api_.Factory(), it->second.first, it->second.second, callback);
+    return {api_.Factory(), it->second.first, it->second.second, callback};
 }
 
 auto Wallet::Nymfile(const identifier::Nym& id, const PasswordPrompt& reason)
@@ -1394,7 +1390,7 @@ auto Wallet::mutable_nymfile(
         delete p;
     };
 
-    return EditorType(nymfile_lock(id), nymfile.release(), callback, deleter);
+    return {nymfile_lock(id), nymfile.release(), callback, deleter};
 }
 
 auto Wallet::notify_changed(const identifier::Nym& id) const noexcept -> void
@@ -2415,12 +2411,12 @@ auto Wallet::mutable_Purse(
 
     OT_ASSERT(purse);
 
-    return Editor<otx::blind::Purse, std::shared_mutex>(
+    return {
         mutex,
         &purse,
         [this, nym = OTNymID{nymID}](auto* in, const auto& lock) -> void {
             this->save(lock, nym, in);
-        });
+        }};
 }
 
 auto Wallet::RemoveServer(const identifier::Notary& id) const -> bool

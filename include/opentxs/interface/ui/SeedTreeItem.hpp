@@ -40,15 +40,14 @@ public:
     virtual auto SeedID() const noexcept -> UnallocatedCString = 0;
     virtual auto Type() const noexcept -> crypto::SeedStyle = 0;
 
-    ~SeedTreeItem() override = default;
-
-protected:
-    SeedTreeItem() noexcept = default;
-
-private:
     SeedTreeItem(const SeedTreeItem&) = delete;
     SeedTreeItem(SeedTreeItem&&) = delete;
     auto operator=(const SeedTreeItem&) -> SeedTreeItem& = delete;
     auto operator=(SeedTreeItem&&) -> SeedTreeItem& = delete;
+
+    ~SeedTreeItem() override = default;
+
+protected:
+    SeedTreeItem() noexcept = default;
 };
 }  // namespace opentxs::ui

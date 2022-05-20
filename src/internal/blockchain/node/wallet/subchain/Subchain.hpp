@@ -60,15 +60,14 @@ public:
         std::atomic_int& errors,
         const block::Position& ancestor) noexcept -> void = 0;
 
-    virtual ~Subchain() = default;
-
-protected:
-    Subchain() = default;
-
-private:
     Subchain(const Subchain&) = delete;
     Subchain(Subchain&&) = delete;
     auto operator=(const Subchain&) -> Subchain& = delete;
     auto operator=(Subchain&&) -> Subchain& = delete;
+
+    virtual ~Subchain() = default;
+
+protected:
+    Subchain() = default;
 };
 }  // namespace opentxs::blockchain::node::wallet

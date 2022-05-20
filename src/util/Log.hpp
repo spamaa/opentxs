@@ -69,6 +69,11 @@ struct Log::Imp final : public internal::Log {
         const noexcept -> void;
 
     Imp(const int logLevel, opentxs::Log& parent) noexcept;
+    Imp() = delete;
+    Imp(const Imp&) = delete;
+    Imp(Imp&&) = delete;
+    auto operator=(const Imp&) -> Imp& = delete;
+    auto operator=(Imp&&) -> Imp& = delete;
 
     ~Imp() final = default;
 
@@ -79,11 +84,5 @@ private:
     static auto get_buffer(UnallocatedCString& id) noexcept -> Logger::Source&;
 
     auto send(const bool terminate) const noexcept -> void;
-
-    Imp() = delete;
-    Imp(const Imp&) = delete;
-    Imp(Imp&&) = delete;
-    auto operator=(const Imp&) -> Imp& = delete;
-    auto operator=(Imp&&) -> Imp& = delete;
 };
 }  // namespace opentxs

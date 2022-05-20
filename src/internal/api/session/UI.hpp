@@ -38,15 +38,14 @@ public:
     auto Internal() noexcept -> internal::UI& final { return *this; }
     virtual auto Shutdown() noexcept -> void = 0;
 
-    ~UI() override = default;
-
-protected:
-    UI() = default;
-
-private:
     UI(const UI&) = delete;
     UI(UI&&) = delete;
     auto operator=(const UI&) -> UI& = delete;
     auto operator=(UI&&) -> UI& = delete;
+
+    ~UI() override = default;
+
+protected:
+    UI() = default;
 };
 }  // namespace opentxs::api::session::internal

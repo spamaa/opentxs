@@ -50,6 +50,10 @@ public:
     auto paymentCode() const noexcept -> QString;
 
     ProfileQt(internal::Profile& parent) noexcept;
+    ProfileQt(const ProfileQt&) = delete;
+    ProfileQt(ProfileQt&&) = delete;
+    auto operator=(const ProfileQt&) -> ProfileQt& = delete;
+    auto operator=(ProfileQt&&) -> ProfileQt& = delete;
 
     ~ProfileQt() final;
 
@@ -57,9 +61,4 @@ private:
     struct Imp;
 
     Imp* imp_;
-
-    ProfileQt(const ProfileQt&) = delete;
-    ProfileQt(ProfileQt&&) = delete;
-    auto operator=(const ProfileQt&) -> ProfileQt& = delete;
-    auto operator=(ProfileQt&&) -> ProfileQt& = delete;
 };

@@ -56,15 +56,14 @@ public:
         const UnallocatedCString& value) const noexcept -> bool = 0;
     virtual auto Type() const noexcept -> identity::wot::claim::ClaimType = 0;
 
-    ~ProfileSubsection() override = default;
-
-protected:
-    ProfileSubsection() noexcept = default;
-
-private:
     ProfileSubsection(const ProfileSubsection&) = delete;
     ProfileSubsection(ProfileSubsection&&) = delete;
     auto operator=(const ProfileSubsection&) -> ProfileSubsection& = delete;
     auto operator=(ProfileSubsection&&) -> ProfileSubsection& = delete;
+
+    ~ProfileSubsection() override = default;
+
+protected:
+    ProfileSubsection() noexcept = default;
 };
 }  // namespace opentxs::ui

@@ -32,9 +32,11 @@ public:
     {
         if (auto running = running_.exchange(true); false == running) {
             thread_ = std::thread{[this] {
+                // NOLINTBEGIN(modernize-avoid-c-arrays)
                 char test[]{"test"};
                 char* argv[]{&test[0], nullptr};
                 int argc{1};
+                // NOLINTEND(modernize-avoid-c-arrays)
                 auto qt = QCoreApplication(argc, argv);
                 promise_.set_value(&qt);
                 qt.exec();

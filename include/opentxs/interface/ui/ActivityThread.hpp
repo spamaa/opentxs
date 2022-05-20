@@ -58,15 +58,14 @@ public:
         -> bool = 0;
     virtual auto ThreadID() const noexcept -> UnallocatedCString = 0;
 
-    ~ActivityThread() override = default;
-
-protected:
-    ActivityThread() noexcept = default;
-
-private:
     ActivityThread(const ActivityThread&) = delete;
     ActivityThread(ActivityThread&&) = delete;
     auto operator=(const ActivityThread&) -> ActivityThread& = delete;
     auto operator=(ActivityThread&&) -> ActivityThread& = delete;
+
+    ~ActivityThread() override = default;
+
+protected:
+    ActivityThread() noexcept = default;
 };
 }  // namespace opentxs::ui

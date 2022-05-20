@@ -36,15 +36,14 @@ public:
     virtual auto DisplayBalance() const noexcept -> UnallocatedCString = 0;
     virtual auto Name() const noexcept -> UnallocatedCString = 0;
 
-    ~AccountSummaryItem() override = default;
-
-protected:
-    AccountSummaryItem() noexcept = default;
-
-private:
     AccountSummaryItem(const AccountSummaryItem&) = delete;
     AccountSummaryItem(AccountSummaryItem&&) = delete;
     auto operator=(const AccountSummaryItem&) -> AccountSummaryItem& = delete;
     auto operator=(AccountSummaryItem&&) -> AccountSummaryItem& = delete;
+
+    ~AccountSummaryItem() override = default;
+
+protected:
+    AccountSummaryItem() noexcept = default;
 };
 }  // namespace opentxs::ui

@@ -22,15 +22,14 @@ public:
     virtual auto Run(const std::size_t totalRetries = 2)
         -> UnallocatedCString = 0;
 
-    virtual ~ServerAction() = default;
-
-protected:
-    ServerAction() = default;
-
-private:
     ServerAction(const ServerAction&) = delete;
     ServerAction(ServerAction&&) = delete;
     auto operator=(const ServerAction&) -> ServerAction& = delete;
     auto operator=(ServerAction&&) -> ServerAction& = delete;
+
+    virtual ~ServerAction() = default;
+
+protected:
+    ServerAction() = default;
 };
 }  // namespace opentxs::client
