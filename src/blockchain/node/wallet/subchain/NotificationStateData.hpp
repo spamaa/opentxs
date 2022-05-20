@@ -147,6 +147,12 @@ public:
         const opentxs::PaymentCode& code,
         const crypto::Notification& subaccount,
         allocator_type alloc) noexcept;
+    NotificationStateData() = delete;
+    NotificationStateData(const NotificationStateData&) = delete;
+    NotificationStateData(NotificationStateData&&) = delete;
+    auto operator=(const NotificationStateData&)
+        -> NotificationStateData& = delete;
+    auto operator=(NotificationStateData&&) -> NotificationStateData& = delete;
 
     ~NotificationStateData() final = default;
 
@@ -186,12 +192,5 @@ private:
 
     auto init_contacts() noexcept -> void;
     auto work() noexcept -> bool final;
-
-    NotificationStateData() = delete;
-    NotificationStateData(const NotificationStateData&) = delete;
-    NotificationStateData(NotificationStateData&&) = delete;
-    auto operator=(const NotificationStateData&)
-        -> NotificationStateData& = delete;
-    auto operator=(NotificationStateData&&) -> NotificationStateData& = delete;
 };
 }  // namespace opentxs::blockchain::node::wallet

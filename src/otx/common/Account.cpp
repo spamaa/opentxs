@@ -43,7 +43,7 @@
 
 namespace opentxs
 {
-
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 char const* const TypeStringsAccount[] = {
     "user",       // used by users
     "issuer",     // used by issuers    (these can only go negative.)

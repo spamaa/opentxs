@@ -37,17 +37,16 @@ public:
     virtual auto IsTestnet() const noexcept -> bool = 0;
     virtual auto Type() const noexcept -> blockchain::Type = 0;
 
-    ~BlockchainSelectionItem() override = default;
-
-protected:
-    BlockchainSelectionItem() noexcept = default;
-
-private:
     BlockchainSelectionItem(const BlockchainSelectionItem&) = delete;
     BlockchainSelectionItem(BlockchainSelectionItem&&) = delete;
     auto operator=(const BlockchainSelectionItem&)
         -> BlockchainSelectionItem& = delete;
     auto operator=(BlockchainSelectionItem&&)
         -> BlockchainSelectionItem& = delete;
+
+    ~BlockchainSelectionItem() override = default;
+
+protected:
+    BlockchainSelectionItem() noexcept = default;
 };
 }  // namespace opentxs::ui

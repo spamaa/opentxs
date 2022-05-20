@@ -182,6 +182,7 @@ opentxs::OTDB::mapOfFunctions* opentxs::OTDB::details::pFunctionMap =
               // on
               // startup.
 
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 const char* opentxs::OTDB::StoredObjectTypeStrings[] = {
     "OTDBString",     // Just a string.
     "Blob",           // Binary data of arbitrary size.
@@ -611,7 +612,7 @@ auto QueryString(
 
     if (!CheckStringsExistInOrder(
             dataFolder, strFolder, oneStr, twoStr, threeStr)) {
-        return UnallocatedCString("");
+        return {};
     }
 
     if (!ot_oneStr->Exists()) {
@@ -624,7 +625,7 @@ auto QueryString(
 
     Storage* pStorage = details::s_pStorage;
 
-    if (nullptr == pStorage) { return UnallocatedCString(""); }
+    if (nullptr == pStorage) { return {}; }
 
     return pStorage->QueryString(
         api,
@@ -705,7 +706,7 @@ auto QueryPlainString(
     OT_ASSERT((strFolder.length() > 3) || (0 == strFolder.compare(0, 1, ".")));
     OT_ASSERT((oneStr.length() < 1) || (oneStr.length() > 3));
 
-    if (nullptr == pStorage) { return UnallocatedCString(""); }
+    if (nullptr == pStorage) { return {}; }
 
     return pStorage->QueryPlainString(
         api,
@@ -1096,6 +1097,7 @@ IMPLEMENT_GET_ADD_REMOVE(
 // store smart pointers, instead of regular pointers, so they are self-cleaning.
 //
 
+// NOLINTBEGIN(modernize-use-equals-default)
 ContactNym::~ContactNym()
 {
     //      while (GetServerInfoCount() > 0)
@@ -1116,6 +1118,7 @@ AddressBook::~AddressBook()
     //      while (GetContactCount() > 0)
     //          RemoveContact(0);
 }
+// NOLINTEND(modernize-use-equals-default)
 
 /* Protocol Buffers notes.
 
@@ -1583,10 +1586,10 @@ void StringMapPB::hookBeforePack()
     // Loop through all the key/value pairs in the map, and add them to
     // __pb_obj.node.
     //
-    for (auto it = the_map.begin(); it != the_map.end(); ++it) {
+    for (auto& it : the_map) {
         KeyValue_InternalPB* pNode = __pb_obj.add_node();
-        pNode->set_key(it->first);
-        pNode->set_value(it->second);
+        pNode->set_key(it.first);
+        pNode->set_value(it.second);
     }
 }
 
@@ -3013,7 +3016,7 @@ StorageFS::StorageFS()
 {
 }
 
-StorageFS::~StorageFS() {}
+StorageFS::~StorageFS() = default;
 
 // See if the file is there.
 

@@ -36,15 +36,14 @@ public:
     virtual auto ImageURI() const noexcept -> UnallocatedCString = 0;
     virtual auto Section() const noexcept -> UnallocatedCString = 0;
 
-    ~ContactListItem() override = default;
-
-protected:
-    ContactListItem() noexcept = default;
-
-private:
     ContactListItem(const ContactListItem&) = delete;
     ContactListItem(ContactListItem&&) = delete;
     auto operator=(const ContactListItem&) -> ContactListItem& = delete;
     auto operator=(ContactListItem&&) -> ContactListItem& = delete;
+
+    ~ContactListItem() override = default;
+
+protected:
+    ContactListItem() noexcept = default;
 };
 }  // namespace opentxs::ui

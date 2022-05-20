@@ -70,6 +70,12 @@ public:
         const api::session::Client& api,
         const ContactListRowID& rowID,
         const ContactListSortKey& key) noexcept;
+    ContactListItem() = delete;
+    ContactListItem(const ContactListItem&) = delete;
+    ContactListItem(ContactListItem&&) = delete;
+    auto operator=(const ContactListItem&) -> ContactListItem& = delete;
+    auto operator=(ContactListItem&&) -> ContactListItem& = delete;
+
     ~ContactListItem() override = default;
 
 protected:
@@ -93,12 +99,6 @@ private:
     auto calculate_section() const noexcept -> UnallocatedCString;
     virtual auto calculate_section(const Lock&) const noexcept
         -> UnallocatedCString;
-
-    ContactListItem() = delete;
-    ContactListItem(const ContactListItem&) = delete;
-    ContactListItem(ContactListItem&&) = delete;
-    auto operator=(const ContactListItem&) -> ContactListItem& = delete;
-    auto operator=(ContactListItem&&) -> ContactListItem& = delete;
 };
 }  // namespace opentxs::ui::implementation
 

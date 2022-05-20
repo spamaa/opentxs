@@ -85,12 +85,8 @@ struct Data::Imp {
     }
 
     Imp(const Imp& rhs)
-        : api_(rhs.api_)
-        , version_(rhs.version_)
-        , nym_(rhs.nym_)
-        , sections_(rhs.sections_)
-    {
-    }
+
+        = default;
 
     auto scope() const -> Scope
     {
@@ -186,7 +182,7 @@ auto Data::operator+(const Data& rhs) const -> Data
 
     const auto version = std::max(imp_->version_, rhs.imp_->version_);
 
-    return Data(imp_->api_, imp_->nym_, version, version, map);
+    return {imp_->api_, imp_->nym_, version, version, map};
 }
 
 Data::operator UnallocatedCString() const
@@ -321,7 +317,7 @@ auto Data::AddItem(const std::shared_ptr<Item>& item) const -> Data
         OT_ASSERT(section);
     }
 
-    return Data(imp_->api_, imp_->nym_, version, version, map);
+    return {imp_->api_, imp_->nym_, version, version, map};
 }
 
 auto Data::AddPaymentCode(
@@ -618,7 +614,7 @@ auto Data::AddSocialMediaProfile(
         OT_ASSERT(identifierSection);
     }
 
-    return Data(imp_->api_, imp_->nym_, version, version, map);
+    return {imp_->api_, imp_->nym_, version, version, map};
 }
 
 auto Data::begin() const -> Data::SectionMap::const_iterator
@@ -737,7 +733,7 @@ auto Data::Delete(const Identifier& id) const -> Data
 
     if (false == deleted) { return *this; }
 
-    return Data(imp_->api_, imp_->nym_, imp_->version_, imp_->version_, map);
+    return {imp_->api_, imp_->nym_, imp_->version_, imp_->version_, map};
 }
 
 auto Data::EmailAddresses(bool active) const -> UnallocatedCString
@@ -1003,7 +999,7 @@ auto Data::SetScope(const claim::ClaimType type, const UnallocatedCString& name)
 
         mapCopy[section] = newSection;
 
-        return Data(imp_->api_, imp_->nym_, version, version, mapCopy);
+        return {imp_->api_, imp_->nym_, version, version, mapCopy};
     } else {
         LogError()(OT_PRETTY_CLASS())("Scope already set.").Flush();
 

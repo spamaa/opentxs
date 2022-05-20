@@ -104,6 +104,13 @@ public:
               zmq::socket::Direction::Bind))
     {
     }
+    ZMQIncomingConnectionManager() = delete;
+    ZMQIncomingConnectionManager(const ZMQIncomingConnectionManager&) = delete;
+    ZMQIncomingConnectionManager(ZMQIncomingConnectionManager&&) = delete;
+    auto operator=(const ZMQIncomingConnectionManager&)
+        -> ZMQIncomingConnectionManager& = delete;
+    auto operator=(ZMQIncomingConnectionManager&&)
+        -> ZMQIncomingConnectionManager& = delete;
 
 private:
     using ConnectionID = OTData;
@@ -292,14 +299,6 @@ private:
             }
         }
     }
-
-    ZMQIncomingConnectionManager() = delete;
-    ZMQIncomingConnectionManager(const ZMQIncomingConnectionManager&) = delete;
-    ZMQIncomingConnectionManager(ZMQIncomingConnectionManager&&) = delete;
-    auto operator=(const ZMQIncomingConnectionManager&)
-        -> ZMQIncomingConnectionManager& = delete;
-    auto operator=(ZMQIncomingConnectionManager&&)
-        -> ZMQIncomingConnectionManager& = delete;
 };
 
 auto PeerManager::IncomingConnectionManager::ZMQ(

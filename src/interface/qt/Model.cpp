@@ -243,6 +243,11 @@ struct Model::Imp {
     {
         map_[ID(nullptr)];
     }
+    Imp() = delete;
+    Imp(const Imp&) = delete;
+    Imp(Imp&&) = delete;
+    auto operator=(const Imp&) -> Imp& = delete;
+    auto operator=(Imp&&) -> Imp& = delete;
 
 private:
     struct RowData {
@@ -324,8 +329,6 @@ private:
             : RowData(nullptr, std::shared_ptr<ui::internal::Row>{})
         {
         }
-
-    private:
         RowData(const RowData&) = delete;
         RowData(RowData&&) = delete;
         auto operator=(const RowData&) -> RowData& = delete;
@@ -449,12 +452,6 @@ private:
 
         return it->second;
     }
-
-    Imp() = delete;
-    Imp(const Imp&) = delete;
-    Imp(Imp&&) = delete;
-    auto operator=(const Imp&) -> Imp& = delete;
-    auto operator=(Imp&&) -> Imp& = delete;
 };
 
 Model::Model(QObject* parent) noexcept

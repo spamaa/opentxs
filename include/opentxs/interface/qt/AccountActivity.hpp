@@ -116,6 +116,11 @@ public:
     auto syncProgress() const noexcept -> QVariantList;
 
     AccountActivityQt(internal::AccountActivity& parent) noexcept;
+    AccountActivityQt() = delete;
+    AccountActivityQt(const AccountActivityQt&) = delete;
+    AccountActivityQt(AccountActivityQt&&) = delete;
+    auto operator=(const AccountActivityQt&) -> AccountActivityQt& = delete;
+    auto operator=(AccountActivityQt&&) -> AccountActivityQt& = delete;
 
     ~AccountActivityQt() final;
 
@@ -123,10 +128,4 @@ private:
     struct Imp;
 
     Imp* imp_;
-
-    AccountActivityQt() = delete;
-    AccountActivityQt(const AccountActivityQt&) = delete;
-    AccountActivityQt(AccountActivityQt&&) = delete;
-    auto operator=(const AccountActivityQt&) -> AccountActivityQt& = delete;
-    auto operator=(AccountActivityQt&&) -> AccountActivityQt& = delete;
 };

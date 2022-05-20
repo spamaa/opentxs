@@ -96,7 +96,11 @@ public:
         const Time lastConnected,
         const UnallocatedSet<Service>& services,
         const bool incoming) noexcept(false);
+    Address() = delete;
     Address(const Address& rhs) noexcept;
+    Address(Address&&) = delete;
+    auto operator=(const Address&) -> Address& = delete;
+    auto operator=(Address&&) -> Address& = delete;
 
     ~Address() final = default;
 
@@ -139,10 +143,5 @@ private:
     {
         return std::make_unique<Address>(*this);
     }
-
-    Address() = delete;
-    Address(Address&&) = delete;
-    auto operator=(const Address&) -> Address& = delete;
-    auto operator=(Address&&) -> Address& = delete;
 };
 }  // namespace opentxs::blockchain::p2p::implementation

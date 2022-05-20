@@ -98,6 +98,11 @@ public:
     auto threadID() const noexcept -> QString;
 
     ActivityThreadQt(internal::ActivityThread& parent) noexcept;
+    ActivityThreadQt() = delete;
+    ActivityThreadQt(const ActivityThreadQt&) = delete;
+    ActivityThreadQt(ActivityThreadQt&&) = delete;
+    auto operator=(const ActivityThreadQt&) -> ActivityThreadQt& = delete;
+    auto operator=(ActivityThreadQt&&) -> ActivityThreadQt& = delete;
 
     ~ActivityThreadQt() final;
 
@@ -105,10 +110,4 @@ private:
     struct Imp;
 
     Imp* imp_;
-
-    ActivityThreadQt() = delete;
-    ActivityThreadQt(const ActivityThreadQt&) = delete;
-    ActivityThreadQt(ActivityThreadQt&&) = delete;
-    auto operator=(const ActivityThreadQt&) -> ActivityThreadQt& = delete;
-    auto operator=(ActivityThreadQt&&) -> ActivityThreadQt& = delete;
 };

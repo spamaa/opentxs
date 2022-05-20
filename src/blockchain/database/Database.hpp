@@ -572,6 +572,11 @@ public:
         const database::common::Database& common,
         const blockchain::Type chain,
         const blockchain::cfilter::Type filter) noexcept;
+    Database() = delete;
+    Database(const Database&) = delete;
+    Database(Database&&) = delete;
+    auto operator=(const Database&) -> Database& = delete;
+    auto operator=(Database&&) -> Database& = delete;
 
     ~Database() final = default;
 
@@ -590,11 +595,5 @@ private:
     mutable database::implementation::Sync sync_;
 
     static auto init_db(storage::lmdb::LMDB& db) noexcept -> void;
-
-    Database() = delete;
-    Database(const Database&) = delete;
-    Database(Database&&) = delete;
-    auto operator=(const Database&) -> Database& = delete;
-    auto operator=(Database&&) -> Database& = delete;
 };
 }  // namespace opentxs::blockchain::implementation

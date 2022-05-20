@@ -38,6 +38,10 @@ class OPENTXS_EXPORT opentxs::ui::ActivitySummaryQt final : public qt::Model
 
 public:
     ActivitySummaryQt(internal::ActivitySummary& parent) noexcept;
+    ActivitySummaryQt(const ActivitySummaryQt&) = delete;
+    ActivitySummaryQt(ActivitySummaryQt&&) = delete;
+    auto operator=(const ActivitySummaryQt&) -> ActivitySummaryQt& = delete;
+    auto operator=(ActivitySummaryQt&&) -> ActivitySummaryQt& = delete;
 
     ~ActivitySummaryQt() final;
 
@@ -45,9 +49,4 @@ private:
     struct Imp;
 
     Imp* imp_;
-
-    ActivitySummaryQt(const ActivitySummaryQt&) = delete;
-    ActivitySummaryQt(ActivitySummaryQt&&) = delete;
-    auto operator=(const ActivitySummaryQt&) -> ActivitySummaryQt& = delete;
-    auto operator=(ActivitySummaryQt&&) -> ActivitySummaryQt& = delete;
 };

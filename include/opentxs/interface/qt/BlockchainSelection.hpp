@@ -70,6 +70,11 @@ public:
         -> bool final;
 
     BlockchainSelectionQt(internal::BlockchainSelection& parent) noexcept;
+    BlockchainSelectionQt(const BlockchainSelectionQt&) = delete;
+    BlockchainSelectionQt(BlockchainSelectionQt&&) = delete;
+    auto operator=(const BlockchainSelectionQt&)
+        -> BlockchainSelectionQt& = delete;
+    auto operator=(BlockchainSelectionQt&&) -> BlockchainSelectionQt& = delete;
 
     ~BlockchainSelectionQt() final;
 
@@ -77,10 +82,4 @@ private:
     struct Imp;
 
     Imp* imp_;
-
-    BlockchainSelectionQt(const BlockchainSelectionQt&) = delete;
-    BlockchainSelectionQt(BlockchainSelectionQt&&) = delete;
-    auto operator=(const BlockchainSelectionQt&)
-        -> BlockchainSelectionQt& = delete;
-    auto operator=(BlockchainSelectionQt&&) -> BlockchainSelectionQt& = delete;
 };

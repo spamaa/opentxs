@@ -48,15 +48,14 @@ public:
     virtual auto UUID() const noexcept -> UnallocatedCString = 0;
     virtual auto Workflow() const noexcept -> UnallocatedCString = 0;
 
-    ~BalanceItem() override = default;
-
-protected:
-    BalanceItem() noexcept = default;
-
-private:
     BalanceItem(const BalanceItem&) = delete;
     BalanceItem(BalanceItem&&) = delete;
     auto operator=(const BalanceItem&) -> BalanceItem& = delete;
     auto operator=(BalanceItem&&) -> BalanceItem& = delete;
+
+    ~BalanceItem() override = default;
+
+protected:
+    BalanceItem() noexcept = default;
 };
 }  // namespace opentxs::ui

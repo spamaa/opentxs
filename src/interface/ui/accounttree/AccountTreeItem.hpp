@@ -90,6 +90,12 @@ public:
         const AccountCurrencyRowID& rowID,
         const AccountCurrencySortKey& sortKey,
         CustomData& custom) noexcept;
+    AccountTreeItem() = delete;
+    AccountTreeItem(const AccountTreeItem&) = delete;
+    AccountTreeItem(AccountTreeItem&&) = delete;
+    auto operator=(const AccountTreeItem&) -> AccountTreeItem& = delete;
+    auto operator=(AccountTreeItem&&) -> AccountTreeItem& = delete;
+
     ~AccountTreeItem() override;
 
 protected:
@@ -109,12 +115,6 @@ private:
 
     auto reindex(const AccountCurrencySortKey&, CustomData&) noexcept
         -> bool final;
-
-    AccountTreeItem() = delete;
-    AccountTreeItem(const AccountTreeItem&) = delete;
-    AccountTreeItem(AccountTreeItem&&) = delete;
-    auto operator=(const AccountTreeItem&) -> AccountTreeItem& = delete;
-    auto operator=(AccountTreeItem&&) -> AccountTreeItem& = delete;
 };
 }  // namespace opentxs::ui::implementation
 

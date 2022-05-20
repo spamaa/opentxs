@@ -126,6 +126,10 @@ struct Proposal::Imp {
         , finished_proposals_()
     {
     }
+    Imp() = delete;
+    Imp(const Imp&) = delete;
+    auto operator=(const Imp&) -> Imp& = delete;
+    auto operator=(Imp&&) -> Imp& = delete;
 
 private:
     using FinishedProposals = UnallocatedSet<OTIdentifier>;
@@ -145,11 +149,6 @@ private:
 
         return out;
     }
-
-    Imp() = delete;
-    Imp(const Imp&) = delete;
-    auto operator=(const Imp&) -> Imp& = delete;
-    auto operator=(Imp&&) -> Imp& = delete;
 };
 
 Proposal::Proposal(const storage::lmdb::LMDB& lmdb) noexcept

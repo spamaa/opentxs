@@ -124,6 +124,13 @@ public:
         , sockets_()
     {
     }
+    TCPIncomingConnectionManager() = delete;
+    TCPIncomingConnectionManager(const TCPIncomingConnectionManager&) = delete;
+    TCPIncomingConnectionManager(TCPIncomingConnectionManager&&) = delete;
+    auto operator=(const TCPIncomingConnectionManager&)
+        -> TCPIncomingConnectionManager& = delete;
+    auto operator=(TCPIncomingConnectionManager&&)
+        -> TCPIncomingConnectionManager& = delete;
 
     ~TCPIncomingConnectionManager() final { Shutdown(); }
 
@@ -160,14 +167,6 @@ private:
 
         sockets_.try_emplace(peerID, std::move(socket));
     }
-
-    TCPIncomingConnectionManager() = delete;
-    TCPIncomingConnectionManager(const TCPIncomingConnectionManager&) = delete;
-    TCPIncomingConnectionManager(TCPIncomingConnectionManager&&) = delete;
-    auto operator=(const TCPIncomingConnectionManager&)
-        -> TCPIncomingConnectionManager& = delete;
-    auto operator=(TCPIncomingConnectionManager&&)
-        -> TCPIncomingConnectionManager& = delete;
 };
 
 auto PeerManager::IncomingConnectionManager::TCP(

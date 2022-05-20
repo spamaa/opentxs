@@ -67,6 +67,9 @@ struct Options::Imp final {
 
     Imp() noexcept;
     Imp(const Imp& rhs) noexcept;
+    Imp(Imp&&) = delete;
+    auto operator=(const Imp&) -> Imp& = delete;
+    auto operator=(Imp&&) -> Imp& = delete;
 
     ~Imp();
 
@@ -77,10 +80,6 @@ private:
 
     auto convert(std::string_view value) const noexcept(false)
         -> blockchain::Type;
-
-    Imp(Imp&&) = delete;
-    auto operator=(const Imp&) -> Imp& = delete;
-    auto operator=(Imp&&) -> Imp& = delete;
 };
 // NOLINTEND(clang-analyzer-optin.performance.Padding)
 }  // namespace opentxs

@@ -48,15 +48,14 @@ public:
     virtual auto Timestamp() const noexcept -> Time = 0;
     virtual auto Type() const noexcept -> otx::client::StorageBox = 0;
 
-    ~ActivityThreadItem() override = default;
-
-protected:
-    ActivityThreadItem() noexcept = default;
-
-private:
     ActivityThreadItem(const ActivityThreadItem&) = delete;
     ActivityThreadItem(ActivityThreadItem&&) = delete;
     auto operator=(const ActivityThreadItem&) -> ActivityThreadItem& = delete;
     auto operator=(ActivityThreadItem&&) -> ActivityThreadItem& = delete;
+
+    ~ActivityThreadItem() override = default;
+
+protected:
+    ActivityThreadItem() noexcept = default;
 };
 }  // namespace opentxs::ui

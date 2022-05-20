@@ -44,16 +44,15 @@ public:
     auto validate(QString& input, int& pos) const -> State final;
 
     DraftValidator(internal::ActivityThread& parent) noexcept;
-
-    ~DraftValidator() final = default;
-
-private:
-    internal::ActivityThread& parent_;
-
     DraftValidator() = delete;
     DraftValidator(const DraftValidator&) = delete;
     DraftValidator(DraftValidator&&) = delete;
     auto operator=(const DraftValidator&) -> DraftValidator& = delete;
     auto operator=(DraftValidator&&) -> DraftValidator& = delete;
+
+    ~DraftValidator() final = default;
+
+private:
+    internal::ActivityThread& parent_;
 };
 }  // namespace opentxs::ui::implementation

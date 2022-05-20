@@ -84,11 +84,8 @@ Endpoint::Imp::Imp() noexcept
 }
 
 Endpoint::Imp::Imp(const Imp& rhs) noexcept
-    : type_(rhs.type_)
-    , data_(rhs.data_)
-    , bytes_(rhs.bytes_)
-{
-}
+
+    = default;
 
 Endpoint::Imp::~Imp() = default;
 

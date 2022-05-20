@@ -50,7 +50,7 @@
 
 namespace opentxs
 {
-
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 char const* const TypeStringsLedger[] = {
     "nymbox",  // the nymbox is per user account (versus per asset account) and
                // is used to receive new transaction numbers (and messages.)

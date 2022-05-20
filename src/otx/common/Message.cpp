@@ -663,7 +663,7 @@ auto Message::VerifySignature(const identity::Nym& theNym) const -> bool
 //
 auto Message::VerifyContractID() const -> bool { return true; }
 
-Message::~Message() {}
+Message::~Message() = default;
 
 void OTMessageStrategy::processXmlSuccess(
     Message& m,
@@ -680,7 +680,7 @@ void Message::registerStrategy(
     messageStrategyManager.registerStrategy(name, strategy);
 }
 
-OTMessageStrategy::~OTMessageStrategy() {}
+OTMessageStrategy::~OTMessageStrategy() = default;
 
 class StrategyGetMarketOffers final : public OTMessageStrategy
 {

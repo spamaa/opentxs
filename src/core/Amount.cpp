@@ -41,7 +41,7 @@ auto signed_amount(long long ip, unsigned long long fp, unsigned long long div)
     if (ip < 0) {
         return -Amount(Imp::shift_left(-ip) + (Imp::shift_left(fp) / div));
     } else {
-        return Amount(Imp::shift_left(ip) + (Imp::shift_left(fp) / div));
+        return {Imp::shift_left(ip) + (Imp::shift_left(fp) / div)};
     }
 }
 
@@ -52,7 +52,7 @@ auto unsigned_amount(
 {
     using Imp = Amount::Imp;
 
-    return Amount(Imp::shift_left(ip) + (Imp::shift_left(fp) / div));
+    return {Imp::shift_left(ip) + (Imp::shift_left(fp) / div)};
 }
 
 auto swap(Amount& lhs, Amount& rhs) noexcept -> void { lhs.swap(rhs); }

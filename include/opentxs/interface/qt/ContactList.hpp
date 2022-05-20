@@ -57,6 +57,11 @@ public:
     };
 
     ContactListQt(internal::ContactList& parent) noexcept;
+    ContactListQt() = delete;
+    ContactListQt(const ContactListQt&) = delete;
+    ContactListQt(ContactListQt&&) = delete;
+    auto operator=(const ContactListQt&) -> ContactListQt& = delete;
+    auto operator=(ContactListQt&&) -> ContactListQt& = delete;
 
     ~ContactListQt() final;
 
@@ -64,10 +69,4 @@ private:
     struct Imp;
 
     Imp* imp_;
-
-    ContactListQt() = delete;
-    ContactListQt(const ContactListQt&) = delete;
-    ContactListQt(ContactListQt&&) = delete;
-    auto operator=(const ContactListQt&) -> ContactListQt& = delete;
-    auto operator=(ContactListQt&&) -> ContactListQt& = delete;
 };

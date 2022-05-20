@@ -31,10 +31,8 @@ Outpoint::Outpoint() noexcept
 }
 
 Outpoint::Outpoint(const Outpoint& rhs) noexcept
-    : txid_(rhs.txid_)
-    , index_(rhs.index_)
-{
-}
+
+    = default;
 
 // NOLINTBEGIN(cert-oop11-cpp)
 Outpoint::Outpoint(Outpoint&& rhs) noexcept
@@ -135,14 +133,12 @@ auto Outpoint::operator>=(const Outpoint& rhs) const noexcept -> bool
 
 auto Outpoint::operator==(const Outpoint& rhs) const noexcept -> bool
 {
-    // NOLINTNEXTLINE(cert-exp42-c,cert-flp37-c)
-    return 0 == std::memcmp(this, &rhs, sizeof(*this));
+    return (index_ == rhs.index_) && (txid_ == rhs.txid_);
 }
 
 auto Outpoint::operator!=(const Outpoint& rhs) const noexcept -> bool
 {
-    // NOLINTNEXTLINE(cert-exp42-c,cert-flp37-c)
-    return 0 != std::memcmp(this, &rhs, sizeof(*this));
+    return (index_ != rhs.index_) || (txid_ != rhs.txid_);
 }
 
 auto Outpoint::Index() const noexcept -> std::uint32_t

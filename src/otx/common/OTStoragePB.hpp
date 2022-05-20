@@ -156,12 +156,12 @@ public:
 
     auto getPBMessage() -> ::google::protobuf::MessageLite* override;
 
-    auto clone(void) const -> theBaseType* override
+    auto clone() const -> theBaseType* override
     {
         return dynamic_cast<theBaseType*>(do_clone());
     }
 
-    auto do_clone(void) const -> IStorable*
+    auto do_clone() const -> IStorable*
     {
         Storable* pNewStorable =
             Storable::Create(theObjectType, PACK_PROTOCOL_BUFFERS);

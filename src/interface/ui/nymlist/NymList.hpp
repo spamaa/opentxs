@@ -73,6 +73,11 @@ class NymList final : public NymListList, Worker<NymList>
 {
 public:
     NymList(const api::session::Client& api, const SimpleCallback& cb) noexcept;
+    NymList() = delete;
+    NymList(const NymList&) = delete;
+    NymList(NymList&&) = delete;
+    auto operator=(const NymList&) -> NymList& = delete;
+    auto operator=(NymList&&) -> NymList& = delete;
 
     ~NymList() final;
 
@@ -98,11 +103,5 @@ private:
     auto process_new_nym(Message&& in) noexcept -> void;
     auto process_nym_changed(Message&& in) noexcept -> void;
     auto startup() noexcept -> void;
-
-    NymList() = delete;
-    NymList(const NymList&) = delete;
-    NymList(NymList&&) = delete;
-    auto operator=(const NymList&) -> NymList& = delete;
-    auto operator=(NymList&&) -> NymList& = delete;
 };
 }  // namespace opentxs::ui::implementation

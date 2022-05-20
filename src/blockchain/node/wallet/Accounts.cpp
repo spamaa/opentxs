@@ -210,7 +210,11 @@ auto Accounts::Imp::pipeline(const Work work, Message&& msg) noexcept -> void
 
 auto Accounts::Imp::process_block_header(Message&& in) noexcept -> void
 {
-    if (startup_reorg_.has_value()) { defer(std::move(in)); }
+    if (startup_reorg_.has_value()) {
+        defer(std::move(in));
+
+        return;
+    }
 
     const auto body = in.Body();
 

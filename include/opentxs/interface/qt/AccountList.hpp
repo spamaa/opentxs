@@ -57,6 +57,10 @@ public:
     };
 
     AccountListQt(internal::AccountList& parent) noexcept;
+    AccountListQt(const AccountListQt&) = delete;
+    AccountListQt(AccountListQt&&) = delete;
+    auto operator=(const AccountListQt&) -> AccountListQt& = delete;
+    auto operator=(AccountListQt&&) -> AccountListQt& = delete;
 
     ~AccountListQt() final;
 
@@ -64,9 +68,4 @@ private:
     struct Imp;
 
     Imp* imp_;
-
-    AccountListQt(const AccountListQt&) = delete;
-    AccountListQt(AccountListQt&&) = delete;
-    auto operator=(const AccountListQt&) -> AccountListQt& = delete;
-    auto operator=(AccountListQt&&) -> AccountListQt& = delete;
 };

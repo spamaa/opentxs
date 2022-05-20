@@ -55,6 +55,10 @@ public:
         const api::Session& api,
         std::unique_ptr<Header> header,
         const blockchain::BloomFilter& filter) noexcept;
+    Filterload(const Filterload&) = delete;
+    Filterload(Filterload&&) = delete;
+    auto operator=(const Filterload&) -> Filterload& = delete;
+    auto operator=(Filterload&&) -> Filterload& = delete;
 
     ~Filterload() final = default;
 
@@ -63,10 +67,5 @@ private:
 
     using implementation::Message::payload;
     auto payload(AllocateOutput out) const noexcept -> bool final;
-
-    Filterload(const Filterload&) = delete;
-    Filterload(Filterload&&) = delete;
-    auto operator=(const Filterload&) -> Filterload& = delete;
-    auto operator=(Filterload&&) -> Filterload& = delete;
 };
 }  // namespace opentxs::blockchain::p2p::bitcoin::message::implementation

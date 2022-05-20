@@ -42,15 +42,14 @@ public:
     virtual auto Timestamp() const noexcept -> Time = 0;
     virtual auto Type() const noexcept -> otx::client::StorageBox = 0;
 
-    ~ActivitySummaryItem() override = default;
-
-protected:
-    ActivitySummaryItem() noexcept = default;
-
-private:
     ActivitySummaryItem(const ActivitySummaryItem&) = delete;
     ActivitySummaryItem(ActivitySummaryItem&&) = delete;
     auto operator=(const ActivitySummaryItem&) -> ActivitySummaryItem& = delete;
     auto operator=(ActivitySummaryItem&&) -> ActivitySummaryItem& = delete;
+
+    ~ActivitySummaryItem() override = default;
+
+protected:
+    ActivitySummaryItem() noexcept = default;
 };
 }  // namespace opentxs::ui

@@ -86,6 +86,12 @@ public:
         const identifier::Nym& nymID,
         const UnitType& currency,
         const SimpleCallback& cb) noexcept;
+    PayableList() = delete;
+    PayableList(const PayableList&) = delete;
+    PayableList(PayableList&&) = delete;
+    auto operator=(const PayableList&) -> PayableList& = delete;
+    auto operator=(PayableList&&) -> PayableList& = delete;
+
     ~PayableList() final;
 
 private:
@@ -118,11 +124,5 @@ private:
     auto process_contact(const Message& message) noexcept -> void;
     auto process_nym(const Message& message) noexcept -> void;
     auto startup() noexcept -> void;
-
-    PayableList() = delete;
-    PayableList(const PayableList&) = delete;
-    PayableList(PayableList&&) = delete;
-    auto operator=(const PayableList&) -> PayableList& = delete;
-    auto operator=(PayableList&&) -> PayableList& = delete;
 };
 }  // namespace opentxs::ui::implementation

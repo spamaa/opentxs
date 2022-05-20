@@ -17,15 +17,14 @@ public:
     virtual auto someConstFunctionWithNoExcept(const int& input) const noexcept
         -> bool = 0;
 
-    virtual ~Interface() = default;
-
-protected:
-    Interface() = default;
-
-private:
     Interface(const Interface&) = delete;
     Interface(Interface&&) = delete;
     auto operator=(const Interface&) -> Interface& = delete;
     auto operator=(const Interface&&) -> Interface& = delete;
+
+    virtual ~Interface() = default;
+
+protected:
+    Interface() = default;
 };
 }  // namespace ottest

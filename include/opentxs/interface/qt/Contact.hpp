@@ -49,6 +49,11 @@ public:
     auto paymentCode() const noexcept -> QString;
 
     ContactQt(internal::Contact& parent) noexcept;
+    ContactQt() = delete;
+    ContactQt(const ContactQt&) = delete;
+    ContactQt(ContactQt&&) = delete;
+    auto operator=(const ContactQt&) -> ContactQt& = delete;
+    auto operator=(ContactQt&&) -> ContactQt& = delete;
 
     ~ContactQt() final;
 
@@ -56,10 +61,4 @@ private:
     struct Imp;
 
     Imp* imp_;
-
-    ContactQt() = delete;
-    ContactQt(const ContactQt&) = delete;
-    ContactQt(ContactQt&&) = delete;
-    auto operator=(const ContactQt&) -> ContactQt& = delete;
-    auto operator=(ContactQt&&) -> ContactQt& = delete;
 };
