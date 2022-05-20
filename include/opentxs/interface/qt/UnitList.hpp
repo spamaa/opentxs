@@ -54,6 +54,6 @@ private:
 
     UnitListQt(const UnitListQt&) = delete;
     UnitListQt(UnitListQt&&) = delete;
-    UnitListQt& operator=(const UnitListQt&) = delete;
-    UnitListQt& operator=(UnitListQt&&) = delete;
+    auto operator=(const UnitListQt&) -> UnitListQt& = delete;
+    auto operator=(UnitListQt&&) -> UnitListQt& = delete;
 };

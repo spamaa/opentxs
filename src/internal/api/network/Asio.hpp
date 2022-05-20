@@ -80,7 +80,7 @@ protected:
 private:
     Asio(const Asio&) = delete;
     Asio(Asio&&) = delete;
-    Asio& operator=(const Asio&) = delete;
-    Asio& operator=(Asio&&) = delete;
+    auto operator=(const Asio&) -> Asio& = delete;
+    auto operator=(Asio&&) -> Asio& = delete;
 };
 }  // namespace opentxs::api::network::internal

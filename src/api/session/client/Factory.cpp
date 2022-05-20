@@ -118,7 +118,7 @@ auto Factory::BitcoinGenerationTransaction(
         const auto bip34 =
             opentxs::blockchain::bitcoin::block::internal::EncodeBip34(height);
         auto output = space(bip34.size() + coinbase.size());
-        auto it = output.data();
+        auto* it = output.data();
         std::memcpy(it, bip34.data(), bip34.size());
         std::advance(it, bip34.size());
         std::memcpy(it, coinbase.data(), coinbase.size());

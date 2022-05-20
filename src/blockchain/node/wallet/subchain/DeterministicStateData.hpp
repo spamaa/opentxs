@@ -167,7 +167,9 @@ private:
     DeterministicStateData() = delete;
     DeterministicStateData(const DeterministicStateData&) = delete;
     DeterministicStateData(DeterministicStateData&&) = delete;
-    DeterministicStateData& operator=(const DeterministicStateData&) = delete;
-    DeterministicStateData& operator=(DeterministicStateData&&) = delete;
+    auto operator=(const DeterministicStateData&)
+        -> DeterministicStateData& = delete;
+    auto operator=(DeterministicStateData&&)
+        -> DeterministicStateData& = delete;
 };
 }  // namespace opentxs::blockchain::node::wallet

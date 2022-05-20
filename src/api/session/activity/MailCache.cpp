@@ -8,6 +8,7 @@
 #include "api/session/activity/MailCache.hpp"  // IWYU pragma: associated
 
 #include <chrono>
+#include <cstddef>
 #include <cstring>
 #include <functional>
 #include <iterator>
@@ -284,7 +285,7 @@ private:
     {
         const auto preimage = [&] {
             auto out = space(nym.size() + id.size() + sizeof(box));
-            auto it = out.data();
+            auto* it = out.data();
             std::memcpy(it, nym.data(), nym.size());
             std::advance(it, nym.size());
             std::memcpy(it, id.data(), id.size());

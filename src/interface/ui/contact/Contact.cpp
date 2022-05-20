@@ -153,7 +153,7 @@ auto Contact::process_contact(const opentxs::Contact& contact) noexcept -> void
 
     if (data) {
         for (const auto& section : *data) {
-            auto& type = section.first;
+            const auto& type = section.first;
 
             if (check_type(type)) {
                 auto custom = CustomData{
@@ -216,6 +216,6 @@ Contact::~Contact()
 {
     ClearCallbacks();
 
-    for (auto& it : listeners_) { delete it.second; }
+    for (const auto& it : listeners_) { delete it.second; }
 }
 }  // namespace opentxs::ui::implementation

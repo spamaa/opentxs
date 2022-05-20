@@ -75,6 +75,6 @@ private:
 
     SeedTreeQt(const SeedTreeQt&) = delete;
     SeedTreeQt(SeedTreeQt&&) = delete;
-    SeedTreeQt& operator=(const SeedTreeQt&) = delete;
-    SeedTreeQt& operator=(SeedTreeQt&&) = delete;
+    auto operator=(const SeedTreeQt&) -> SeedTreeQt& = delete;
+    auto operator=(SeedTreeQt&&) -> SeedTreeQt& = delete;
 };

@@ -30,7 +30,7 @@ class ActivitySummaryQt;
 }  // namespace ui
 // }  // namespace v1
 }  // namespace opentxs
-// NOLINTEND(modernize-concat-nested-namespaces
+// NOLINTEND(modernize-concat-nested-namespaces)
 
 class OPENTXS_EXPORT opentxs::ui::ActivitySummaryQt final : public qt::Model
 {
@@ -48,6 +48,6 @@ private:
 
     ActivitySummaryQt(const ActivitySummaryQt&) = delete;
     ActivitySummaryQt(ActivitySummaryQt&&) = delete;
-    ActivitySummaryQt& operator=(const ActivitySummaryQt&) = delete;
-    ActivitySummaryQt& operator=(ActivitySummaryQt&&) = delete;
+    auto operator=(const ActivitySummaryQt&) -> ActivitySummaryQt& = delete;
+    auto operator=(ActivitySummaryQt&&) -> ActivitySummaryQt& = delete;
 };

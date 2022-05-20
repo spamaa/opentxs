@@ -105,7 +105,7 @@ protected:
 private:
     Blockchain(const Blockchain&) = delete;
     Blockchain(Blockchain&&) = delete;
-    Blockchain& operator=(const Blockchain&) = delete;
-    Blockchain& operator=(Blockchain&&) = delete;
+    auto operator=(const Blockchain&) -> Blockchain& = delete;
+    auto operator=(Blockchain&&) -> Blockchain& = delete;
 };
 }  // namespace opentxs::api::network::internal

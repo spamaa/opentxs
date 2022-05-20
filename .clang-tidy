@@ -1,5 +1,5 @@
 {
-  "Checks": "clang-diagnostic-*,clang-analyzer-*,readability-braces-around-statements",
+  "Checks": "cert-*,-cert-oop54-cpp,-cert-err58-cpp,clang-diagnostic-*,clang-analyzer-*,modernize-concat-nested-namespaces,modernize-use-auto,modernize-use-nullptr,modernize-use-override,modernize-use-trailing-return-type,modernize-use-using,readability-braces-around-statements,readability-qualified-auto",
   "CheckOptions": [
     {
       "key": "readability-braces-around-statements.ShortStatementLines",

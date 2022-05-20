@@ -539,7 +539,7 @@ auto BlockchainImp::start(
                 endpoint = sync_server_.Endpoint(type);
             }
 
-            auto& config = [&]() -> const Config& {
+            const auto& config = [&]() -> const Config& {
                 {
                     auto it = config_.find(type);
 

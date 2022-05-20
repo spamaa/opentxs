@@ -10,11 +10,12 @@ namespace ottest
 class Interface
 {
 public:
-    virtual bool someFunction(const int& input) = 0;
-    virtual bool someConstFunction(const int& input) = 0;
-    virtual bool someFunctionWithNoExcept(const int& input) noexcept = 0;
-    virtual bool someConstFunctionWithNoExcept(
-        const int& input) const noexcept = 0;
+    virtual auto someFunction(const int& input) -> bool = 0;
+    virtual auto someConstFunction(const int& input) -> bool = 0;
+    virtual auto someFunctionWithNoExcept(const int& input) noexcept
+        -> bool = 0;
+    virtual auto someConstFunctionWithNoExcept(const int& input) const noexcept
+        -> bool = 0;
 
     virtual ~Interface() = default;
 
@@ -24,7 +25,7 @@ protected:
 private:
     Interface(const Interface&) = delete;
     Interface(Interface&&) = delete;
-    Interface& operator=(const Interface&) = delete;
-    Interface& operator=(const Interface&&) = delete;
+    auto operator=(const Interface&) -> Interface& = delete;
+    auto operator=(const Interface&&) -> Interface& = delete;
 };
 }  // namespace ottest

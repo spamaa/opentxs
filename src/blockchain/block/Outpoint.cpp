@@ -29,15 +29,20 @@ Outpoint::Outpoint() noexcept
 {
     static_assert(sizeof(*this) == 36u);
 }
+
 Outpoint::Outpoint(const Outpoint& rhs) noexcept
     : txid_(rhs.txid_)
     , index_(rhs.index_)
 {
 }
+
+// NOLINTBEGIN(cert-oop11-cpp)
 Outpoint::Outpoint(Outpoint&& rhs) noexcept
     : Outpoint(rhs)  // copy constructor, rhs is an lvalue
 {
 }
+// NOLINTEND(cert-oop11-cpp)
+
 Outpoint::Outpoint(const ReadView in) noexcept(false)
     : txid_()
     , index_()
@@ -48,6 +53,7 @@ Outpoint::Outpoint(const ReadView in) noexcept(false)
 
     std::memcpy(static_cast<void*>(this), in.data(), sizeof(*this));
 }
+
 Outpoint::Outpoint(const ReadView txid, const std::uint32_t index) noexcept(
     false)
     : txid_()
@@ -64,6 +70,7 @@ Outpoint::Outpoint(const ReadView txid, const std::uint32_t index) noexcept(
     std::memcpy(static_cast<void*>(txid_.data()), txid.data(), txid_.size());
     std::memcpy(static_cast<void*>(index_.data()), &buf, index_.size());
 }
+
 auto Outpoint::operator=(const Outpoint& rhs) noexcept -> Outpoint&
 {
     if (&rhs != this) {
@@ -73,10 +80,12 @@ auto Outpoint::operator=(const Outpoint& rhs) noexcept -> Outpoint&
 
     return *this;
 }
+
 auto Outpoint::operator=(Outpoint&& rhs) noexcept -> Outpoint&
 {
     return operator=(rhs);  // copy assignment, rhs is an lvalue
 }
+
 auto Outpoint::Bytes() const noexcept -> ReadView
 {
     return ReadView{reinterpret_cast<const char*>(this), sizeof(*this)};
@@ -126,11 +135,13 @@ auto Outpoint::operator>=(const Outpoint& rhs) const noexcept -> bool
 
 auto Outpoint::operator==(const Outpoint& rhs) const noexcept -> bool
 {
+    // NOLINTNEXTLINE(cert-exp42-c,cert-flp37-c)
     return 0 == std::memcmp(this, &rhs, sizeof(*this));
 }
 
 auto Outpoint::operator!=(const Outpoint& rhs) const noexcept -> bool
 {
+    // NOLINTNEXTLINE(cert-exp42-c,cert-flp37-c)
     return 0 != std::memcmp(this, &rhs, sizeof(*this));
 }
 

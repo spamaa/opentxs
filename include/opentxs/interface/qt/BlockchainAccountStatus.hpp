@@ -69,7 +69,8 @@ private:
     BlockchainAccountStatusQt() = delete;
     BlockchainAccountStatusQt(const BlockchainAccountStatusQt&) = delete;
     BlockchainAccountStatusQt(BlockchainAccountStatusQt&&) = delete;
-    BlockchainAccountStatusQt& operator=(const BlockchainAccountStatusQt&) =
-        delete;
-    BlockchainAccountStatusQt& operator=(BlockchainAccountStatusQt&&) = delete;
+    auto operator=(const BlockchainAccountStatusQt&)
+        -> BlockchainAccountStatusQt& = delete;
+    auto operator=(BlockchainAccountStatusQt&&)
+        -> BlockchainAccountStatusQt& = delete;
 };

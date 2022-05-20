@@ -1016,9 +1016,12 @@ auto OTPacker::Unpack(PackedBuffer& inBuf, UnallocatedCString& outObj) -> bool
                                                                                \
     using listOf##name##s = UnallocatedDeque<PointerTo##name>;                 \
                                                                                \
-    size_t scope Get##name##Count() { return list_##name##s.size(); }          \
+    auto scope Get##name##Count()->std::size_t                                 \
+    {                                                                          \
+        return list_##name##s.size();                                          \
+    }                                                                          \
                                                                                \
-    name* scope Get##name(size_t nIndex)                                       \
+    auto scope Get##name(size_t nIndex)->name*                                 \
     {                                                                          \
         if (nIndex < list_##name##s.size()) {                                  \
             PointerTo##name theP = list_##name##s.at(nIndex);                  \
@@ -1027,7 +1030,7 @@ auto OTPacker::Unpack(PackedBuffer& inBuf, UnallocatedCString& outObj) -> bool
         return nullptr;                                                        \
     }                                                                          \
                                                                                \
-    bool scope Remove##name(size_t nIndex##name)                               \
+    auto scope Remove##name(size_t nIndex##name)->bool                         \
     {                                                                          \
         if (nIndex##name < list_##name##s.size()) {                            \
             list_##name##s.erase(list_##name##s.begin() + nIndex##name);       \
@@ -1036,7 +1039,7 @@ auto OTPacker::Unpack(PackedBuffer& inBuf, UnallocatedCString& outObj) -> bool
             return false;                                                      \
     }                                                                          \
                                                                                \
-    bool scope Add##name(name& disownObject)                                   \
+    auto scope Add##name(name& disownObject)->bool                             \
     {                                                                          \
         PointerTo##name theP(disownObject.clone());                            \
         list_##name##s.push_back(theP);                                        \

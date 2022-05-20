@@ -186,7 +186,7 @@ auto Factory::AsymmetricKey(
     const opentxs::crypto::key::asymmetric::Role role,
     const VersionNumber version) const -> OTAsymmetricKey
 {
-    auto output = asymmetric_.NewKey(params, role, version, reason).release();
+    auto* output = asymmetric_.NewKey(params, role, version, reason).release();
 
     if (output) {
         return OTAsymmetricKey{std::move(output)};
@@ -198,7 +198,7 @@ auto Factory::AsymmetricKey(
 auto Factory::AsymmetricKey(const proto::AsymmetricKey& serialized) const
     -> OTAsymmetricKey
 {
-    auto output = asymmetric_.Internal().InstantiateKey(serialized).release();
+    auto* output = asymmetric_.Internal().InstantiateKey(serialized).release();
 
     if (output) {
         return OTAsymmetricKey{std::move(output)};

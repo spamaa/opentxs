@@ -40,8 +40,8 @@ class DraftValidator final : public QValidator
     Q_OBJECT
 
 public:
-    void fixup(QString& input) const final;
-    State validate(QString& input, int& pos) const final;
+    auto fixup(QString& input) const -> void final;
+    auto validate(QString& input, int& pos) const -> State final;
 
     DraftValidator(internal::ActivityThread& parent) noexcept;
 
@@ -53,7 +53,7 @@ private:
     DraftValidator() = delete;
     DraftValidator(const DraftValidator&) = delete;
     DraftValidator(DraftValidator&&) = delete;
-    DraftValidator& operator=(const DraftValidator&) = delete;
-    DraftValidator& operator=(DraftValidator&&) = delete;
+    auto operator=(const DraftValidator&) -> DraftValidator& = delete;
+    auto operator=(DraftValidator&&) -> DraftValidator& = delete;
 };
 }  // namespace opentxs::ui::implementation

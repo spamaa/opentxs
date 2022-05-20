@@ -110,8 +110,8 @@ private:
     ModelHelper() = delete;
     ModelHelper(const ModelHelper&) = delete;
     ModelHelper(ModelHelper&&) = delete;
-    ModelHelper& operator=(const ModelHelper&) = delete;
-    ModelHelper& operator=(ModelHelper&&) = delete;
+    auto operator=(const ModelHelper&) -> ModelHelper& = delete;
+    auto operator=(ModelHelper&&) -> ModelHelper& = delete;
 };
 
 class OPENTXS_EXPORT Model : public QAbstractItemModel
@@ -162,7 +162,7 @@ private:
     Model() = delete;
     Model(const Model&) = delete;
     Model(Model&&) = delete;
-    Model& operator=(const Model&) = delete;
-    Model& operator=(Model&&) = delete;
+    auto operator=(const Model&) -> Model& = delete;
+    auto operator=(Model&&) -> Model& = delete;
 };
 }  // namespace opentxs::ui::qt

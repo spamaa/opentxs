@@ -80,6 +80,8 @@ private:
 
     BlockchainStatisticsQt(const BlockchainStatisticsQt&) = delete;
     BlockchainStatisticsQt(BlockchainStatisticsQt&&) = delete;
-    BlockchainStatisticsQt& operator=(const BlockchainStatisticsQt&) = delete;
-    BlockchainStatisticsQt& operator=(BlockchainStatisticsQt&&) = delete;
+    auto operator=(const BlockchainStatisticsQt&)
+        -> BlockchainStatisticsQt& = delete;
+    auto operator=(BlockchainStatisticsQt&&)
+        -> BlockchainStatisticsQt& = delete;
 };

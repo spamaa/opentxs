@@ -498,7 +498,7 @@ auto FilterOracle::ProcessBlock(
 auto FilterOracle::ProcessBlock(BlockIndexerData& data) const noexcept -> void
 {
     auto post = ScopeGuard{[&] { --data.job_counter_; }};
-    auto& task = data.incoming_data_;
+    const auto& task = data.incoming_data_;
     const auto& [height, block] = task.position_;
 
     try {
@@ -616,7 +616,7 @@ auto FilterOracle::ProcessSyncData(
                 return output;
             }
         }();
-        auto* parent = &previous;
+        const auto* parent = &previous;
         auto b = hashes.cbegin();
         auto d = blocks.cbegin();
 

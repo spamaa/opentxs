@@ -51,7 +51,7 @@
 namespace opentxs
 {
 
-char const* const __TypeStringsLedger[] = {
+char const* const TypeStringsLedger[] = {
     "nymbox",  // the nymbox is per user account (versus per asset account) and
                // is used to receive new transaction numbers (and messages.)
     "inbox",  // each asset account has an inbox, with pending transfers as well
@@ -119,7 +119,7 @@ Ledger::Ledger(const api::Session& api)
 auto Ledger::GetTypeString(ledgerType theType) -> char const*
 {
     auto nType = static_cast<std::int32_t>(theType);
-    return __TypeStringsLedger[nType];
+    return TypeStringsLedger[nType];
 }
 
 // This calls OTTransactionType::VerifyAccount(), which calls
@@ -258,7 +258,7 @@ auto Ledger::LoadBoxReceipts(UnallocatedSet<std::int64_t>* psetUnloaded) -> bool
     //
     bool bRetVal = true;
 
-    for (auto& it : the_set) {
+    for (const auto& it : the_set) {
         std::int64_t lSetNum = it;
 
         const auto pTransaction = GetTransaction(lSetNum);
@@ -473,7 +473,7 @@ auto Ledger::LoadExpiredBoxFromString(const String& strBox) -> bool
  */
 auto Ledger::LoadGeneric(ledgerType theType, const String& pString) -> bool
 {
-    const auto pszType = GetTypeString();
+    const auto* const pszType = GetTypeString();
     const auto [valid, path1, path2, path3] = make_filename(theType);
 
     if (false == valid) {
@@ -549,7 +549,7 @@ auto Ledger::LoadGeneric(ledgerType theType, const String& pString) -> bool
 
 auto Ledger::SaveGeneric(ledgerType theType) -> bool
 {
-    const auto pszType = GetTypeString();
+    const auto* const pszType = GetTypeString();
     const auto [valid, path1, path2, path3] = make_filename(theType);
 
     if (false == valid) {
@@ -1151,7 +1151,7 @@ auto Ledger::GetTransactionCountInRefTo(std::int64_t lReferenceNum) const
 {
     std::int32_t nCount{0};
 
-    for (auto& it : m_mapTransactions) {
+    for (const auto& it : m_mapTransactions) {
         const auto pTransaction = it.second;
         OT_ASSERT(pTransaction);
 
@@ -1172,7 +1172,7 @@ auto Ledger::GetTransactionByIndex(std::int32_t nIndex) const
 
     std::int32_t nIndexCount = -1;
 
-    for (auto& it : m_mapTransactions) {
+    for (const auto& it : m_mapTransactions) {
         nIndexCount++;  // On first iteration, this is now 0, same as nIndex.
         auto pTransaction = it.second;
         OT_ASSERT(pTransaction);  // Should always be good.
@@ -1569,7 +1569,7 @@ auto Ledger::GenerateBalanceStatement(
         "each one... ")
         .Flush();
 
-    for (auto& it : m_mapTransactions) {
+    for (const auto& it : m_mapTransactions) {
         auto pTransaction = it.second;
 
         OT_ASSERT(pTransaction);

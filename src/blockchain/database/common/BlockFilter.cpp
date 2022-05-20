@@ -324,7 +324,7 @@ auto BlockFilter::StoreFilters(
     auto tx = lmdb_.TransactionRW();
     auto lock = Lock{bulk_.Mutex()};
 
-    for (auto& [block, cfilter] : filters) {
+    for (const auto& [block, cfilter] : filters) {
         OT_ASSERT(cfilter.IsValid());
 
         if (false == store(lock, tx, block.Bytes(), type, cfilter)) {
@@ -396,7 +396,7 @@ auto BlockFilter::StoreFilters(
                 }();
                 proto::write(*cfheaderProto, writer(cfHeader));
 
-                if (auto& [b, filter] = *f;
+                if (const auto& [b, filter] = *f;
                     (false == filter.IsValid()) ||
                     (false == filter.Internal().Serialize(*cfilter))) {
                     throw std::runtime_error{"Failed to serialize gcs"};

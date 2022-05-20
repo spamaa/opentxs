@@ -404,7 +404,7 @@ private:
     SubchainStateData() = delete;
     SubchainStateData(const SubchainStateData&) = delete;
     SubchainStateData(SubchainStateData&&) = delete;
-    SubchainStateData& operator=(const SubchainStateData&) = delete;
-    SubchainStateData& operator=(SubchainStateData&&) = delete;
+    auto operator=(const SubchainStateData&) -> SubchainStateData& = delete;
+    auto operator=(SubchainStateData&&) -> SubchainStateData& = delete;
 };
 }  // namespace opentxs::blockchain::node::wallet

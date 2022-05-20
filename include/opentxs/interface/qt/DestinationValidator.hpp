@@ -54,9 +54,9 @@ signals:
 public:
     struct Imp;
 
-    QString getDetails() const;
-    void fixup(QString& input) const final;
-    State validate(QString& input, int& pos) const final;
+    auto getDetails() const -> QString;
+    auto fixup(QString& input) const -> void final;
+    auto validate(QString& input, int& pos) const -> State final;
 
     OPENTXS_NO_EXPORT DestinationValidator(
         const api::session::Client&,
@@ -72,6 +72,7 @@ private:
     DestinationValidator() = delete;
     DestinationValidator(const DestinationValidator&) = delete;
     DestinationValidator(DestinationValidator&&) = delete;
-    DestinationValidator& operator=(const DestinationValidator&) = delete;
-    DestinationValidator& operator=(DestinationValidator&&) = delete;
+    auto operator=(const DestinationValidator&)
+        -> DestinationValidator& = delete;
+    auto operator=(DestinationValidator&&) -> DestinationValidator& = delete;
 };

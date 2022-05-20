@@ -1711,8 +1711,8 @@ private:
     Model() = delete;
     Model(const Model&) = delete;
     Model(Model&&) = delete;
-    Model& operator=(const Model&) = delete;
-    Model& operator=(Model&&) = delete;
+    auto operator=(const Model&) -> Model& = delete;
+    auto operator=(Model&&) -> Model& = delete;
 };
 }  // namespace opentxs::ui::qt::internal
 
@@ -2091,3 +2091,28 @@ auto UnitListModel(
 auto UnitListQtModel(ui::internal::UnitList& parent) noexcept
     -> std::unique_ptr<ui::UnitListQt>;
 }  // namespace opentxs::factory
+
+namespace std
+{
+template <>
+struct less<opentxs::ui::implementation::ActivityThreadRowID> {
+    auto operator()(
+        const opentxs::ui::implementation::ActivityThreadRowID& lhs,
+        const opentxs::ui::implementation::ActivityThreadRowID& rhs) const
+        -> bool;
+};
+template <>
+struct less<opentxs::ui::implementation::BlockchainSelectionSortKey> {
+    auto operator()(
+        const opentxs::ui::implementation::BlockchainSelectionSortKey& lhs,
+        const opentxs::ui::implementation::BlockchainSelectionSortKey& rhs)
+        const -> bool;
+};
+template <>
+struct less<opentxs::ui::implementation::ContactListSortKey> {
+    auto operator()(
+        const opentxs::ui::implementation::ContactListSortKey& lhs,
+        const opentxs::ui::implementation::ContactListSortKey& rhs) const
+        -> bool;
+};
+}  // namespace std

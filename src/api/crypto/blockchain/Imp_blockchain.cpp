@@ -418,7 +418,7 @@ auto BlockchainImp::ProcessTransactions(
     const auto& log = LogTrace();
     auto lock = Lock{lock_};
 
-    for (auto& pTX : in) {
+    for (const auto& pTX : in) {
         OT_ASSERT(pTX);
 
         const auto& tx = *pTX;
