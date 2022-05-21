@@ -3,24 +3,74 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// IWYU pragma: no_forward_declare opentxs::blockchain::node::implementation::FilterOracle::HeaderDownloader
+// IWYU pragma: no_include "opentxs/blockchain/BlockchainType.hpp"
+// IWYU pragma: no_include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
+
 #pragma once
 
-#include "0_stdafx.hpp"    // IWYU pragma: associated
-#include "1_Internal.hpp"  // IWYU pragma: associated
-#include "blockchain/node/filteroracle/FilterOracle.hpp"  // IWYU pragma: associated
-
+#include <cstddef>
+#include <exception>
 #include <functional>
+#include <future>
 
 #include "blockchain/DownloadManager.hpp"
-#include "internal/blockchain/Blockchain.hpp"
-#include "opentxs/network/zeromq/Context.hpp"
-#include "opentxs/network/zeromq/Pipeline.hpp"
-#include "opentxs/network/zeromq/message/Frame.hpp"
-#include "opentxs/network/zeromq/message/FrameSection.hpp"
-#include "opentxs/network/zeromq/message/Message.hpp"
-#include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/network/zeromq/socket/Socket.hpp"
-#include "opentxs/util/Log.hpp"
+#include "blockchain/DownloadTask.hpp"
+#include "blockchain/node/filteroracle/FilterOracle.hpp"
+#include "core/Worker.hpp"
+#include "opentxs/api/session/Session.hpp"
+#include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/bitcoin/cfilter/Hash.hpp"
+#include "opentxs/blockchain/bitcoin/cfilter/Header.hpp"
+#include "opentxs/blockchain/bitcoin/cfilter/Types.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
+#include "opentxs/util/Container.hpp"
+#include "opentxs/util/Time.hpp"
+
+// NOLINTBEGIN(modernize-concat-nested-namespaces)
+namespace opentxs  // NOLINT
+{
+// inline namespace v1
+// {
+namespace api
+{
+class Session;
+}  // namespace api
+
+namespace blockchain
+{
+namespace cfilter
+{
+class Hash;
+class Header;
+}  // namespace cfilter
+
+namespace database
+{
+class Cfilter;
+}  // namespace database
+
+namespace node
+{
+namespace internal
+{
+class Manager;
+}  // namespace internal
+
+class HeaderOracle;
+}  // namespace node
+}  // namespace blockchain
+
+namespace network
+{
+namespace zeromq
+{
+class Message;
+}  // namespace zeromq
+}  // namespace network
+// }  // namespace v1
+}  // namespace opentxs
+// NOLINTEND(modernize-concat-nested-namespaces)
 
 namespace opentxs::blockchain::node::implementation
 {
@@ -37,7 +87,7 @@ public:
     using Callback =
         std::function<Position(const Position&, const cfilter::Header&)>;
 
-    auto NextBatch() noexcept { return allocate_batch(type_); }
+    auto NextBatch() noexcept -> BatchType;
 
     HeaderDownloader(
         const api::Session& api,
@@ -48,36 +98,9 @@ public:
         const blockchain::Type chain,
         const cfilter::Type type,
         const UnallocatedCString& shutdown,
-        Callback&& cb) noexcept
-        : HeaderDM(
-              [&] { return db.FilterHeaderTip(type); }(),
-              [&] {
-                  auto promise = std::promise<cfilter::Header>{};
-                  const auto tip = db.FilterHeaderTip(type);
-                  promise.set_value(
-                      db.LoadFilterHeader(type, tip.second.Bytes()));
+        Callback&& cb) noexcept;
 
-                  return Finished{promise.get_future()};
-              }(),
-              "cfheader",
-              20000,
-              10000)
-        , HeaderWorker(api, 20ms)
-        , db_(db)
-        , header_(header)
-        , node_(node)
-        , filter_(filter)
-        , chain_(chain)
-        , type_(type)
-        , checkpoint_(std::move(cb))
-    {
-        init_executor(
-            {shutdown, UnallocatedCString{api_.Endpoints().BlockchainReorg()}});
-
-        OT_ASSERT(checkpoint_);
-    }
-
-    ~HeaderDownloader() { signal_shutdown().get(); }
+    ~HeaderDownloader();
 
 private:
     friend HeaderDM;
@@ -91,173 +114,18 @@ private:
     const cfilter::Type type_;
     const Callback checkpoint_;
 
-    auto batch_ready() const noexcept -> void
-    {
-        node_.JobReady(PeerManagerJobs::JobAvailableCfheaders);
-    }
-    auto batch_size(const std::size_t in) const noexcept -> std::size_t
-    {
-        if (in < 10) {
-
-            return 1;
-        } else if (in < 100) {
-
-            return 10;
-        } else if (in < 1000) {
-
-            return 100;
-        } else {
-
-            return 2000;
-        }
-    }
-    auto check_task(TaskType&) const noexcept -> void {}
-    auto trigger_state_machine() const noexcept -> void { trigger(); }
+    auto batch_ready() const noexcept -> void;
+    auto batch_size(const std::size_t in) const noexcept -> std::size_t;
+    auto check_task(TaskType&) const noexcept -> void;
+    auto trigger_state_machine() const noexcept -> void;
     auto update_tip(const Position& position, const cfilter::Header&)
-        const noexcept -> void
-    {
-        const auto saved = db_.SetFilterHeaderTip(type_, position);
+        const noexcept -> void;
 
-        OT_ASSERT(saved);
-
-        LogDetail()(print(chain_))(" cfheader chain updated to height ")(
-            position.first)
-            .Flush();
-        filter_.UpdatePosition(position);
-    }
-
-    auto pipeline(const zmq::Message& in) noexcept -> void
-    {
-        if (false == running_.load()) { return; }
-
-        const auto body = in.Body();
-
-        OT_ASSERT(1 <= body.size());
-
-        const auto work = [&] {
-            try {
-
-                return body.at(0).as<FilterOracle::Work>();
-            } catch (...) {
-
-                OT_FAIL;
-            }
-        }();
-
-        switch (work) {
-            case FilterOracle::Work::shutdown: {
-                shutdown(shutdown_promise_);
-            } break;
-            case FilterOracle::Work::block:
-            case FilterOracle::Work::reorg: {
-                process_position(in);
-                run_if_enabled();
-            } break;
-            case FilterOracle::Work::reset_filter_tip: {
-                process_reset(in);
-            } break;
-            case FilterOracle::Work::heartbeat: {
-                process_position();
-                run_if_enabled();
-            } break;
-            case FilterOracle::Work::statemachine: {
-                run_if_enabled();
-            } break;
-            default: {
-                OT_FAIL;
-            }
-        }
-    }
-    auto process_position(const zmq::Message& in) noexcept -> void
-    {
-        {
-            const auto body = in.Body();
-
-            OT_ASSERT(body.size() >= 4);
-
-            const auto chain = body.at(1).as<blockchain::Type>();
-
-            if (chain_ != chain) { return; }
-        }
-
-        process_position();
-    }
-    auto process_position() noexcept -> void
-    {
-        auto current = known();
-        auto hashes = header_.BestChain(current, 20000);
-
-        OT_ASSERT(0 < hashes.size());
-
-        auto prior = Previous{std::nullopt};
-        {
-            auto& first = hashes.front();
-
-            if (first != current) {
-                auto promise = std::promise<cfilter::Header>{};
-                promise.set_value(
-                    db_.LoadFilterHeader(type_, first.second.Bytes()));
-                prior.emplace(std::move(first), promise.get_future());
-            }
-        }
-        hashes.erase(hashes.begin());
-        update_position(std::move(hashes), type_, std::move(prior));
-    }
-    auto process_reset(const zmq::Message& in) noexcept -> void
-    {
-        const auto body = in.Body();
-
-        OT_ASSERT(3 < body.size());
-
-        auto position =
-            Position{body.at(1).as<block::Height>(), body.at(2).Bytes()};
-        auto promise = std::promise<cfilter::Header>{};
-        promise.set_value(body.at(3).Bytes());
-        Reset(position, promise.get_future());
-    }
-    auto queue_processing(DownloadedData&& data) noexcept -> void
-    {
-        if (0 == data.size()) { return; }
-
-        const auto& previous = data.front()->previous_.get();
-        auto hashes = Vector<cfilter::Hash>{};
-        auto headers = Vector<database::Cfilter::CFHeaderParams>{};
-
-        for (const auto& task : data) {
-            const auto& hash = hashes.emplace_back(task->data_.get());
-            auto header = blockchain::internal::FilterHashToHeader(
-                api_, hash.Bytes(), task->previous_.get().Bytes());
-            const auto& position = task->position_;
-            const auto check = checkpoint_(position, header);
-
-            if (check == position) {
-                headers.emplace_back(position.second, header, hash);
-                task->process(std::move(header));
-            } else {
-                const auto good =
-                    db_.LoadFilterHeader(type_, check.second.Bytes());
-
-                OT_ASSERT(false == good.IsNull());
-
-                auto work = MakeWork(Work::reset_filter_tip);
-                work.AddFrame(check.first);
-                work.AddFrame(check.second);
-                work.AddFrame(good);
-                pipeline_.Push(std::move(work));
-            }
-        }
-
-        const auto saved =
-            db_.StoreFilterHeaders(type_, previous.Bytes(), std::move(headers));
-
-        OT_ASSERT(saved);
-    }
-    auto shutdown(std::promise<void>& promise) noexcept -> void
-    {
-        if (auto previous = running_.exchange(false); previous) {
-            pipeline_.Close();
-            promise.set_value();
-        }
-    }
+    auto pipeline(const zmq::Message& in) noexcept -> void;
+    auto process_position(const zmq::Message& in) noexcept -> void;
+    auto process_position() noexcept -> void;
+    auto process_reset(const zmq::Message& in) noexcept -> void;
+    auto queue_processing(DownloadedData&& data) noexcept -> void;
+    auto shutdown(std::promise<void>& promise) noexcept -> void;
 };
 }  // namespace opentxs::blockchain::node::implementation
