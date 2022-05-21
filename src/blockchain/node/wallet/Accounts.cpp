@@ -21,9 +21,9 @@
 
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
-#include "internal/blockchain/node/FilterOracle.hpp"
 #include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/Manager.hpp"
+#include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/wallet/Account.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/Types.hpp"

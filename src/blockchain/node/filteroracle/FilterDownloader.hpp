@@ -72,7 +72,7 @@ public:
         const blockchain::Type chain,
         const cfilter::Type type,
         const UnallocatedCString& shutdown,
-        const NotifyCallback& notify) noexcept
+        const filteroracle::NotifyCallback& notify) noexcept
         : FilterDM(
               [&] { return db.FilterTip(type); }(),
               [&] {
@@ -108,7 +108,7 @@ private:
     const internal::Manager& node_;
     const blockchain::Type chain_;
     const cfilter::Type type_;
-    const NotifyCallback& notify_;
+    const filteroracle::NotifyCallback& notify_;
 
     auto batch_ready() const noexcept -> void
     {
