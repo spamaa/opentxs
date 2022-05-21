@@ -11,6 +11,7 @@ target_sources(
     "BlockIndexer.hpp"
     "FilterCheckpoints.hpp"
     "FilterDownloader.hpp"
+    "HeaderDownloader.cpp"
     "HeaderDownloader.hpp"
     "FilterOracle.cpp"
     "FilterOracle.hpp"
