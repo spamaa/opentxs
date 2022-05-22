@@ -6,15 +6,17 @@
 target_sources(
   opentxs-common
   PRIVATE
-    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/FilterOracle.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/filteroracle/FilterOracle.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/filteroracle/BlockIndexer.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/filteroracle/Types.hpp"
     "BlockIndexer.cpp"
     "BlockIndexer.hpp"
     "FilterCheckpoints.hpp"
     "FilterDownloader.hpp"
-    "HeaderDownloader.cpp"
-    "HeaderDownloader.hpp"
     "FilterOracle.cpp"
     "FilterOracle.hpp"
+    "HeaderDownloader.cpp"
+    "HeaderDownloader.hpp"
 )
 set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/node/FilterOracle.hpp"
