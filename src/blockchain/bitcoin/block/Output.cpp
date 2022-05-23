@@ -22,7 +22,6 @@
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/bitcoin/Bitcoin.hpp"
 #include "internal/blockchain/bitcoin/block/Factory.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/core/Amount.hpp"
 #include "internal/core/Factory.hpp"
 #include "internal/identity/wot/claim/Types.hpp"
@@ -159,11 +158,10 @@ auto BitcoinTransactionOutput(
             [&]() -> blockchain::block::Position {
                 if (const auto& hash = in.mined_block(); 0 < hash.size()) {
 
-                    return std::make_pair(
-                        in.mined_height(), blockchain::block::Hash{hash});
+                    return {in.mined_height(), hash};
                 } else {
 
-                    return make_blank<blockchain::block::Position>::value(api);
+                    return {};
                 }
             }(),
             static_cast<blockchain::node::TxoState>(in.state()),
@@ -276,7 +274,7 @@ Output::Output(
           {},
           {},
           false,
-          make_blank<blockchain::block::Position>::value(api),
+          blockchain::block::Position{},
           node::TxoState::Error,
           {})
 {
@@ -302,7 +300,7 @@ Output::Output(
           {},
           {},
           false,
-          make_blank<blockchain::block::Position>::value(api),
+          blockchain::block::Position{},
           node::TxoState::Error,
           {})
 {

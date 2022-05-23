@@ -27,7 +27,6 @@
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Types.hpp"
-#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Time.hpp"
 
@@ -43,6 +42,11 @@ class Session;
 
 namespace blockchain
 {
+namespace block
+{
+class Position;
+}  // namespace block
+
 namespace database
 {
 class Sync;

@@ -307,7 +307,7 @@ auto Requestor::Imp::process_sync_ack(Message&& in) noexcept -> void
     const auto& ack = base->asAcknowledgement();
     update_remote_position(ack.State(chain_));
     log_(OT_PRETTY_CLASS())("best chain tip for ")(print(chain_))(
-        " according to sync peer is ")(print(remote_position_))
+        " according to sync peer is ")(remote_position_)
         .Flush();
 }
 
@@ -369,7 +369,7 @@ auto Requestor::Imp::request(const block::Position& position) noexcept -> void
     }
 
     log_(OT_PRETTY_CLASS())("requesting ")(print(chain_))(
-        " sync data starting from block ")(position.first)
+        " sync data starting from block ")(position.height_)
         .Flush();
     pipeline_.Internal().SendFromThread([&] {
         auto msg = MakeWork(Work::Request);
@@ -542,7 +542,7 @@ auto Requestor::Imp::transition_state_run() noexcept -> void
 {
     const auto checkpoint = params::Chains().at(chain_).checkpoint_.height_;
 
-    if (remote_position_.first < checkpoint) { return; }
+    if (remote_position_.height_ < checkpoint) { return; }
 
     if (local_position_ != remote_position_) { return; }
 

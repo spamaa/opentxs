@@ -20,13 +20,13 @@
 #include "internal/blockchain/block/Header.hpp"
 #include "internal/blockchain/database/Header.hpp"
 #include "internal/blockchain/node/Factory.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/Work.hpp"
 #include "opentxs/blockchain/bitcoin/block/Header.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/bitcoin/cfilter/Header.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/p2p/Block.hpp"
@@ -64,7 +64,7 @@ HeaderOracle::HeaderOracle(
     auto lock = Lock{lock_};
     const auto best = best_chain(lock);
 
-    OT_ASSERT(0 <= best.first);
+    OT_ASSERT(0 <= best.height_);
 }
 
 auto HeaderOracle::Ancestors(
@@ -74,28 +74,29 @@ auto HeaderOracle::Ancestors(
 {
     auto lock = Lock{lock_};
     const auto check =
-        std::max<block::Height>(std::min(start.first, target.first), 0);
-    const auto fast = is_in_best_chain(lock, target.second).first &&
-                      is_in_best_chain(lock, start.second).first &&
-                      (start.first < target.first);
+        std::max<block::Height>(std::min(start.height_, target.height_), 0);
+    const auto fast = is_in_best_chain(lock, target.hash_).first &&
+                      is_in_best_chain(lock, start.hash_).first &&
+                      (start.height_ < target.height_);
 
     if (fast) {
         auto output = best_chain(lock, start, limit);
         lock.unlock();
 
-        while ((1 < output.size()) && (output.back().first > target.first)) {
+        while ((1 < output.size()) &&
+               (output.back().height_ > target.height_)) {
             output.pop_back();
         }
 
         OT_ASSERT(0 < output.size());
-        OT_ASSERT(output.front().first <= check);
+        OT_ASSERT(output.front().height_ <= check);
 
         return output;
     }
 
     auto cache = UnallocatedDeque<block::Position>{};
-    auto current = database_.LoadHeader(target.second);
-    auto sibling = database_.LoadHeader(start.second);
+    auto current = database_.LoadHeader(target.hash_);
+    auto sibling = database_.LoadHeader(start.hash_);
 
     while (sibling->Height() > current->Height()) {
         sibling = database_.TryLoadHeader(sibling->ParentHash());
@@ -136,7 +137,7 @@ auto HeaderOracle::Ancestors(
     auto output = Positions{};
     std::move(cache.begin(), cache.end(), std::back_inserter(output));
 
-    OT_ASSERT(output.front().first <= check);
+    OT_ASSERT(output.front().height_ <= check);
 
     return output;
 }
@@ -336,7 +337,7 @@ auto HeaderOracle::best_chain(
 {
     const auto [youngest, best] = common_parent(lock, tip);
     static const auto blank = block::Hash{};
-    auto height = std::max<block::Height>(youngest.first, 0);
+    auto height = std::max<block::Height>(youngest.height_, 0);
     auto output = Positions{};
 
     // TODO allocator
@@ -442,13 +443,13 @@ auto HeaderOracle::best_hashes(
     const auto last = [&] {
         if (limitIsZero) {
 
-            return tip.first;
+            return tip.height_;
         } else {
             const auto requestedEnd = block::Height{
                 current + static_cast<block::Height>(limit) -
                 static_cast<block::Height>(1)};
 
-            return std::min<block::Height>(requestedEnd, tip.first);
+            return std::min<block::Height>(requestedEnd, tip.height_);
         }
     }();
 
@@ -479,7 +480,7 @@ auto HeaderOracle::blank_hash() const noexcept -> const block::Hash&
 
 auto HeaderOracle::blank_position() const noexcept -> const block::Position&
 {
-    static const auto blank = make_blank<block::Position>::value(api_);
+    static const auto blank = block::Position{};
 
     return blank;
 }
@@ -501,14 +502,14 @@ auto HeaderOracle::calculate_reorg(const Lock& lock, const block::Position& tip)
 
     output.emplace_back(tip);
 
-    for (auto height{tip.first}; height >= 0; --height) {
+    for (auto height{tip.height_}; height >= 0; --height) {
         if (0 == height) {
             throw std::runtime_error(
                 "Provided tip does not connect to genesis block");
         }
 
         const auto& child = *output.crbegin();
-        const auto pHeader = database_.TryLoadHeader(child.second);
+        const auto pHeader = database_.TryLoadHeader(child.hash_);
 
         if (false == bool(pHeader)) {
             throw std::runtime_error("Failed to load block header");
@@ -547,7 +548,7 @@ auto HeaderOracle::choose_candidate(
             OT_ASSERT(0 < candidate.chain_.size());
 
             const auto& position = *candidate.chain_.crbegin();
-            const auto& tip = update.Header(position.second);
+            const auto& tip = update.Header(position.hash_);
 
             if (evaluate_candidate(*pBest, tip)) { pBest = &tip; }
         }
@@ -560,7 +561,7 @@ auto HeaderOracle::choose_candidate(
             OT_ASSERT(0 < candidate.chain_.size());
 
             const auto& position = *candidate.chain_.crbegin();
-            const auto& tip = update.Header(position.second);
+            const auto& tip = update.Header(position.hash_);
 
             if (tip.Hash() == best.Hash()) {
                 found = true;
@@ -630,12 +631,12 @@ auto HeaderOracle::common_parent(
         {0, GenesisBlockHash(chain_)}, best_chain(lock)};
     auto& [parent, best] = output;
     auto test{position};
-    auto pHeader = database.TryLoadHeader(test.second);
+    auto pHeader = database.TryLoadHeader(test.hash_);
 
     if (false == bool(pHeader)) { return output; }
 
-    while (0 < test.first) {
-        if (is_in_best_chain(lock, test.second).first) {
+    while (0 < test.height_) {
+        if (is_in_best_chain(lock, test.hash_).first) {
             parent = test;
 
             return output;
@@ -663,7 +664,7 @@ auto HeaderOracle::connect_children(
     auto& chain = candidate.chain_;
     const auto& end = *chain.crbegin();
 
-    OT_ASSERT(end.first + 1 == parent.Position().first);
+    OT_ASSERT(end.height_ + 1 == parent.Position().height_);
 
     chain.emplace_back(parent.Position());
 
@@ -715,7 +716,7 @@ auto HeaderOracle::DeleteCheckpoint() noexcept -> bool
         return false;
     }
 
-    const auto position = update.Checkpoint().first;
+    const auto position = update.Checkpoint().height_;
     update.ClearCheckpoint();
 
     if (apply_checkpoint(lock, position, update)) {
@@ -814,7 +815,7 @@ auto HeaderOracle::Init() noexcept -> void
     }
 
     // Remove existing checkpoint if it is set
-    if (existingHeight != null.first) {
+    if (existingHeight != null.height_) {
         LogConsole()(print(chain_))(
             ": Removing obsolete checkpoint at height ")(existingHeight)
             .Flush();
@@ -851,14 +852,14 @@ auto HeaderOracle::initialize_candidate(
     using StopFunction = std::function<bool(const block::Position&)>;
     auto run =
         stopHash.IsNull() ? StopFunction{[&update](const auto& in) -> bool {
-            return update.EffectiveBestBlock(in.first) != in.second;
+            return update.EffectiveBestBlock(in.height_) != in.hash_;
         }}
                           : StopFunction{[&stopHash](const auto& in) -> bool {
-                                return stopHash != in.second;
+                                return stopHash != in.hash_;
                             }};
 
     while (run(position)) {
-        OT_ASSERT(0 <= position.first);
+        OT_ASSERT(0 <= position.height_);
         OT_ASSERT(grandparent);
 
         chain.insert(chain.begin(), position);
@@ -885,7 +886,7 @@ auto HeaderOracle::IsInBestChain(const block::Position& position) const noexcept
 {
     auto lock = Lock{lock_};
 
-    return is_in_best_chain(lock, position.first, position.second);
+    return is_in_best_chain(lock, position.height_, position.hash_);
 }
 
 auto HeaderOracle::is_disconnected(
@@ -924,7 +925,7 @@ auto HeaderOracle::is_in_best_chain(
     const Lock& lock,
     const block::Position& position) const noexcept -> bool
 {
-    return is_in_best_chain(lock, position.first, position.second);
+    return is_in_best_chain(lock, position.height_, position.hash_);
 }
 
 auto HeaderOracle::is_in_best_chain(
@@ -1054,7 +1055,7 @@ auto HeaderOracle::stage_candidate(
             child,
             best.Hash());
         candidate.chain_.emplace_back(child.Position());
-        const auto first = candidate.chain_.cbegin()->first;
+        const auto first = candidate.chain_.cbegin()->height_;
 
         OT_ASSERT(position == first);
     }

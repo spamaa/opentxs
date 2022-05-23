@@ -34,6 +34,7 @@
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
 #include "opentxs/blockchain/crypto/Deterministic.hpp"
 #include "opentxs/blockchain/crypto/HD.hpp"

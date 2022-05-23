@@ -56,6 +56,7 @@
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
 #include "opentxs/blockchain/crypto/Subaccount.hpp"
 #include "opentxs/blockchain/crypto/Subchain.hpp"  // IWYU pragma: keep
@@ -407,7 +408,7 @@ private:
             output);
         const auto& [count, of] = output;
         log(OT_PRETTY_CLASS())(name_)(" GCS ")(procedure)(" for block ")(
-            print(position))(" matched ")(count)(" of ")(of)(" target elements")
+            position)(" matched ")(count)(" of ")(of)(" target elements")
             .Flush();
         auto& [clean, dirty, sizes] = cache;
 
@@ -417,7 +418,7 @@ private:
             dirty.emplace(position);
         }
 
-        sizes.emplace(position.first, cfilter.ElementCount());
+        sizes.emplace(position.height_, cfilter.ElementCount());
     }
 };
 }  // namespace opentxs::blockchain::node::wallet
@@ -480,7 +481,7 @@ SubchainStateData::SubchainStateData(
     , chain_(node_.Chain())
     , filter_type_(filter)
     , db_key_(db.GetSubchainID(id_, subchain_))
-    , null_position_(make_blank<block::Position>::value(api_))
+    , null_position_(block::Position{})
     , genesis_(node_.HeaderOracle().GetPosition(0))
     , from_ssd_endpoint_(std::move(toChildren))
     , to_ssd_endpoint_(std::move(fromChildren))
@@ -692,8 +693,7 @@ auto SubchainStateData::do_reorg(
     std::atomic_int& errors,
     const block::Position ancestor) noexcept -> void
 {
-    log_(OT_PRETTY_CLASS())(name_)(" processing reorg to ")(print(ancestor))
-        .Flush();
+    log_(OT_PRETTY_CLASS())(name_)(" processing reorg to ")(ancestor).Flush();
     const auto tip = db_.SubchainLastScanned(db_key_);
     // TODO use ancestor
     const auto& headers = node_.HeaderOracle();
@@ -733,8 +733,7 @@ auto SubchainStateData::do_reorg(
         }
     } catch (...) {
         LogError()(OT_PRETTY_CLASS())(
-            name_)(" header oracle claims existing tip ")(print(tip))(
-            " is invalid")
+            name_)(" header oracle claims existing tip ")(tip)(" is invalid")
             .Flush();
         ++errors;
     }
@@ -938,7 +937,7 @@ auto SubchainStateData::ProcessBlock(
     const auto& type = filter_type_;
     const auto& node = node_;
     const auto& filters = node.FilterOracleInternal();
-    const auto& blockHash = position.second;
+    const auto& blockHash = position.hash_;
     auto buf = std::array<std::byte, 16_KiB>{};
     auto upstream = alloc::StandardToBoost{get_allocator().resource()};
     auto alloc = alloc::BoostMonotonic{buf.data(), buf.size(), &upstream};
@@ -988,7 +987,7 @@ auto SubchainStateData::ProcessBlock(
     const auto haveHeader = Clock::now();
     handle_confirmed_matches(block, position, confirmed, log);
     const auto handledMatches = Clock::now();
-    LogConsole()(name)(" processed block ")(print(position))(" in ")(
+    LogConsole()(name)(" processed block ")(position)(" in ")(
         std::chrono::nanoseconds{Clock::now() - start})
         .Flush();
     log(OT_PRETTY_CLASS())(name)(" ")(general.size())(" of ")(
@@ -1058,7 +1057,7 @@ auto SubchainStateData::ProcessReorg(
 auto SubchainStateData::ReportScan(const block::Position& pos) const noexcept
     -> void
 {
-    log_(OT_PRETTY_CLASS())(name_)(" progress updated to ")(print(pos)).Flush();
+    log_(OT_PRETTY_CLASS())(name_)(" progress updated to ")(pos).Flush();
     subaccount_.Internal().SetScanProgress(pos, subchain_);
     api_.Crypto().Blockchain().Internal().ReportScan(
         chain_, owner_, account_type_, id_, subchain_, pos);
@@ -1112,7 +1111,7 @@ auto SubchainStateData::scan(
         const auto& headers = node.HeaderOracle();
         const auto& filters = node.FilterOracleInternal();
         const auto start = Clock::now();
-        const auto startHeight = highestTested.first + 1;
+        const auto startHeight = highestTested.height_ + 1;
         auto atLeastOnce = std::atomic_bool{false};
         auto highestClean = std::optional<block::Position>{std::nullopt};
         auto resultMap = [&] {
@@ -1181,7 +1180,7 @@ auto SubchainStateData::scan(
                 .Flush();
             const auto stopHeight = std::min(
                 std::min<block::Height>(
-                    startHeight + scanBatch - 1, best.first),
+                    startHeight + scanBatch - 1, best.height_),
                 stop);
 
             if (startHeight > stopHeight) {
@@ -1358,7 +1357,7 @@ auto SubchainStateData::scan(
             const auto count = out.size();
             log(OT_PRETTY_CLASS())(name)(" ")(procedure)(" found ")(
                 count)(" new potential matches between blocks ")(
-                startHeight)(" and ")(highestTested.first)(" in ")(
+                startHeight)(" and ")(highestTested.height_)(" in ")(
                 std::chrono::nanoseconds{Clock::now() - start})
                 .Flush();
         } else {
@@ -1479,7 +1478,7 @@ auto SubchainStateData::select_matches(
         // no possibility that blocks at or below that position will be
         // processed.
         log_(OT_PRETTY_CLASS())(name_)(" existing matches for block ")(
-            print(block))(" not found")
+            block)(" not found")
             .Flush();
 
         return false;
@@ -1506,7 +1505,7 @@ auto SubchainStateData::select_targets(
 {
     auto alloc = out.get_allocator();
     auto& [hash, selected] = out.emplace_back(std::make_pair(
-        block.second,
+        block.hash_,
         std::make_tuple(
             std::make_pair(Vector<Bip32Index>{alloc}, Targets{alloc}),
             std::make_pair(Vector<Bip32Index>{alloc}, Targets{alloc}),

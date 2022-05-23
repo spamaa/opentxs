@@ -11,10 +11,10 @@
 
 #include <cstring>
 #include <iterator>
-#include <type_traits>
 
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameIterator.hpp"
@@ -65,9 +65,9 @@ auto decode(
         }();
 
         if (ScanState::dirty == type) {
-            dirty.emplace(std::make_pair(height, std::move(hash)));
+            dirty.emplace(height, std::move(hash));
         } else {
-            clean.emplace(type, std::make_pair(height, std::move(hash)));
+            clean.emplace(type, block::Position{height, std::move(hash)});
         }
     }
 }
@@ -140,7 +140,7 @@ auto extract_dirty(
 
             return out;
         }();
-        out.emplace_back(type, std::make_pair(height, std::move(hash)));
+        out.emplace_back(type, block::Position{height, std::move(hash)});
     }
 }
 }  // namespace opentxs::blockchain::node::wallet

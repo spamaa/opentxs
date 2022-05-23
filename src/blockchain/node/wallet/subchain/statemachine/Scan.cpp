@@ -35,7 +35,6 @@
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/bitcoin/block/Output.hpp"  // IWYU pragma: keep
-#include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
@@ -110,15 +109,15 @@ auto Scan::Imp::do_startup() noexcept -> void
     OT_ASSERT(filter_tip_.has_value());
 
     log_(OT_PRETTY_CLASS())(parent_.name_)(" loaded last scanned value of ")(
-        opentxs::print(last_scanned_.value()))(" from database")
+        last_scanned_.value())(" from database")
         .Flush();
     log_(OT_PRETTY_CLASS())(parent_.name_)(" loaded filter tip value of ")(
-        opentxs::print(last_scanned_.value()))(" from filter oracle")
+        last_scanned_.value())(" from filter oracle")
         .Flush();
 
     if (last_scanned_.value() > filter_tip_.value()) {
         log_(OT_PRETTY_CLASS())(parent_.name_)(" last scanned reset to ")(
-            opentxs::print(filter_tip_.value()))
+            filter_tip_.value())
             .Flush();
         last_scanned_ = filter_tip_;
     }
@@ -142,14 +141,13 @@ auto Scan::Imp::ProcessReorg(
         const auto target = parent_.ReorgTarget(
             headerOracleLock, parent, last_scanned_.value());
         log_(OT_PRETTY_CLASS())(parent_.name_)(" last scanned reset to ")(
-            opentxs::print(target))
+            target)
             .Flush();
         last_scanned_ = target;
     }
 
     if (filter_tip_.has_value() && (filter_tip_.value() > parent)) {
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" filter tip reset to ")(
-            opentxs::print(parent))
+        log_(OT_PRETTY_CLASS())(parent_.name_)(" filter tip reset to ")(parent)
             .Flush();
         filter_tip_ = parent;
     }
@@ -166,15 +164,13 @@ auto Scan::Imp::process_filter(Message&& in, block::Position&& tip) noexcept
     -> void
 {
     if (tip < this->tip()) {
-        log_(OT_PRETTY_CLASS())(name_)(" ignoring stale filter tip ")(
-            opentxs::print(tip))
+        log_(OT_PRETTY_CLASS())(name_)(" ignoring stale filter tip ")(tip)
             .Flush();
 
         return;
     }
 
-    log_(OT_PRETTY_CLASS())(parent_.name_)(" filter tip updated to ")(
-        opentxs::print(tip))
+    log_(OT_PRETTY_CLASS())(parent_.name_)(" filter tip updated to ")(tip)
         .Flush();
     filter_tip_ = std::move(tip);
 
@@ -233,13 +229,13 @@ auto Scan::Imp::work() noexcept -> bool
         return false;
     }
 
-    const auto height = current().first;
+    const auto height = current().height_;
     const auto rescan = [&]() -> block::Height {
         auto handle = parent_.progress_position_.lock();
 
         if (handle->has_value()) {
 
-            return handle->value().first;
+            return handle->value().height_;
         } else {
 
             return -1;
@@ -268,7 +264,7 @@ auto Scan::Imp::work() noexcept -> bool
         dirty);
     last_scanned_ = std::move(highestTested);
     log_(OT_PRETTY_CLASS())(parent_.name_)(" last scanned updated to ")(
-        opentxs::print(current()))
+        current())
         .Flush();
 
     if (auto count = dirty.size(); 0u < count) {

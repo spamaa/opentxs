@@ -27,6 +27,7 @@
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/core/Data.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
@@ -98,8 +99,7 @@ struct SubchainData::Imp {
 
         const auto position =
             headers.Internal().GetPosition(headerOracleLock, target);
-        LogTrace()(OT_PRETTY_CLASS())("resetting last scanned to ")(
-            print(position))
+        LogTrace()(OT_PRETTY_CLASS())("resetting last scanned to ")(position)
             .Flush();
 
         if (false == cache_.SetLastScanned(subchain, position, tx)) {

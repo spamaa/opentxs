@@ -27,6 +27,7 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -81,8 +82,7 @@ auto Index::Imp::do_process_update(Message&& msg) noexcept -> void
     for (const auto& [type, position] : clean) {
         if (ScanState::processed == type) {
             log_(OT_PRETTY_CLASS())(parent_.name_)(" re-indexing ")(
-                parent_.name_)(" due to processed block ")(
-                opentxs::print(position))
+                parent_.name_)(" due to processed block ")(position)
                 .Flush();
         }
     }

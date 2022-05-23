@@ -3,8 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef OPENTXS_OPENTXS_HPP
-#define OPENTXS_OPENTXS_HPP
+#pragma once
 
 // IWYU pragma: begin_exports
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
@@ -388,5 +387,4 @@
 #include "opentxs/util/WorkType.hpp"
 #include "opentxs/util/storage/Driver.hpp"
 #include "opentxs/util/storage/Plugin.hpp"
-#endif
 // IWYU pragma: end_exports
