@@ -501,7 +501,7 @@ auto BlockchainImp::ReportScan(
     OT_ASSERT(false == id.empty());
 
     const auto bytes = id.Bytes();
-    const auto hash = progress.second.Bytes();
+    const auto hash = progress.hash_.Bytes();
     scan_updates_->Send([&] {
         auto work = opentxs::network::zeromq::tagged_message(
             WorkType::BlockchainWalletScanProgress);
@@ -510,7 +510,7 @@ auto BlockchainImp::ReportScan(
         work.AddFrame(type);
         work.AddFrame(bytes.data(), bytes.size());
         work.AddFrame(subchain);
-        work.AddFrame(progress.first);
+        work.AddFrame(progress.height_);
         work.AddFrame(hash.data(), hash.size());
 
         return work;

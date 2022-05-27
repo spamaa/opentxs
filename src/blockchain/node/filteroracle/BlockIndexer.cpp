@@ -40,6 +40,7 @@
 #include "opentxs/blockchain/bitcoin/cfilter/Header.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/node/BlockOracle.hpp"
 #include "opentxs/blockchain/node/FilterOracle.hpp"
@@ -133,18 +134,18 @@ BlockIndexer::Imp::Imp(
     , state_(State::normal)
     , previous_header_()
     , current_header_()
-    , best_position_(make_blank<block::Position>::value(api_))
-    , current_position_(make_blank<block::Position>::value(api_))
+    , best_position_(block::Position{})
+    , current_position_(block::Position{})
 {
 }
 
 auto BlockIndexer::Imp::calculate_next_block() noexcept -> bool
 {
-    OT_ASSERT(0 <= current_position_.first);
+    OT_ASSERT(0 <= current_position_.height_);
 
     const auto& blockOracle = node_.BlockOracle();
     const auto& headerOracle = node_.HeaderOracle();
-    auto position = headerOracle.GetPosition(current_position_.first + 1);
+    auto position = headerOracle.GetPosition(current_position_.height_ + 1);
     const auto& [height, hash] = position;
 
     if (hash.empty()) {
@@ -181,7 +182,7 @@ auto BlockIndexer::Imp::calculate_next_block() noexcept -> bool
 
     OT_ASSERT(block.ID() == hash);
 
-    if (block.Header().ParentHash() != current_position_.second) {
+    if (block.Header().ParentHash() != current_position_.hash_) {
         log_(OT_PRETTY_CLASS())(name_)(": block ")
             .asHex(hash)(" is not connected to current tip")
             .Flush();
@@ -198,7 +199,7 @@ auto BlockIndexer::Imp::calculate_next_block() noexcept -> bool
 
     if (false == cfilter.IsValid()) {
         log_(OT_PRETTY_CLASS())(name_)(": failed to calculate gcs for ")(
-            print(position))
+            position)
             .Flush();
 
         OT_FAIL;
@@ -226,8 +227,8 @@ auto BlockIndexer::Imp::do_shutdown() noexcept -> void
 {
     current_header_ = {};
     previous_header_ = {};
-    best_position_ = make_blank<block::Position>::value(api_);
-    current_position_ = make_blank<block::Position>::value(api_);
+    best_position_ = block::Position{};
+    current_position_ = block::Position{};
 }
 
 auto BlockIndexer::Imp::do_startup() noexcept -> void
@@ -246,16 +247,16 @@ auto BlockIndexer::Imp::find_best_position(block::Position candidate) noexcept
     static const auto blank = make_blank<block::Height>::value(api_);
     const auto& headerOracle = node_.HeaderOracle();
 
-    if (blank == candidate.first) {
+    if (blank == candidate.height_) {
         candidate = headerOracle.GetPosition(0);
 
-        OT_ASSERT(db_.HaveFilterHeader(filter_type_, candidate.second));
-        OT_ASSERT(db_.HaveFilter(filter_type_, candidate.second));
+        OT_ASSERT(db_.HaveFilterHeader(filter_type_, candidate.hash_));
+        OT_ASSERT(db_.HaveFilter(filter_type_, candidate.hash_));
     }
 
-    if (0 == candidate.first) {
+    if (0 == candidate.height_) {
         current_header_ =
-            db_.LoadFilterHeader(filter_type_, candidate.second.Bytes());
+            db_.LoadFilterHeader(filter_type_, candidate.hash_.Bytes());
         previous_header_ = {};
         current_position_ = std::move(candidate);
 
@@ -273,21 +274,21 @@ auto BlockIndexer::Imp::find_best_position(block::Position candidate) noexcept
                    db_.HaveFilter(filter_type_, prev);
         };
 
-        while (0 <= candidate.first) {
-            if (0 == candidate.first) {
-                current_header_ = db_.LoadFilterHeader(
-                    filter_type_, candidate.second.Bytes());
+        while (0 <= candidate.height_) {
+            if (0 == candidate.height_) {
+                current_header_ =
+                    db_.LoadFilterHeader(filter_type_, candidate.hash_.Bytes());
                 previous_header_ = {};
                 current_position_ = std::move(candidate);
 
                 return;
             } else {
-                auto prior = candidate.first - 1;
+                auto prior = candidate.height_ - 1;
                 auto previous = headerOracle.BestHash(prior);
 
-                if (have_data(previous, candidate.second)) {
+                if (have_data(previous, candidate.hash_)) {
                     current_header_ = db_.LoadFilterHeader(
-                        filter_type_, candidate.second.Bytes());
+                        filter_type_, candidate.hash_.Bytes());
                     previous_header_ =
                         db_.LoadFilterHeader(filter_type_, previous.Bytes());
                     current_position_ = std::move(candidate);

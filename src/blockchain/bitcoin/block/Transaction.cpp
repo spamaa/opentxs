@@ -15,7 +15,6 @@
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 
 #include "Proto.hpp"
@@ -25,7 +24,6 @@
 #include "internal/blockchain/bitcoin/block/Input.hpp"   // IWYU pragma: keep
 #include "internal/blockchain/bitcoin/block/Output.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/block/Block.hpp"           // IWYU pragma: keep
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/core/Amount.hpp"
 #include "internal/identity/wot/claim/Types.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -140,7 +138,7 @@ auto BitcoinTransaction(
             std::move(inputs),
             std::move(outputs),
             UnallocatedVector<blockchain::Type>{chain},
-            make_blank<blockchain::block::Position>::value(api));
+            blockchain::block::Position{});
     } catch (const std::exception& e) {
         LogError()("opentxs::factory::")(__func__)(": ")(e.what()).Flush();
 
@@ -246,7 +244,7 @@ auto BitcoinTransaction(
             factory::BitcoinTransactionOutputs(
                 std::move(instantiatedOutputs), outputBytes),
             UnallocatedVector<blockchain::Type>{chain},
-            make_blank<blockchain::block::Position>::value(api),
+            blockchain::block::Position{},
             [&]() -> std::optional<std::size_t> {
                 if (std::numeric_limits<std::size_t>::max() == position) {
 

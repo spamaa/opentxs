@@ -15,6 +15,7 @@
 #include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -51,7 +52,7 @@ public:
             if (first != current) {
                 auto promise = std::promise<cfilter::Header>{};
                 auto cfheader =
-                    db_.LoadFilterHeader(type_, first.second.Bytes());
+                    db_.LoadFilterHeader(type_, first.hash_.Bytes());
 
                 OT_ASSERT(false == cfheader.IsNull());
 
@@ -79,7 +80,7 @@ public:
                   auto promise = std::promise<cfilter::Header>{};
                   const auto tip = db.FilterTip(type);
                   promise.set_value(
-                      db.LoadFilterHeader(type, tip.second.Bytes()));
+                      db.LoadFilterHeader(type, tip.hash_.Bytes()));
 
                   return Finished{promise.get_future()};
               }(),
@@ -140,7 +141,7 @@ private:
         OT_ASSERT(saved);
 
         LogDetail()(print(chain_))(" cfilter chain updated to height ")(
-            position.first)
+            position.height_)
             .Flush();
         notify_(type_, position);
     }
@@ -204,14 +205,14 @@ private:
         for (const auto& task : data) {
             const auto& priorCfheader = task->previous_.get();
             auto& cfilter = const_cast<GCS&>(task->data_.get());
-            const auto& block = task->position_.second;
+            const auto& block = task->position_.hash_;
             const auto expected = db_.LoadFilterHash(type_, block.Bytes());
 
             if (expected == cfilter.Hash()) {
                 task->process(cfilter.Header(priorCfheader));
                 filters.emplace_back(block, std::move(cfilter));
             } else {
-                LogError()("Filter for block ")(print(task->position_))(
+                LogError()("Filter for block ")(task->position_)(
                     " does not match header. Received: ")(
                     cfilter.Hash().asHex())(" expected: ")(expected.asHex())
                     .Flush();

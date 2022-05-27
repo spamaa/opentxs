@@ -16,7 +16,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <string_view>
-#include <type_traits>
 #include <utility>
 
 #include "internal/blockchain/crypto/Crypto.hpp"
@@ -40,6 +39,7 @@
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
@@ -165,11 +165,10 @@ auto Accounts::Imp::do_startup() noexcept -> void
     for (const auto& id : api_.Wallet().LocalNyms()) { process_nym(id); }
 
     const auto oldPosition = db_.GetPosition();
-    log_(OT_PRETTY_CLASS())(name_)(" last wallet position is ")(
-        print(oldPosition))
+    log_(OT_PRETTY_CLASS())(name_)(" last wallet position is ")(oldPosition)
         .Flush();
 
-    if (0 > oldPosition.first) { return; }
+    if (0 > oldPosition.height_) { return; }
 
     const auto [parent, best] = node_.HeaderOracle().CommonParent(oldPosition);
 
@@ -183,10 +182,10 @@ auto Accounts::Imp::do_startup() noexcept -> void
         pipeline_.Push([&](const auto& ancestor, const auto& tip) {
             auto out = MakeWork(Work::reorg);
             out.AddFrame(chain_);
-            out.AddFrame(ancestor.second);
-            out.AddFrame(ancestor.first);
-            out.AddFrame(tip.second);
-            out.AddFrame(tip.first);
+            out.AddFrame(ancestor.hash_);
+            out.AddFrame(ancestor.height_);
+            out.AddFrame(tip.hash_);
+            out.AddFrame(tip.height_);
 
             return out;
         }(parent, best));
@@ -230,8 +229,7 @@ auto Accounts::Imp::process_block_header(Message&& in) noexcept -> void
 
     const auto position =
         block::Position{body.at(3).as<block::Height>(), body.at(2).Bytes()};
-    log_(OT_PRETTY_CLASS())("processing block header for ")(print(position))
-        .Flush();
+    log_(OT_PRETTY_CLASS())("processing block header for ")(position).Flush();
     db_.AdvanceTo(position);
 }
 
@@ -291,8 +289,8 @@ auto Accounts::Imp::process_reorg(Message&& in) noexcept -> void
 
     process_reorg(
         std::move(in),
-        std::make_pair(body.at(3).as<block::Height>(), body.at(2).Bytes()),
-        std::make_pair(body.at(5).as<block::Height>(), body.at(4).Bytes()));
+        {body.at(3).as<block::Height>(), body.at(2).Bytes()},
+        {body.at(5).as<block::Height>(), body.at(4).Bytes()});
 }
 
 auto Accounts::Imp::process_reorg(
@@ -352,7 +350,7 @@ auto Accounts::Imp::process_reorg(
 
         OT_ASSERT(rc);
     });
-    LogConsole()(name_)(": reorg to ")(print(tip))(" finished").Flush();
+    LogConsole()(name_)(": reorg to ")(tip)(" finished").Flush();
 }
 
 auto Accounts::Imp::process_rescan(Message&& in) noexcept -> void

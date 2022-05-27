@@ -588,7 +588,7 @@ auto Base::GetVerifiedPeerCount() const noexcept -> std::size_t
 
 auto Base::init() noexcept -> void
 {
-    local_chain_height_.store(header_.BestChain().first);
+    local_chain_height_.store(header_.BestChain().height_);
 
     {
         const auto best = database_.CurrentBest();
@@ -597,7 +597,7 @@ auto Base::init() noexcept -> void
 
         const auto position = best->Position();
         LogVerbose()(print(chain_))(" chain initialized with best hash ")(
-            print(position))
+            position)
             .Flush();
     }
 
@@ -628,13 +628,13 @@ auto Base::IsWalletScanEnabled() const noexcept -> bool
 
 auto Base::is_synchronized_blocks() const noexcept -> bool
 {
-    return block_.Tip().first >= this->target();
+    return block_.Tip().height_ >= this->target();
 }
 
 auto Base::is_synchronized_filters() const noexcept -> bool
 {
     const auto target = this->target();
-    const auto progress = filters_.Tip(filters_.DefaultType()).first;
+    const auto progress = filters_.Tip(filters_.DefaultType()).height_;
 
     return (progress >= target);
 }
@@ -651,7 +651,7 @@ auto Base::is_synchronized_sync_server() const noexcept -> bool
 {
     if (sync_server_) {
 
-        return sync_server_->Tip().first >= this->target();
+        return sync_server_->Tip().height_ >= this->target();
     } else {
 
         return false;
@@ -677,8 +677,8 @@ auto Base::notify_sync_client() const noexcept -> void
         sync_socket_->Send([this] {
             const auto tip = filters_.FilterTip(filters_.DefaultType());
             auto msg = MakeWork(OTZMQWorkType{OT_ZMQ_INTERNAL_SIGNAL + 2});
-            msg.AddFrame(tip.first);
-            msg.AddFrame(tip.second);
+            msg.AddFrame(tip.height_);
+            msg.AddFrame(tip.hash_);
 
             return msg;
         }());
@@ -1086,7 +1086,7 @@ auto Base::process_sync_data(network::zeromq::Message&& in) noexcept -> void
         }
 
         remote_chain_height_.store(
-            std::max(state.Position().first, remote_chain_height_.load()));
+            std::max(state.Position().height_, remote_chain_height_.load()));
     }
 
     auto prior = block::Hash{};
@@ -1383,7 +1383,7 @@ auto Base::Submit(network::zeromq::Message&& work) const noexcept -> void
 
 auto Base::SyncTip() const noexcept -> block::Position
 {
-    static const auto blank = make_blank<block::Position>::value(api_);
+    static const auto blank = block::Position{};
 
     if (sync_server_) {
 
@@ -1430,8 +1430,7 @@ auto Base::UpdateLocalHeight(const block::Position position) const noexcept
     if (false == running_.load()) { return; }
 
     const auto& [height, hash] = position;
-    LogDetail()(print(chain_))(" block header chain updated to hash ")(
-        print(position))
+    LogDetail()(print(chain_))(" block header chain updated to hash ")(position)
         .Flush();
     local_chain_height_.store(height);
     trigger();

@@ -50,7 +50,7 @@ Blocks::Blocks(
         return out;
     }())
 {
-    if (blank_position_.first == Tip().first) {
+    if (blank_position_.height_ == Tip().height_) {
         SetTip(block::Position{0, genesis_});
     }
 }

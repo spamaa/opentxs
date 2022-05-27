@@ -26,7 +26,6 @@
 #include "internal/blockchain/block/Header.hpp"
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/blockchain/node/Manager.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/api/session/Factory.hpp"
@@ -65,15 +64,15 @@ Headers::Headers(
     {
         const auto best = this->best();
 
-        OT_ASSERT(HeaderExists(best.second));
-        OT_ASSERT(0 <= best.first);
+        OT_ASSERT(HeaderExists(best.hash_));
+        OT_ASSERT(0 <= best.height_);
     }
 
     {
         const auto header = CurrentBest();
 
         OT_ASSERT(header);
-        OT_ASSERT(0 <= header->Position().first);
+        OT_ASSERT(0 <= header->Position().height_);
     }
 }
 
@@ -87,7 +86,7 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
     }
 
     Lock lock(lock_);
-    const auto initialHeight = best(lock).first;
+    const auto initialHeight = best(lock).height_;
     auto parentTxn = lmdb_.TransactionRW();
 
     if (update.HaveCheckpoint()) {
@@ -96,7 +95,7 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
                 .Store(
                     ChainData,
                     tsv(static_cast<std::size_t>(Key::CheckpointHeight)),
-                    tsv(static_cast<std::size_t>(update.Checkpoint().first)),
+                    tsv(static_cast<std::size_t>(update.Checkpoint().height_)),
                     parentTxn)
                 .first) {
             LogError()(OT_PRETTY_CLASS())("Failed to save checkpoint height")
@@ -109,7 +108,7 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
                          .Store(
                              ChainData,
                              tsv(static_cast<std::size_t>(Key::CheckpointHash)),
-                             update.Checkpoint().second.Bytes(),
+                             update.Checkpoint().hash_.Bytes(),
                              parentTxn)
                          .first) {
             LogError()(OT_PRETTY_CLASS())("Failed to save checkpoint hash")
@@ -186,7 +185,7 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
     }
 
     if (update.HaveReorg()) {
-        for (auto i = initialHeight; i > update.ReorgParent().first; --i) {
+        for (auto i = initialHeight; i > update.ReorgParent().height_; --i) {
             if (false == pop_best(i, parentTxn)) {
                 LogError()(OT_PRETTY_CLASS())("Failed to delete best hash")
                     .Flush();
@@ -197,7 +196,7 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
     }
 
     for (const auto& position : update.BestChain()) {
-        push_best(position, false, parentTxn);
+        push_best(block::Position{position}, false, parentTxn);
     }
 
     if (0 < update.BestChain().size()) {
@@ -289,7 +288,7 @@ auto Headers::best() const noexcept -> block::Position
 
 auto Headers::best(const Lock& lock) const noexcept -> block::Position
 {
-    auto output = make_blank<block::Position>::value(api_);
+    auto output = block::Position{};
     auto height = std::size_t{0};
 
     if (false ==
@@ -301,27 +300,27 @@ auto Headers::best(const Lock& lock) const noexcept -> block::Position
                     &height, in.data(), std::min(in.size(), sizeof(height)));
             })) {
 
-        return make_blank<block::Position>::value(api_);
+        return block::Position{};
     }
 
     if (false ==
         lmdb_.Load(BlockHeaderBest, tsv(height), [&](const auto in) -> void {
-            const auto rc = output.second.Assign(in.data(), in.size());
+            const auto rc = output.hash_.Assign(in.data(), in.size());
 
             OT_ASSERT(rc);  // TODO exception
         })) {
 
-        return make_blank<block::Position>::value(api_);
+        return block::Position{};
     }
 
-    output.first = height;
+    output.height_ = height;
 
     return output;
 }
 
 auto Headers::checkpoint(const Lock& lock) const noexcept -> block::Position
 {
-    auto output = make_blank<block::Position>::value(api_);
+    auto output = block::Position{};
     auto height = std::size_t{0};
 
     if (false ==
@@ -332,7 +331,7 @@ auto Headers::checkpoint(const Lock& lock) const noexcept -> block::Position
                 std::memcpy(
                     &height, in.data(), std::min(in.size(), sizeof(height)));
             })) {
-        return make_blank<block::Position>::value(api_);
+        return block::Position{};
     }
 
     if (false == lmdb_.Load(
@@ -340,15 +339,15 @@ auto Headers::checkpoint(const Lock& lock) const noexcept -> block::Position
                      tsv(static_cast<std::size_t>(Key::CheckpointHash)),
                      [&](const auto in) -> void {
                          const auto rc =
-                             output.second.Assign(in.data(), in.size());
+                             output.hash_.Assign(in.data(), in.size());
 
                          OT_ASSERT(rc);  // TODO exception
                      })) {
 
-        return make_blank<block::Position>::value(api_);
+        return block::Position{};
     }
 
-    output.first = height;
+    output.height_ = height;
 
     return output;
 }
@@ -388,7 +387,7 @@ auto Headers::HaveCheckpoint() const noexcept -> bool
 {
     Lock lock(lock_);
 
-    return 0 < checkpoint(lock).first;
+    return 0 < checkpoint(lock).height_;
 }
 
 auto Headers::header_exists(const Lock& lock, const block::Hash& hash)
@@ -458,7 +457,7 @@ auto Headers::import_genesis(const blockchain::Type type) const noexcept -> void
 
     OT_ASSERT(HeaderExists(hash));
 
-    if (0 > best().first) {
+    if (0 > best().height_) {
         auto transaction = lmdb_.TransactionRW();
         success = push_best({0, hash}, true, transaction);
 
@@ -470,11 +469,11 @@ auto Headers::import_genesis(const blockchain::Type type) const noexcept -> void
 
         const auto best = this->best();
 
-        OT_ASSERT(0 == best.first);
-        OT_ASSERT(hash == best.second);
+        OT_ASSERT(0 == best.height_);
+        OT_ASSERT(hash == best.hash_);
     }
 
-    OT_ASSERT(0 <= best().first);
+    OT_ASSERT(0 <= best().height_);
 }
 
 auto Headers::IsSibling(const block::Hash& hash) const noexcept -> bool
@@ -545,15 +544,15 @@ auto Headers::push_best(
 
     auto output = lmdb_.Store(
         BlockHeaderBest,
-        tsv(static_cast<std::size_t>(next.first)),
-        next.second.Bytes(),
+        tsv(static_cast<std::size_t>(next.height_)),
+        next.hash_.Bytes(),
         parent);
 
     if (output.first && setTip) {
         output = lmdb_.Store(
             ChainData,
             tsv(static_cast<std::size_t>(Key::TipHeight)),
-            tsv(static_cast<std::size_t>(next.first)),
+            tsv(static_cast<std::size_t>(next.height_)),
             parent);
     }
 

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <gtest/gtest.h>
+
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
 {
@@ -22,13 +24,13 @@ namespace ot = opentxs;
 
 namespace ottest
 {
-class Base
+class Base : virtual public ::testing::Test
 {
 protected:
     const ot::api::Context& ot_;
 
     Base() noexcept;
 
-    virtual ~Base() = default;
+    ~Base() override = default;
 };
 }  // namespace ottest

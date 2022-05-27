@@ -456,7 +456,7 @@ auto BlockchainAccountStatus::subchain_display_name(
             const auto& chain =
                 api.Network().Blockchain().GetChain(node.Parent().Chain());
 
-            return chain.HeaderOracle().BestChain().first;
+            return chain.HeaderOracle().BestChain().height_;
         } catch (...) {
 
             return std::nullopt;
@@ -465,7 +465,7 @@ auto BlockchainAccountStatus::subchain_display_name(
     const auto scanned = [&]() -> std::optional<Height> {
         try {
 
-            return node.ScanProgress(subchain).first;
+            return node.ScanProgress(subchain).height_;
         } catch (...) {
 
             return std::nullopt;

@@ -24,7 +24,7 @@
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/block/Block.hpp"
-#include "opentxs/blockchain/block/Hash.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
@@ -97,7 +97,7 @@ auto BlockDownloader::batch_size(const std::size_t in) const noexcept
 
 auto BlockDownloader::check_task(TaskType& task) const noexcept -> void
 {
-    const auto& hash = task.position_.second;
+    const auto& hash = task.position_.hash_;
 
     if (auto block = db_.BlockLoadBitcoin(hash); bool(block)) {
         task.download(std::move(block));
@@ -231,11 +231,11 @@ auto BlockDownloader::update_tip(const Position& position, const int&)
     OT_ASSERT(saved);
 
     LogDetail()(print(chain_))(" block chain updated to height ")(
-        position.first)
+        position.height_)
         .Flush();
     auto work = MakeWork(OT_ZMQ_NEW_FULL_BLOCK_SIGNAL);
-    work.AddFrame(position.first);
-    work.AddFrame(position.second);
+    work.AddFrame(position.height_);
+    work.AddFrame(position.hash_);
     socket_->Send(std::move(work));
 }
 
