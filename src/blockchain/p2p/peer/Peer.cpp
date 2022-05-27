@@ -572,6 +572,7 @@ auto Peer::send(std::pair<zmq::Frame, zmq::Frame>&& frames) noexcept
 
 auto Peer::Shutdown() noexcept -> std::shared_future<void>
 {
+    activity_.shutdown_timers();
     return signal_shutdown();
 }
 

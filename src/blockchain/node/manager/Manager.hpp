@@ -293,6 +293,7 @@ protected:
 
     // NOTE call init in every final constructor body
     auto init() noexcept -> void;
+    auto shutdown_timers() noexcept -> void;
 
     Base(
         const api::Session& api,

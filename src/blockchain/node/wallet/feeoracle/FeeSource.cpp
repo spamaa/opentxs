@@ -258,7 +258,9 @@ auto FeeSource::Imp::shutdown(std::promise<void>& promise) noexcept -> void
     }
 }
 
-FeeSource::Imp::~Imp() = default;
+auto FeeSource::Imp::shutdown_timers() noexcept -> void { timer_.Cancel(); }
+
+FeeSource::Imp::~Imp() { shutdown_timers(); }
 }  // namespace opentxs::blockchain::node::wallet
 
 namespace opentxs::blockchain::node::wallet

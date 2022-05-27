@@ -87,6 +87,7 @@ protected:
         -> std::optional<Amount>;
     auto process_int(std::int64_t rate, unsigned long long int scale) noexcept
         -> std::optional<Amount>;
+    auto shutdown_timers() noexcept -> void;
 
     Imp(const api::Session& api,
         CString endpoint,

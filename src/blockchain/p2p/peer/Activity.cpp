@@ -83,4 +83,12 @@ auto Activity::reset_ping() noexcept -> void
         }
     });
 }
+
+auto Activity::shutdown_timers() noexcept -> void
+{
+    disconnect_.Cancel();
+    ping_.Cancel();
+}
+
+Activity::~Activity() { shutdown_timers(); }
 }  // namespace opentxs::blockchain::p2p::peer

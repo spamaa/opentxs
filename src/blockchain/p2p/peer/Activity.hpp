@@ -48,10 +48,12 @@ public:
     auto get() const noexcept -> Time;
 
     auto Bump() noexcept -> void;
+    auto shutdown_timers() noexcept -> void;
 
     Activity(
         const api::Session& api,
         const network::zeromq::Pipeline& pipeline) noexcept;
+    ~Activity();
 
 private:
     static constexpr auto ping_interval_ = 15s;

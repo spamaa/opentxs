@@ -209,7 +209,11 @@ auto FeeOracle::Imp::shutdown(std::promise<void>& promise) noexcept -> void
     }
 }
 
-FeeOracle::Imp::~Imp() { signal_shutdown().get(); }
+FeeOracle::Imp::~Imp()
+{
+    signal_shutdown().get();
+    timer_.Cancel();
+}
 }  // namespace opentxs::blockchain::node::wallet
 
 namespace opentxs::blockchain::node::wallet
