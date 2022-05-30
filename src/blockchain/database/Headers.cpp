@@ -27,6 +27,7 @@
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -37,6 +38,7 @@
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
+#include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/WorkType.hpp"
@@ -232,19 +234,27 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
             " reorg detected. Last common ancestor is ")(pHash.asHex())(
             " at height ")(pHeight)
             .Flush();
-        auto work = MakeWork(WorkType::BlockchainReorg);
-        work.AddFrame(network_.Chain());
-        work.AddFrame(pBytes.data(), pBytes.size());
-        work.AddFrame(pHeight);
-        work.AddFrame(bytes.data(), bytes.size());
-        work.AddFrame(height);
-        network_.Reorg().Send(std::move(work));
+        // TODO c++20
+        network_.Reorg().Send([&](const auto& height, const auto& pHeight) {
+            auto work = MakeWork(WorkType::BlockchainReorg);
+            work.AddFrame(network_.Chain());
+            work.AddFrame(pBytes.data(), pBytes.size());
+            work.AddFrame(pHeight);
+            work.AddFrame(bytes.data(), bytes.size());
+            work.AddFrame(height);
+
+            return work;
+        }(height, pHeight));
     } else {
-        auto work = MakeWork(WorkType::BlockchainNewHeader);
-        work.AddFrame(network_.Chain());
-        work.AddFrame(bytes.data(), bytes.size());
-        work.AddFrame(height);
-        network_.Reorg().Send(std::move(work));
+        // TODO c++20
+        network_.Reorg().Send([&](const auto& height) {
+            auto work = MakeWork(WorkType::BlockchainNewHeader);
+            work.AddFrame(network_.Chain());
+            work.AddFrame(bytes.data(), bytes.size());
+            work.AddFrame(height);
+
+            return work;
+        }(height));
     }
 
     network_.UpdateLocalHeight(position);
@@ -289,7 +299,7 @@ auto Headers::best() const noexcept -> block::Position
 auto Headers::best(const Lock& lock) const noexcept -> block::Position
 {
     auto output = block::Position{};
-    auto height = std::size_t{0};
+    auto height = 0_uz;
 
     if (false ==
         lmdb_.Load(
@@ -321,7 +331,7 @@ auto Headers::best(const Lock& lock) const noexcept -> block::Position
 auto Headers::checkpoint(const Lock& lock) const noexcept -> block::Position
 {
     auto output = block::Position{};
-    auto height = std::size_t{0};
+    auto height = 0_uz;
 
     if (false ==
         lmdb_.Load(

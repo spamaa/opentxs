@@ -174,15 +174,6 @@ auto BitcoinString(const UnallocatedCString& in) noexcept -> OTData
     return output;
 }
 
-auto CommandName(const Command command) noexcept -> UnallocatedCString
-{
-    try {
-        return command_map_.at(command);
-    } catch (...) {
-        return {};
-    }
-}
-
 auto convert_service_bit(BitVector8 value) noexcept -> bitcoin::Service
 {
     if (0 == value) { return Service::None; }
@@ -261,12 +252,21 @@ auto GetServices(
 #pragma GCC diagnostic pop
 #endif
 
+auto print(const Command command) noexcept -> std::string_view
+{
+    try {
+        return command_map_.at(command);
+    } catch (...) {
+        return {};
+    }
+}
+
 auto SerializeCommand(const Command command) noexcept -> CommandField
 {
     CommandField output{};
 
     try {
-        const auto string = CommandName(command);
+        const auto string = print(command);
 
         OT_ASSERT(output.size() >= string.size());
 

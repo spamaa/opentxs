@@ -30,6 +30,7 @@ extern "C" {
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/database/common/Common.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -53,7 +54,7 @@ struct Sync::Imp final : private util::MappedFileStorage {
     {
         const auto start = static_cast<std::size_t>(height + 1);
         auto haveOne{false};
-        auto total = std::size_t{};
+        auto total = 0_uz;
         auto lock = SharedLock{lock_};
         const auto cb = [&](const auto key, const auto value) {
             if ((nullptr == key.data()) ||
@@ -62,7 +63,7 @@ struct Sync::Imp final : private util::MappedFileStorage {
             }
 
             const auto height = [&] {
-                auto out = std::size_t{};
+                auto out = 0_uz;
                 std::memcpy(&out, key.data(), key.size());
 
                 return out;
@@ -263,7 +264,7 @@ struct Sync::Imp final : private util::MappedFileStorage {
         }())
     {
         auto cb = [&](const auto key, const auto value) {
-            auto chain = std::size_t{};
+            auto chain = 0_uz;
             auto height = Height{};
 
             if (key.size() != sizeof(chain)) {

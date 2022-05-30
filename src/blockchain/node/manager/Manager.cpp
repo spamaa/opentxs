@@ -728,6 +728,7 @@ auto Base::pipeline(zmq::Message&& in) noexcept -> void
             process_block(std::move(in));
         } break;
         case ManagerJobs::Heartbeat: {
+            // TODO upgrade all the oracles to no longer require this
             mempool_.Heartbeat();
             block_.Heartbeat();
             filters_.Heartbeat();

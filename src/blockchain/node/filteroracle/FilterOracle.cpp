@@ -31,6 +31,7 @@
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/filteroracle/BlockIndexer.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
@@ -416,22 +417,23 @@ auto FilterOracle::new_tip(
     }
 
     last_sync_progress_ = Clock::now();
-
-    {
+    new_filters_->Send([&] {
         auto work = MakeWork(OT_ZMQ_NEW_FILTER_SIGNAL);
         work.AddFrame(type);
         work.AddFrame(tip.height_);
         work.AddFrame(tip.hash_);
-        new_filters_->Send(std::move(work));
-    }
-    {
+
+        return work;
+    }());
+    filter_notifier_.Send([&] {
         auto work = MakeWork(WorkType::BlockchainNewFilter);
         work.AddFrame(chain_);
         work.AddFrame(type);
         work.AddFrame(tip.height_);
         work.AddFrame(tip.hash_);
-        filter_notifier_.Send(std::move(work));
-    }
+
+        return work;
+    }());
 }
 
 auto FilterOracle::ProcessBlock(
@@ -598,7 +600,7 @@ auto FilterOracle::ProcessSyncData(
         auto b = hashes.cbegin();
         auto d = blocks.cbegin();
 
-        for (auto i = std::size_t{0u}; i < count; ++i, ++b, ++d) {
+        for (auto i = 0_uz; i < count; ++i, ++b, ++d) {
             const auto& blockHash = *b;
             const auto& syncData = *d;
             const auto height = syncData.Height();

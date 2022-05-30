@@ -27,6 +27,7 @@
 #include "internal/blockchain/bitcoin/block/Output.hpp"
 #include "internal/blockchain/database/Types.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -592,7 +593,7 @@ auto OutputCache::populate() noexcept -> void
 {
     if (populated_) { return; }
 
-    auto outputCount = std::size_t{};
+    auto outputCount = 0_uz;
     const auto outputs = [&](const auto key, const auto value) {
         ++outputCount;
         outputs_.try_emplace(
@@ -648,7 +649,7 @@ auto OutputCache::populate() noexcept -> void
     const auto states = [&](const auto key, const auto value) {
         auto& map = states_;
         auto id = [&] {
-            auto out = std::size_t{};
+            auto out = 0_uz;
             std::memcpy(&out, key.data(), std::min(key.size(), sizeof(out)));
 
             return static_cast<node::TxoState>(out);

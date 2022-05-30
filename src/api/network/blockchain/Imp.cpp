@@ -635,10 +635,13 @@ auto BlockchainImp::UpdatePeer(
     const opentxs::blockchain::Type chain,
     const UnallocatedCString& address) const noexcept -> void
 {
-    auto work = MakeWork(WorkType::BlockchainPeerAdded);
-    work.AddFrame(chain);
-    work.AddFrame(address);
-    active_peer_updates_->Send(std::move(work));
+    active_peer_updates_->Send([&] {
+        auto work = MakeWork(WorkType::BlockchainPeerAdded);
+        work.AddFrame(chain);
+        work.AddFrame(address);
+
+        return work;
+    }());
 }
 
 BlockchainImp::~BlockchainImp() { batch_.ClearCallbacks(); }
