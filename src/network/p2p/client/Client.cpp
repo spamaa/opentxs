@@ -992,7 +992,11 @@ auto Client::Imp::state_machine() noexcept -> void
     }
 }
 
-Client::Imp::~Imp() { shutdown(); }
+Client::Imp::~Imp()
+{
+    shutdown();
+    timer_.Cancel();
+}
 }  // namespace opentxs::network::p2p
 
 namespace opentxs::network::p2p

@@ -1216,6 +1216,8 @@ auto Base::shutdown(std::promise<void>& promise) noexcept -> void
     }
 }
 
+auto Base::shutdown_timers() noexcept -> void { heartbeat_.Cancel(); }
+
 auto Base::StartWallet() noexcept -> void
 {
     pipeline_.Push(MakeWork(ManagerJobs::StartWallet));
@@ -1438,5 +1440,9 @@ auto Base::UpdateLocalHeight(const block::Position position) const noexcept
 
 auto Base::Wallet() const noexcept -> const node::Wallet& { return wallet_; }
 
-Base::~Base() { Shutdown().get(); }
+Base::~Base()
+{
+    Shutdown().get();
+    shutdown_timers();
+}
 }  // namespace opentxs::blockchain::node::implementation
