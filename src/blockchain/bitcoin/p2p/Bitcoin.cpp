@@ -67,21 +67,33 @@ const CommandMap command_map_{
 };
 const CommandReverseMap command_reverse_map_{reverse_map(command_map_)};
 
-const OTData AddressVersion::cjdns_prefix_{[]() {
-    auto out = Data::Factory();
-    out->DecodeHex("0xfc");
+auto AddressVersion::cjdns_prefix() -> OTData
+{
+    static auto out = []() {
+        auto out = Data::Factory();
+        out->DecodeHex("0xfc");
+        return out;
+    }();
     return out;
-}()};
-const OTData AddressVersion::ipv4_prefix_{[]() {
-    auto out = Data::Factory();
-    out->DecodeHex("0x00000000000000000000ffff");
+}
+auto AddressVersion::ipv4_prefix() -> OTData
+{
+    static auto out = []() {
+        auto out = Data::Factory();
+        out->DecodeHex("0x00000000000000000000ffff");
+        return out;
+    }();
     return out;
-}()};
-const OTData AddressVersion::onion_prefix_{[]() {
-    auto out = Data::Factory();
-    out->DecodeHex("0xfd87d87eeb43");
+}
+auto AddressVersion::onion_prefix() -> OTData
+{
+    static auto out = []() {
+        auto out = Data::Factory();
+        out->DecodeHex("0xfd87d87eeb43");
+        return out;
+    }();
     return out;
-}()};
+}
 
 AddressVersion::AddressVersion(
     const UnallocatedSet<bitcoin::Service>& services,
@@ -126,7 +138,7 @@ auto AddressVersion::Encode(const Network type, const Data& bytes)
             std::memcpy(output.data(), bytes.data(), output.size());
         } break;
         case Network::ipv4: {
-            auto encoded{ipv4_prefix_};
+            auto encoded{ipv4_prefix()};
             encoded += bytes;
 
             OT_ASSERT(output.size() == encoded->size());
@@ -134,7 +146,7 @@ auto AddressVersion::Encode(const Network type, const Data& bytes)
             std::memcpy(output.data(), encoded->data(), output.size());
         } break;
         case Network::onion2: {
-            auto encoded{onion_prefix_};
+            auto encoded{onion_prefix()};
             encoded += bytes;
 
             OT_ASSERT(output.size() == encoded->size());

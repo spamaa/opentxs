@@ -63,7 +63,11 @@ auto FeeSources(
 
 namespace opentxs::blockchain::node::wallet
 {
-const display::Scale FeeSource::Imp::scale_{"", "", {{10, 0}}, 0, 3};
+auto FeeSource::Imp::display_scale() -> const display::Scale&
+{
+    static auto scale = display::Scale{"", "", {{10, 0}}, 0, 3};
+    return scale;
+}
 
 FeeSource::Imp::Imp(
     const api::Session& api,
@@ -154,8 +158,9 @@ auto FeeSource::Imp::process_double(
     auto out = std::optional<Amount>{
         static_cast<std::int64_t>(rate * static_cast<double>(scale))};
     const auto& value = out.value();
-    LogTrace()(OT_PRETTY_CLASS())("obtained scaled amount ")(scale_.Format(
-        value))(" from raw input ")(rate)(" and scale value ")(scale)
+    LogTrace()(OT_PRETTY_CLASS())("obtained scaled amount ")(
+        display_scale().Format(value))(" from raw input ")(
+        rate)(" and scale value ")(scale)
         .Flush();
 
     if (0 > value) {
@@ -173,8 +178,9 @@ auto FeeSource::Imp::process_int(
 {
     auto out = std::optional<Amount>{static_cast<std::int64_t>(rate * scale)};
     const auto& value = out.value();
-    LogTrace()(OT_PRETTY_CLASS())("obtained scaled amount ")(scale_.Format(
-        value))(" from raw input ")(rate)(" and scale value ")(scale)
+    LogTrace()(OT_PRETTY_CLASS())("obtained scaled amount ")(
+        display_scale().Format(value))(" from raw input ")(
+        rate)(" and scale value ")(scale)
         .Flush();
 
     if (0 > value) {
