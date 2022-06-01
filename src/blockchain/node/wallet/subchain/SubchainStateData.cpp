@@ -78,6 +78,7 @@
 #include "util/ByteLiterals.hpp"
 #include "util/Container.hpp"
 #include "util/ScopeGuard.hpp"
+#include "util/Thread.hpp"
 #include "util/Work.hpp"
 
 namespace opentxs
@@ -1201,10 +1202,12 @@ auto SubchainStateData::scan(
                 startHeight, target, get_allocator().resource());
             auto filterPromise = std::promise<Vector<GCS>>{};
             auto filterFuture = filterPromise.get_future();
-            auto tp =
-                api_.Network().Asio().Internal().Post(ThreadPool::General, [&] {
+            auto tp = api_.Network().Asio().Internal().Post(
+                ThreadPool::General,
+                [&] {
                     filterPromise.set_value(filters.LoadFilters(type, blocks));
-                });
+                },
+                "SubchainStateData filter");
 
             if (false == tp) { throw std::runtime_error{""}; }
 
@@ -1229,7 +1232,8 @@ auto SubchainStateData::scan(
                         [post = std::make_shared<ScopeGuard>(
                              [&count] { ++count; }, [&] { --count; }),
                          n,
-                         &prehash] { prehash(n); });
+                         &prehash] { prehash(n); },
+                        "SubchainStateData prehash 1");
 
                     if (false == tp) { throw std::runtime_error{""}; }
                 }
@@ -1289,7 +1293,8 @@ auto SubchainStateData::scan(
                                 n,
                                 results,
                                 data);
-                        });
+                        },
+                        "SubchainStateData prehash 2");
 
                     if (false == tp) { throw std::runtime_error{""}; }
                 }

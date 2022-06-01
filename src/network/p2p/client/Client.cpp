@@ -89,6 +89,7 @@ Client::Imp::Imp(
             [this](auto&& in) { process_monitor(std::move(in)); }));
         out.listen_callbacks_.emplace_back(Callback::Factory(
             [this](auto&& in) { process_wallet(std::move(in)); }));
+        out.thread_name_ = "P2PClient";
 
         return out;
     }())
@@ -258,7 +259,8 @@ Client::Imp::Imp(
                [id = wallet_.ID(), &cb = wallet_cb_](auto&& m) {
                    cb.Process(std::move(m));
                }},
-          }))
+          },
+          batch_.thread_name_))
 {
     OT_ASSERT(nullptr != thread_);
 

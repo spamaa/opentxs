@@ -25,7 +25,10 @@ namespace opentxs::api::network::imp
 ZAP::ZAP(const opentxs::network::zeromq::Context& context)
     : context_(context)
     , callback_(opentxs::network::zeromq::zap::Callback::Factory())
-    , zap_(opentxs::network::zeromq::zap::Handler::Factory(context_, callback_))
+    , zap_(opentxs::network::zeromq::zap::Handler::Factory(
+          context_,
+          callback_,
+          "ZAP"))
 {
 }
 

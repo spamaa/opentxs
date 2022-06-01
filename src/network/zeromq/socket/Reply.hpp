@@ -48,7 +48,8 @@ public:
     Reply(
         const zeromq::Context& context,
         const Direction direction,
-        const ReplyCallback& callback) noexcept;
+        const ReplyCallback& callback,
+        const std::string_view threadname = "Reply") noexcept;
     Reply() = delete;
     Reply(const Reply&) = delete;
     Reply(Reply&&) = delete;

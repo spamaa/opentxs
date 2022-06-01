@@ -65,7 +65,8 @@ UnitList::UnitList(
           [this](const auto& in) { process_blockchain_balance(in); }))
     , blockchain_balance_(api_.Network().ZeroMQ().DealerSocket(
           blockchain_balance_cb_,
-          zmq::socket::Direction::Connect))
+          zmq::socket::Direction::Connect,
+          "UnitList"))
     , listeners_{
           {api_.Endpoints().AccountUpdate().data(),
            new MessageProcessor<UnitList>(&UnitList::process_account)}}

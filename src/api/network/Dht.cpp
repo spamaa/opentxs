@@ -149,7 +149,8 @@ Dht::Dht(
           })}
     , request_nym_socket_{zeromq.ReplySocket(
           request_nym_callback_,
-          zmq::socket::Direction::Bind)}
+          zmq::socket::Direction::Bind,
+          "DHT nym")}
     , request_server_callback_{zmq::ReplyCallback::Factory(
           [=](const zmq::Message& incoming)
               -> opentxs::network::zeromq::Message {
@@ -157,7 +158,8 @@ Dht::Dht(
           })}
     , request_server_socket_{zeromq.ReplySocket(
           request_server_callback_,
-          zmq::socket::Direction::Bind)}
+          zmq::socket::Direction::Bind,
+          "DHT server")}
     , request_unit_callback_{zmq::ReplyCallback::Factory(
           [=](const zmq::Message& incoming)
               -> opentxs::network::zeromq::Message {
@@ -165,7 +167,8 @@ Dht::Dht(
           })}
     , request_unit_socket_{zeromq.ReplySocket(
           request_unit_callback_,
-          zmq::socket::Direction::Bind)}
+          zmq::socket::Direction::Bind,
+          "DHT unit")}
 {
     request_nym_socket_->Start(endpoints.DhtRequestNym().data());
     request_server_socket_->Start(endpoints.DhtRequestServer().data());

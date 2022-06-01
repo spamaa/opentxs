@@ -17,6 +17,7 @@
 #include "opentxs/network/zeromq/socket/Pair.hpp"
 #include "opentxs/network/zeromq/socket/Socket.hpp"
 #include "opentxs/util/Pimpl.hpp"
+#include "util/Thread.hpp"
 
 template class opentxs::Pimpl<opentxs::network::zeromq::Proxy>;
 
@@ -25,7 +26,8 @@ namespace opentxs::network::zeromq
 auto Proxy::Factory(
     const zeromq::Context& context,
     socket::Socket& frontend,
-    socket::Socket& backend) -> OTZMQProxy
+    socket::Socket& backend,
+    const std::string_view threadname) -> OTZMQProxy
 {
     return OTZMQProxy(new implementation::Proxy(context, frontend, backend));
 }
@@ -36,16 +38,22 @@ namespace opentxs::network::zeromq::implementation
 Proxy::Proxy(
     const zeromq::Context& context,
     zeromq::socket::Socket& frontend,
-    zeromq::socket::Socket& backend)
+    zeromq::socket::Socket& backend,
+    const std::string_view threadname)
     : context_(context)
     , frontend_(frontend)
     , backend_(backend)
     , null_callback_(network::zeromq::ListenCallback::Factory(
           [](const zeromq::Message&) -> void {}))
-    , control_listener_(factory::PairSocket(context, null_callback_, false))
-    , control_sender_(
-          factory::PairSocket(null_callback_, control_listener_, false))
+    , control_listener_(
+          factory::PairSocket(context, null_callback_, false, "Proxy listener"))
+    , control_sender_(factory::PairSocket(
+          null_callback_,
+          control_listener_,
+          false,
+          "Proxy sender"))
     , thread_(nullptr)
+    , thread_name_{threadname}
 {
     thread_ = std::make_unique<std::thread>(&Proxy::proxy, this);
 
@@ -59,6 +67,7 @@ auto Proxy::clone() const -> Proxy*
 
 void Proxy::proxy() const
 {
+    SetThisThreadsName(thread_name_);
     zmq_proxy_steerable(frontend_, backend_, nullptr, nullptr);
 }
 

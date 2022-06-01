@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <string_view>
+
 namespace opentxs
 {
 enum class ThreadPriority {
@@ -18,5 +20,6 @@ enum class ThreadPriority {
 };
 
 auto print(ThreadPriority priority) noexcept -> const char*;
+auto SetThisThreadsName(const std::string_view threadname) noexcept -> void;
 auto SetThisThreadsPriority(ThreadPriority priority) noexcept -> void;
 }  // namespace opentxs

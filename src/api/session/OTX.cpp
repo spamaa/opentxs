@@ -196,7 +196,7 @@ OTX::OTX(
         LogDetail()(OT_PRETTY_CLASS())("Connecting to ")(endpoint.data())
             .Flush();
         auto out = api_.Network().ZeroMQ().SubscribeSocket(
-            account_subscriber_callback_.get());
+            account_subscriber_callback_.get(), "OTX account");
         const auto start = out->Start(endpoint.data());
 
         OT_ASSERT(start);
@@ -209,7 +209,9 @@ OTX::OTX(
           }))
     , notification_listener_([&] {
         auto out = api_.Network().ZeroMQ().PullSocket(
-            notification_listener_callback_, zmq::socket::Direction::Bind);
+            notification_listener_callback_,
+            zmq::socket::Direction::Bind,
+            "OTX notification listener");
         const auto start = out->Start(
             api_.Endpoints().Internal().ProcessPushNotification().data());
 
@@ -223,7 +225,9 @@ OTX::OTX(
           }))
     , find_nym_listener_([&] {
         auto out = api_.Network().ZeroMQ().PullSocket(
-            find_nym_callback_, zmq::socket::Direction::Bind);
+            find_nym_callback_,
+            zmq::socket::Direction::Bind,
+            "OTX nym listener");
         const auto start = out->Start(api_.Endpoints().FindNym().data());
 
         OT_ASSERT(start);
@@ -236,7 +240,9 @@ OTX::OTX(
           }))
     , find_server_listener_([&] {
         auto out = api_.Network().ZeroMQ().PullSocket(
-            find_server_callback_, zmq::socket::Direction::Bind);
+            find_server_callback_,
+            zmq::socket::Direction::Bind,
+            "OTX server listener");
         const auto start = out->Start(api_.Endpoints().FindServer().data());
 
         OT_ASSERT(start);
@@ -249,7 +255,9 @@ OTX::OTX(
           }))
     , find_unit_listener_([&] {
         auto out = api_.Network().ZeroMQ().PullSocket(
-            find_unit_callback_, zmq::socket::Direction::Bind);
+            find_unit_callback_,
+            zmq::socket::Direction::Bind,
+            "OTX unit listener");
         const auto start =
             out->Start(api_.Endpoints().FindUnitDefinition().data());
 

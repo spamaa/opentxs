@@ -113,7 +113,8 @@ BlockchainImp::BlockchainImp(
                [socket = &block_queue_out_](auto&& m) {
                    socket->SendDeferred(std::move(m));
                }},
-          }))
+          },
+          "Blockchain"))
     , active_peer_updates_([&] {
         auto out = zmq.PublishSocket();
         const auto listen = out->Start(endpoints.BlockchainPeer().data());

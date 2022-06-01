@@ -55,7 +55,8 @@ public:
     Dealer(
         const zeromq::Context& context,
         const Direction direction,
-        const zeromq::ListenCallback& callback) noexcept;
+        const zeromq::ListenCallback& callback,
+        const std::string_view threadname = "Dealer") noexcept;
     Dealer() = delete;
     Dealer(const Dealer&) = delete;
     Dealer(Dealer&&) = delete;

@@ -78,6 +78,7 @@ private:
 
     auto run(ThreadPriority priority) noexcept -> void
     {
+        SetThisThreadsName("asio thread - starting");
         SetThisThreadsPriority(priority);
         Signals::Block();
         context_.run();

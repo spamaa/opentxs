@@ -74,6 +74,7 @@ private:
 
     Handler(
         const zeromq::Context& context,
-        const zap::Callback& callback) noexcept;
+        const zap::Callback& callback,
+        const std::string_view threadname = "Handler") noexcept;
 };
 }  // namespace opentxs::network::zeromq::zap::implementation

@@ -62,7 +62,7 @@ ShutdownReceiver::ShutdownReceiver(
     , callback_(zmq::ListenCallback::Factory([cb, this](auto&&) {
         if (bool(cb)) { cb(this->promise_); }
     }))
-    , socket_(zmq.SubscribeSocket(callback_))
+    , socket_(zmq.SubscribeSocket(callback_, "ShutdownReceiver"))
 {
     auto init{false};
 

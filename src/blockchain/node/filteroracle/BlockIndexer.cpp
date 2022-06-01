@@ -60,6 +60,7 @@
 #include "opentxs/util/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "util/ScopeGuard.hpp"
+#include "util/Thread.hpp"
 #include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::filteroracle
