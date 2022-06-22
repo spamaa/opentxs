@@ -52,7 +52,6 @@
 #include "serialization/protobuf/StorageThread.pb.h"
 #include "serialization/protobuf/StorageThreadItem.pb.h"
 #include "serialization/protobuf/UnitDefinition.pb.h"
-#include "util/Thread.hpp"
 #include "util/storage/Config.hpp"
 #include "util/storage/tree/Accounts.hpp"
 #include "util/storage/tree/Bip47Channels.hpp"

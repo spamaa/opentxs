@@ -16,7 +16,6 @@
 #include "network/asio/Socket.hpp"
 #include "opentxs/network/asio/Endpoint.hpp"
 #include "opentxs/util/Container.hpp"
-#include "util/Thread.hpp"
 
 namespace opentxs::network::asio
 {

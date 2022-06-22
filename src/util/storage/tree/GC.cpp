@@ -17,7 +17,6 @@
 #include "opentxs/util/storage/Driver.hpp"
 #include "serialization/protobuf/StorageRoot.pb.h"
 #include "util/ScopeGuard.hpp"
-#include "util/Thread.hpp"
 #include "util/storage/tree/Node.hpp"
 #include "util/storage/tree/Tree.hpp"
 

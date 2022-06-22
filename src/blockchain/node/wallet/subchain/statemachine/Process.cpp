@@ -54,7 +54,6 @@
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "util/ScopeGuard.hpp"
-#include "util/Thread.hpp"
 #include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::wallet

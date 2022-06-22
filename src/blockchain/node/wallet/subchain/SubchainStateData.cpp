@@ -78,7 +78,6 @@
 #include "util/ByteLiterals.hpp"
 #include "util/Container.hpp"
 #include "util/ScopeGuard.hpp"
-#include "util/Thread.hpp"
 #include "util/Work.hpp"
 
 namespace opentxs
