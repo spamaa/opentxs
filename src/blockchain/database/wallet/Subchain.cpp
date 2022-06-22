@@ -39,7 +39,6 @@
 #include "opentxs/util/Types.hpp"
 #include "util/LMDB.hpp"
 #include "util/ScopeGuard.hpp"
-#include "util/Thread.hpp"
 
 namespace opentxs::blockchain::database::wallet
 {

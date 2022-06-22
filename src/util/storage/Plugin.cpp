@@ -15,7 +15,6 @@
 #include "opentxs/api/session/Storage.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Log.hpp"
-#include "util/Thread.hpp"
 
 namespace opentxs::storage::implementation
 {

@@ -18,7 +18,6 @@
 #include "opentxs/api/crypto/Crypto.hpp"
 #include "opentxs/api/crypto/Encode.hpp"
 #include "opentxs/api/network/Asio.hpp"
-#include "util/Thread.hpp"
 #include "util/storage/Config.hpp"
 
 namespace opentxs::factory

@@ -45,7 +45,6 @@
 #include "util/ByteLiterals.hpp"
 #include "util/JobCounter.hpp"
 #include "util/ScopeGuard.hpp"
-#include "util/Thread.hpp"
 #include "util/Work.hpp"
 
 namespace zmq = opentxs::network::zeromq;
