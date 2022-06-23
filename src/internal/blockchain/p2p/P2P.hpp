@@ -44,13 +44,6 @@ struct Address : virtual public p2p::Address {
 
     ~Address() override = default;
 };
-
-struct Peer : virtual public p2p::Peer {
-    virtual auto AddressID() const noexcept -> OTIdentifier = 0;
-    virtual auto Shutdown() noexcept -> std::shared_future<void> = 0;
-
-    ~Peer() override = default;
-};
 }  // namespace opentxs::blockchain::p2p::internal
 
 namespace opentxs::factory

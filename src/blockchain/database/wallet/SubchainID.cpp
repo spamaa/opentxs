@@ -13,6 +13,7 @@
 #include <stdexcept>
 
 #include "internal/util/Mutex.hpp"
+#include "internal/util/P0330.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/util/Container.hpp"
@@ -102,7 +103,7 @@ auto SubchainID::Type() const noexcept -> crypto::Subchain
 
     if (false == subchain_.has_value()) {
         auto type = crypto::Subchain{};
-        static constexpr auto offset = std::size_t{0};
+        static constexpr auto offset = 0_uz;
         static constexpr auto size = sizeof(type);
         const auto* const start = std::next(data_.data(), offset);
         std::memcpy(&type, start, size);
