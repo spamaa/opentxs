@@ -35,7 +35,22 @@
 #include "internal/otx/blind/Factory.hpp"
 #include "internal/otx/blind/Mint.hpp"
 #include "internal/otx/client/OTPayment.hpp"
+#include "internal/otx/common/Cheque.hpp"
+#include "internal/otx/common/Contract.hpp"
+#include "internal/otx/common/Item.hpp"
+#include "internal/otx/common/Ledger.hpp"
+#include "internal/otx/common/Message.hpp"
+#include "internal/otx/common/OTTransaction.hpp"
+#include "internal/otx/common/OTTransactionType.hpp"
 #include "internal/otx/common/XML.hpp"
+#include "internal/otx/common/basket/Basket.hpp"
+#include "internal/otx/common/cron/OTCronItem.hpp"
+#include "internal/otx/common/crypto/OTSignedFile.hpp"
+#include "internal/otx/common/recurring/OTPaymentPlan.hpp"
+#include "internal/otx/common/script/OTScriptable.hpp"
+#include "internal/otx/common/trade/OTMarket.hpp"
+#include "internal/otx/common/trade/OTOffer.hpp"
+#include "internal/otx/common/trade/OTTrade.hpp"
 #include "internal/otx/smartcontract/OTSmartContract.hpp"
 #include "internal/serialization/protobuf/Check.hpp"
 #include "internal/serialization/protobuf/verify/Envelope.hpp"
@@ -55,21 +70,8 @@
 #include "opentxs/blockchain/bitcoin/block/Types.hpp"
 #include "opentxs/blockchain/p2p/Address.hpp"
 #endif  // OT_BLOCKCHAIN
-#include "internal/otx/common/Cheque.hpp"
-#include "internal/otx/common/Contract.hpp"
-#include "internal/otx/common/Item.hpp"
-#include "internal/otx/common/Ledger.hpp"
-#include "internal/otx/common/Message.hpp"
-#include "internal/otx/common/OTTransaction.hpp"
-#include "internal/otx/common/OTTransactionType.hpp"
-#include "internal/otx/common/basket/Basket.hpp"
-#include "internal/otx/common/cron/OTCronItem.hpp"
-#include "internal/otx/common/crypto/OTSignedFile.hpp"
-#include "internal/otx/common/recurring/OTPaymentPlan.hpp"
-#include "internal/otx/common/script/OTScriptable.hpp"
-#include "internal/otx/common/trade/OTMarket.hpp"
-#include "internal/otx/common/trade/OTOffer.hpp"
-#include "internal/otx/common/trade/OTTrade.hpp"
+#include "opentxs/core/ByteArray.hpp"
+#include "opentxs/core/Data.hpp"
 #include "opentxs/core/PaymentCode.hpp"
 #include "opentxs/core/contract/BasketContract.hpp"
 #include "opentxs/core/contract/CurrencyContract.hpp"
@@ -745,8 +747,6 @@ auto Factory::ConnectionRequest(
 auto Factory::Contract(const opentxs::String& strInput) const
     -> std::unique_ptr<opentxs::Contract>
 {
-
-    using namespace opentxs;
     auto strContract = String::Factory(),
          strFirstLine = String::Factory();  // output for the below function.
     const bool bProcessed = DearmorAndTrim(strInput, strContract, strFirstLine);
@@ -927,60 +927,62 @@ auto Factory::CurrencyContract(
     }
 }
 
-auto Factory::Data() const -> OTData { return Data::Factory(); }
+auto Factory::Data() const -> ByteArray { return {}; }
 
-auto Factory::Data(const opentxs::Armored& input) const -> OTData
+auto Factory::Data(const opentxs::Armored& input) const -> ByteArray
 {
-    return Data::Factory(input);
+    return input;
 }
 
-auto Factory::Data(const ProtobufType& input) const -> OTData
+auto Factory::Data(const ProtobufType& input) const -> ByteArray
 {
-    auto output = Data::Factory();
+    auto output = ByteArray{};
     const auto size{input.ByteSize()};
-    output->SetSize(size);
-    input.SerializeToArray(output->data(), size);
+    output.SetSize(size);
+    input.SerializeToArray(output.data(), size);
 
     return output;
 }
 
-auto Factory::Data(const opentxs::network::zeromq::Frame& input) const -> OTData
+auto Factory::Data(const opentxs::network::zeromq::Frame& input) const
+    -> ByteArray
 {
-    return Data::Factory(input);
+    return input.Bytes();
 }
 
-auto Factory::Data(const std::uint8_t input) const -> OTData
+auto Factory::Data(const std::uint8_t input) const -> ByteArray
 {
-    return Data::Factory(input);
+    return input;
 }
 
-auto Factory::Data(const std::uint32_t input) const -> OTData
+auto Factory::Data(const std::uint32_t input) const -> ByteArray
 {
-    return Data::Factory(input);
+    return input;
 }
 
 auto Factory::Data(const UnallocatedVector<unsigned char>& input) const
-    -> OTData
+    -> ByteArray
 {
-    return Data::Factory(input);
+    return {input.data(), input.size()};
 }
 
-auto Factory::Data(const UnallocatedVector<std::byte>& input) const -> OTData
+auto Factory::Data(const UnallocatedVector<std::byte>& input) const -> ByteArray
 {
-    return Data::Factory(input);
+    return {input.data(), input.size()};
 }
 
-auto Factory::DataFromBytes(ReadView input) const -> OTData
-{
-    return Data::Factory(input.data(), input.size());
-}
+auto Factory::DataFromBytes(ReadView input) const -> ByteArray { return input; }
 
-auto Factory::DataFromHex(ReadView input) const -> OTData
+auto Factory::DataFromHex(ReadView input) const -> ByteArray
 {
-    auto out = this->Data();
-    out->DecodeHex(input);
+    try {
 
-    return out;
+        return {IsHex, input};
+    } catch (const std::exception& e) {
+        LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
+
+        return {};
+    }
 }
 
 auto Factory::Envelope() const noexcept -> OTEnvelope
@@ -1058,7 +1060,7 @@ auto Factory::Identifier(const ProtobufType& proto) const -> OTIdentifier
 {
     const auto bytes = Data(proto);
 
-    return Identifier(bytes->Bytes());
+    return Identifier(bytes.Bytes());
 }
 
 auto Factory::Identifier(const opentxs::network::zeromq::Frame& bytes) const
@@ -2219,7 +2221,7 @@ auto Factory::ServerID(const google::protobuf::MessageLite& proto) const
     const auto id = [&] {
         const auto bytes = Data(proto);
         auto out = ServerID();
-        out->CalculateDigest(bytes->Bytes());
+        out->CalculateDigest(bytes.Bytes());
 
         return out;
     }();
@@ -2687,7 +2689,7 @@ auto Factory::UnitID(const google::protobuf::MessageLite& proto) const
     const auto id = [&] {
         const auto bytes = Data(proto);
         auto out = UnitID();
-        out->CalculateDigest(bytes->Bytes());
+        out->CalculateDigest(bytes.Bytes());
 
         return out;
     }();

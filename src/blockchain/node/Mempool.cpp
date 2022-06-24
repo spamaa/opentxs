@@ -20,13 +20,12 @@
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/message/Message.tpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Time.hpp"
 #include "opentxs/util/WorkType.hpp"
 
@@ -210,13 +209,13 @@ private:
         for (const auto& txid : wallet_.GetUnconfirmedTransactions()) {
             if (auto tx = crypto_.LoadTransactionBitcoin(txid); tx) {
                 LogVerbose()(OT_PRETTY_CLASS())(
-                    "adding unconfirmed transaction ")(txid->asHex())(
-                    " to mempool")
+                    "adding unconfirmed transaction ")
+                    .asHex(txid)(" to mempool")
                     .Flush();
                 transactions.emplace_back(std::move(tx));
             } else {
-                LogError()(OT_PRETTY_CLASS())("failed to load transaction ")(
-                    txid->asHex())
+                LogError()(OT_PRETTY_CLASS())("failed to load transaction ")
+                    .asHex(txid)
                     .Flush();
             }
         }

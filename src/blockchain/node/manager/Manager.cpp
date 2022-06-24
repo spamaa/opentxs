@@ -69,7 +69,7 @@
 #include "opentxs/blockchain/node/Types.hpp"
 #include "opentxs/blockchain/p2p/Types.hpp"
 #include "opentxs/core/Amount.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/core/PaymentCode.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -366,7 +366,7 @@ Base::Base(
                     auto out = api_.Factory().Data();
                     const auto v4 = boost.to_v4();
                     const auto bytes = v4.to_bytes();
-                    out->Assign(bytes.data(), bytes.size());
+                    out.Assign(bytes.data(), bytes.size());
 
                     return out;
                 }(),
@@ -402,7 +402,7 @@ Base::Base(
                     auto out = api_.Factory().Data();
                     const auto v6 = boost.to_v6();
                     const auto bytes = v6.to_bytes();
-                    out->Assign(bytes.data(), bytes.size());
+                    out.Assign(bytes.data(), bytes.size());
 
                     return out;
                 }(),
@@ -905,14 +905,14 @@ auto Base::process_send_to_address(network::zeromq::Message&& in) noexcept
                 [[fallthrough]];
             }
             case Style::P2PKH: {
-                output.set_pubkeyhash(data->str());
+                output.set_pubkeyhash(data.str());
             } break;
             case Style::P2WSH: {
                 output.set_segwit(true);
                 [[fallthrough]];
             }
             case Style::P2SH: {
-                output.set_scripthash(data->str());
+                output.set_scripthash(data.str());
             } break;
             default: {
                 rc = SendResult::UnsupportedAddressFormat;
@@ -1037,13 +1037,11 @@ auto Base::process_send_to_payment_code(network::zeromq::Message&& in) noexcept
             txout.set_index(index.value());
             txout.set_paymentcodechannel(account.ID().str());
             const auto pubkey = api_.Factory().DataFromBytes(key.PublicKey());
-            LogVerbose()(OT_PRETTY_CLASS())(" using derived public key ")(
-                pubkey->asHex())(
-                " at "
-                "index"
-                " ")(index.value())(" for outgoing transaction")
+            LogVerbose()(OT_PRETTY_CLASS())(" using derived public key ")
+                .asHex(pubkey)(" at index ")(index.value())(
+                    " for outgoing transaction")
                 .Flush();
-            txout.set_pubkey(pubkey->str());
+            txout.set_pubkey(pubkey.str());
             txout.set_contact(UnallocatedCString{contact->Bytes()});
 
             if (account.IsNotified()) {

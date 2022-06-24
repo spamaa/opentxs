@@ -112,8 +112,7 @@ auto Regtest_fixture_simple::TransactionGenerator(
     auto output_transaction = miner_.Factory().BitcoinGenerationTransaction(
         test_chain_, height, std::move(output), coinbase_fun_);
 
-    const auto& txid =
-        transactions_.emplace_back(output_transaction->ID()).get();
+    const auto& txid = transactions_.emplace_back(output_transaction->ID());
 
     for (auto i = Index{0}; i < Index{count}; ++i) {
         auto& [bytes, amount, pattern] = meta.at(i);

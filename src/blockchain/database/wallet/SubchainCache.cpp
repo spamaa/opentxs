@@ -23,7 +23,7 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
@@ -433,12 +433,12 @@ auto SubchainCache::subchain_index(
     const VersionNumber version) const noexcept -> pSubchainIndex
 {
     auto preimage = api_.Factory().Data();
-    preimage->Assign(subaccount);
-    preimage->Concatenate(&subchain, sizeof(subchain));
-    preimage->Concatenate(&type, sizeof(type));
-    preimage->Concatenate(&version, sizeof(version));
+    preimage.Assign(subaccount);
+    preimage.Concatenate(&subchain, sizeof(subchain));
+    preimage.Concatenate(&type, sizeof(type));
+    preimage.Concatenate(&version, sizeof(version));
     auto output = api_.Factory().Identifier();
-    output->CalculateDigest(preimage->Bytes());
+    output->CalculateDigest(preimage.Bytes());
 
     return output;
 }

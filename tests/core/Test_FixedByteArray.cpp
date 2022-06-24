@@ -30,13 +30,13 @@ TEST(FixedByteArray, hex)
 
     EXPECT_TRUE(value.DecodeHex(test_hex_));
 
-    auto data = ot::Data::Factory();
+    auto data = ot::ByteArray{};
 
-    EXPECT_TRUE(data->DecodeHex(test_hex_));
+    EXPECT_TRUE(data.DecodeHex(test_hex_));
     EXPECT_EQ(value, data);
 
     const auto fromFixed = value.asHex();
-    const auto fromData = data->asHex();
+    const auto fromData = data.asHex();
 
     EXPECT_EQ(fromFixed, test_hex_);
     EXPECT_EQ(fromData, test_hex_);
