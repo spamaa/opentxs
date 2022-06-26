@@ -59,7 +59,7 @@
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/blockchain/node/TxoTag.hpp"
 #include "opentxs/core/Amount.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/core/PaymentCode.hpp"
 #include "opentxs/core/display/Definition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
@@ -171,7 +171,7 @@ struct BitcoinTransactionBuilder::Imp {
                         const auto pkh = element.PubkeyHash();
                         out.emplace_back(bi::Opcode(bb::OP::DUP));
                         out.emplace_back(bi::Opcode(bb::OP::HASH160));
-                        out.emplace_back(bi::PushData(pkh->Bytes()));
+                        out.emplace_back(bi::PushData(pkh.Bytes()));
                         out.emplace_back(bi::Opcode(bb::OP::EQUALVERIFY));
                         out.emplace_back(bi::Opcode(bb::OP::CHECKSIG));
                     }
@@ -611,7 +611,7 @@ private:
             return false;
         }
 
-        auto keys = UnallocatedVector<OTData>{};
+        auto keys = UnallocatedVector<ByteArray>{};
         auto signatures = UnallocatedVector<Space>{};
         auto views = bitcoin::block::internal::Input::Signatures{};
         const auto& api = api_.Crypto().Blockchain();
@@ -688,7 +688,7 @@ private:
         const bitcoin::block::internal::Output& spends,
         bitcoin::block::internal::Input& input) const noexcept -> bool
     {
-        auto keys = UnallocatedVector<OTData>{};
+        auto keys = UnallocatedVector<ByteArray>{};
         auto signatures = UnallocatedVector<Space>{};
         auto views = bitcoin::block::internal::Input::Signatures{};
         const auto& api = api_.Crypto().Blockchain();
@@ -764,7 +764,7 @@ private:
         const bitcoin::block::internal::Output& spends,
         bitcoin::block::internal::Input& input) const noexcept -> bool
     {
-        auto keys = UnallocatedVector<OTData>{};
+        auto keys = UnallocatedVector<ByteArray>{};
         auto signatures = UnallocatedVector<Space>{};
         auto views = bitcoin::block::internal::Input::Signatures{};
         const auto& api = api_.Crypto().Blockchain();
@@ -817,7 +817,7 @@ private:
 
             OT_ASSERT(0 < key.PublicKey().size());
 
-            views.emplace_back(reader(sig), pubkey->Bytes());
+            views.emplace_back(reader(sig), pubkey.Bytes());
         }
 
         if (0 == views.size()) {
@@ -904,8 +904,9 @@ private:
                 "account ")(account)(" subchain"
                                      " ")(static_cast<std::uint32_t>(subchain))(
                 " index ")(index)(" does not correspond to the "
-                                  "expected public key. Got ")(got->asHex())(
-                " expected ")(expected->asHex())
+                                  "expected public key. Got ")
+                .asHex(got)(" expected ")
+                .asHex(expected)
                 .Flush();
 
             OT_FAIL;
@@ -1237,7 +1238,7 @@ private:
                 return {};
             }
 
-            if (element.PubkeyHash()->Bytes() != expected.value()) {
+            if (element.PubkeyHash().Bytes() != expected.value()) {
                 LogError()(OT_PRETTY_CLASS())(
                     "Provided public key does not match expected hash")
                     .Flush();

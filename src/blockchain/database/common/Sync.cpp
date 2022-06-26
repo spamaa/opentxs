@@ -19,6 +19,7 @@
 #include <string_view>
 #include <utility>
 
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/util/Container.hpp"
 
 extern "C" {
@@ -37,11 +38,9 @@ extern "C" {
 #include "opentxs/blockchain/Blockchain.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
-#include "opentxs/core/Data.hpp"
 #include "opentxs/network/p2p/Block.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "util/ByteLiterals.hpp"
 #include "util/LMDB.hpp"
 #include "util/MappedFileStorage.hpp"
@@ -357,8 +356,8 @@ private:
                     api_,
                     filterType,
                     opentxs::blockchain::internal::BlockHashToFilterKey(
-                        blockHash->Bytes()),
-                    bytes->Bytes(),
+                        blockHash.Bytes()),
+                    bytes.Bytes(),
                     {});  // TODO allocator
 
                 OT_ASSERT(output.IsValid());
@@ -379,7 +378,7 @@ private:
                 0,
                 filterType,
                 gcs.ElementCount(),
-                header->Bytes(),
+                header.Bytes(),
                 reader(filter));
 
             return output;

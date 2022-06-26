@@ -43,7 +43,7 @@
 #include "network/asio/Endpoint.hpp"
 #include "network/asio/Socket.hpp"  // IWYU pragma: keep
 #include "opentxs/api/network/Asio.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/network/asio/Endpoint.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/ListenCallback.hpp"
@@ -59,7 +59,6 @@
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "util/Thread.hpp"
 #include "util/Work.hpp"
@@ -244,14 +243,16 @@ auto Asio::Imp::FetchJson(
     return future;
 }
 
-auto Asio::Imp::GetPublicAddress4() const noexcept -> std::shared_future<OTData>
+auto Asio::Imp::GetPublicAddress4() const noexcept
+    -> std::shared_future<ByteArray>
 {
     auto lock = sLock{lock_};
 
     return ipv4_future_;
 }
 
-auto Asio::Imp::GetPublicAddress6() const noexcept -> std::shared_future<OTData>
+auto Asio::Imp::GetPublicAddress6() const noexcept
+    -> std::shared_future<ByteArray>
 {
     auto lock = sLock{lock_};
 
@@ -337,7 +338,7 @@ auto Asio::Imp::Post(
 
 auto Asio::Imp::process_address_query(
     const ResponseType type,
-    std::shared_ptr<std::promise<OTData>> promise,
+    std::shared_ptr<std::promise<ByteArray>> promise,
     std::future<Response> future) const noexcept -> void
 {
     if (!promise) { return; }
@@ -382,10 +383,10 @@ auto Asio::Imp::process_address_query(
 
         if (address.is_v4()) {
             const auto bytes = address.to_v4().to_bytes();
-            promise->set_value(Data::Factory(bytes.data(), bytes.size()));
+            promise->set_value(ByteArray{bytes.data(), bytes.size()});
         } else if (address.is_v6()) {
             const auto bytes = address.to_v6().to_bytes();
-            promise->set_value(Data::Factory(bytes.data(), bytes.size()));
+            promise->set_value(ByteArray{bytes.data(), bytes.size()});
         }
     } catch (...) {
         promise->set_exception(std::current_exception());
@@ -501,7 +502,7 @@ auto Asio::Imp::Resolve(std::string_view server, std::uint16_t port)
 
 auto Asio::Imp::retrieve_address_async(
     const struct Site& site,
-    std::shared_ptr<std::promise<OTData>> pPromise) -> void
+    std::shared_ptr<std::promise<ByteArray>> pPromise) -> void
 {
     using HTTP = opentxs::network::asio::HTTP;
     auto alloc = alloc::Default{};
@@ -521,7 +522,7 @@ auto Asio::Imp::retrieve_address_async(
 
 auto Asio::Imp::retrieve_address_async_ssl(
     const struct Site& site,
-    std::shared_ptr<std::promise<OTData>> pPromise) -> void
+    std::shared_ptr<std::promise<ByteArray>> pPromise) -> void
 {
     using HTTPS = opentxs::network::asio::HTTPS;
     auto alloc = alloc::Default{};
@@ -659,11 +660,11 @@ auto Asio::Imp::state_machine() noexcept -> bool
         ipv6_future_ = ipv6_promise_.get_future();
     }
 
-    auto futures4 = UnallocatedVector<std::future<OTData>>{};
-    auto futures6 = UnallocatedVector<std::future<OTData>>{};
+    auto futures4 = UnallocatedVector<std::future<ByteArray>>{};
+    auto futures6 = UnallocatedVector<std::future<ByteArray>>{};
 
     for (const auto& site : sites()) {
-        auto promise = std::make_shared<std::promise<OTData>>();
+        auto promise = std::make_shared<std::promise<ByteArray>>();
 
         if (IPversion::IPV4 == site.protocol) {
             futures4.emplace_back(promise->get_future());
@@ -684,8 +685,8 @@ auto Asio::Imp::state_machine() noexcept -> bool
         }
     }
 
-    auto result4 = Data::Factory();
-    auto result6 = Data::Factory();
+    auto result4 = ByteArray{};
+    auto result6 = ByteArray{};
     static constexpr auto limit = 15s;
     static constexpr auto ready = std::future_status::ready;
 
@@ -694,7 +695,7 @@ auto Asio::Imp::state_machine() noexcept -> bool
             if (const auto status = future.wait_for(limit); ready == status) {
                 auto result = future.get();
 
-                if (result->empty()) { continue; }
+                if (result.empty()) { continue; }
 
                 result4 = std::move(result);
                 break;
@@ -715,7 +716,7 @@ auto Asio::Imp::state_machine() noexcept -> bool
             if (const auto status = future.wait_for(limit); ready == status) {
                 auto result = future.get();
 
-                if (result->empty()) { continue; }
+                if (result.empty()) { continue; }
 
                 result6 = std::move(result);
                 break;
@@ -731,7 +732,7 @@ auto Asio::Imp::state_machine() noexcept -> bool
         }
     }
 
-    if (result4->empty() && result6->empty()) { again = true; }
+    if (result4.empty() && result6.empty()) { again = true; }
 
     {
         auto lock = eLock{lock_};

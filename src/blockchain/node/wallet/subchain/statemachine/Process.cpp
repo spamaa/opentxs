@@ -42,7 +42,7 @@
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/node/BlockOracle.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -52,7 +52,6 @@
 #include "opentxs/network/zeromq/socket/Types.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "util/ScopeGuard.hpp"
 #include "util/Work.hpp"
 
@@ -319,14 +318,14 @@ auto Process::Imp::process_mempool(Message&& in) noexcept -> void
     // as mempool transactions even if they are erroneously received from peers
     // on a subsequent run of the application
     if (0u < txid_cache_.count(txid)) {
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" transaction ")(txid->asHex())(
-            " already process as confirmed")
+        log_(OT_PRETTY_CLASS())(parent_.name_)(" transaction ")
+            .asHex(txid)(" already process as confirmed")
             .Flush();
 
         return;
     }
 
-    if (auto tx = parent_.mempool_oracle_.Query(txid->Bytes()); tx) {
+    if (auto tx = parent_.mempool_oracle_.Query(txid.Bytes()); tx) {
         parent_.ProcessTransaction(*tx, log_);
     }
 }

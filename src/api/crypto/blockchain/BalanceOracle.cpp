@@ -30,7 +30,7 @@
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/Amount.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
@@ -146,10 +146,10 @@ auto BalanceOracle::Imp::notify_subscribers(
         {}, nullptr, chain, balance, WorkType::BlockchainWalletUpdated));
 
     for (const auto& id : recipients) {
-        log(OT_PRETTY_CLASS())("notifying connection ")(id->asHex())(" for ")(
-            print(chain))(" balance update");
+        log(OT_PRETTY_CLASS())("notifying connection ")
+            .asHex(id)(" for ")(print(chain))(" balance update");
         router_.Send(make_message(
-            id->Bytes(), nullptr, chain, balance, WorkType::BlockchainBalance));
+            id.Bytes(), nullptr, chain, balance, WorkType::BlockchainBalance));
     }
 }
 
@@ -164,10 +164,11 @@ auto BalanceOracle::Imp::notify_subscribers(
         {}, &owner, chain, balance, WorkType::BlockchainWalletUpdated));
 
     for (const auto& id : recipients) {
-        log(OT_PRETTY_CLASS())("notifying connection ")(id->asHex())(" for ")(
-            print(chain))(" balance update for nym ")(owner);
+        log(OT_PRETTY_CLASS())("notifying connection ")
+            .asHex(id)(" for ")(print(chain))(" balance update for nym ")(
+                owner);
         router_.Send(make_message(
-            id->Bytes(), &owner, chain, balance, WorkType::BlockchainBalance));
+            id.Bytes(), &owner, chain, balance, WorkType::BlockchainBalance));
     }
 }
 
@@ -256,9 +257,9 @@ auto BalanceOracle::Imp::process_registration(Message&& in) noexcept -> void
         }
     }
     ();
-    const auto& id =
+    const auto& id = *(
         subscribers.emplace(api_.Factory().DataFromBytes(connectionID.Bytes()))
-            .first->get();
+            .first);
     const auto& log = LogTrace();
     log(OT_PRETTY_CLASS())(id.asHex())(" subscribed to ")(print(chain))(
         " balance updates");

@@ -39,7 +39,7 @@
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/network/p2p/Base.hpp"
 #include "opentxs/network/p2p/Data.hpp"
 #include "opentxs/network/p2p/MessageType.hpp"
@@ -53,7 +53,6 @@
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/WorkType.hpp"
 
 namespace opentxs::blockchain::node::base
@@ -325,11 +324,11 @@ auto SyncServer::queue_processing(DownloadedData&& data) noexcept -> void
 
             const auto& header = *pHeader;
 
-            if (previousFilterHeader->empty()) {
+            if (previousFilterHeader.empty()) {
                 previousFilterHeader =
                     filter_.LoadFilterHeader(type_, header.ParentHash());
 
-                if (previousFilterHeader->empty()) {
+                if (previousFilterHeader.empty()) {
                     throw std::runtime_error(
                         UnallocatedCString{
                             "failed to previous filter header for "
@@ -358,7 +357,7 @@ auto SyncServer::queue_processing(DownloadedData&& data) noexcept -> void
                 task->position_.height_,
                 type_,
                 cfilter.ElementCount(),
-                headerBytes->Bytes(),
+                headerBytes.Bytes(),
                 reader(filterBytes));
             task->process(1);
         } catch (const std::exception& e) {
@@ -368,7 +367,7 @@ auto SyncServer::queue_processing(DownloadedData&& data) noexcept -> void
         }
     }
 
-    if (previousFilterHeader->empty() || (0 == items.size())) {
+    if (previousFilterHeader.empty() || (0 == items.size())) {
         LogError()(OT_PRETTY_CLASS())(__func__)(": missing data").Flush();
 
         return;
@@ -383,7 +382,7 @@ auto SyncServer::queue_processing(DownloadedData&& data) noexcept -> void
         WorkType::P2PBlockchainNewBlock,
         {chain_, pos},
         std::move(items),
-        previousFilterHeader->Bytes());
+        previousFilterHeader.Bytes());
     auto work = network::zeromq::Message{};
 
     if (msg.Serialize(work) && zmq_running_) {

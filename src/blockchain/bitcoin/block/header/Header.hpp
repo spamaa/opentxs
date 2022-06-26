@@ -24,7 +24,6 @@
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/core/Data.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Numbers.hpp"
@@ -55,6 +54,8 @@ namespace block
 class Hash;
 }  // namespace block
 }  // namespace blockchain
+
+class ByteArray;
 // }  // namespace v1
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
@@ -72,7 +73,7 @@ public:
     }
 
     virtual auto MerkleRoot() const noexcept -> const blockchain::block::Hash&;
-    virtual auto Encode() const noexcept -> OTData;
+    virtual auto Encode() const noexcept -> ByteArray;
     virtual auto Nonce() const noexcept -> std::uint32_t { return {}; }
     virtual auto nBits() const noexcept -> std::uint32_t { return {}; }
     virtual auto Timestamp() const noexcept -> Time { return {}; }

@@ -28,9 +28,8 @@
 #include "opentxs/blockchain/bitcoin/cfilter/Header.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
-#include "opentxs/core/Data.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "util/LMDB.hpp"
 
 namespace opentxs::blockchain::database
@@ -109,7 +108,7 @@ auto Filters::import_genesis(const blockchain::Type chain) const noexcept
             api_,
             style,
             blockchain::internal::BlockHashToFilterKey(blockHash.Bytes()),
-            bytes->Bytes(),
+            bytes.Bytes(),
             {});  // TODO allocator
 
         OT_ASSERT(gcs.IsValid());

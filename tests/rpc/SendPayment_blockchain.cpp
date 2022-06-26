@@ -99,7 +99,7 @@ protected:
 
             OT_ASSERT(output);
 
-            transactions_.emplace_back(output->ID()).get();
+            transactions_.emplace_back(output->ID());
 
             return output;
         })

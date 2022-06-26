@@ -640,7 +640,7 @@ TEST_F(Regtest_fixture_hd, failed_spend)
         alice_.nym_id_, address, 140000000000, memo_outgoing_);
     const auto txid = future.get().second;
 
-    EXPECT_TRUE(txid->empty());
+    EXPECT_TRUE(txid.empty());
 
     // TODO ensure CancelProposal is finished processing with appropriate signal
     ot::Sleep(5s);
@@ -733,13 +733,13 @@ TEST_F(Regtest_fixture_hd, spend)
         alice_.nym_id_, address, 1400000000, memo_outgoing_);
     const auto& txid = transactions_.emplace_back(future.get().second);
 
-    EXPECT_FALSE(txid->empty());
+    EXPECT_FALSE(txid.empty());
 
     const auto& element = SendHD().BalanceElement(Subchain::Internal, 0);
     const auto amount = ot::blockchain::Amount{99997807};
     expected_.emplace(
         std::piecewise_construct,
-        std::forward_as_tuple(txid->Bytes(), 0),
+        std::forward_as_tuple(txid.Bytes(), 0),
         std::forward_as_tuple(
             element.PubkeyHash(), amount, Pattern::PayToPubkeyHash));
     const auto pTX =
@@ -852,7 +852,7 @@ TEST_F(Regtest_fixture_hd, confirm)
     account_list_.expected_ += 2;
     account_activity_.expected_ += ((3 * count) + 3);
     account_status_.expected_ += (6u * count);
-    const auto& txid = transactions_.at(1).get();
+    const auto& txid = transactions_.at(1);
     const auto extra = [&] {
         auto output = ot::UnallocatedVector<Transaction>{};
         const auto& pTX = output.emplace_back(
@@ -889,14 +889,14 @@ TEST_F(Regtest_fixture_hd, outgoing_transaction)
     using Tag = ot::blockchain::node::TxoTag;
 
     {
-        const auto tags = wallet.GetTags({transactions_.at(1)->Bytes(), 0});
+        const auto tags = wallet.GetTags({transactions_.at(1).Bytes(), 0});
 
         EXPECT_EQ(tags.size(), 2);
         EXPECT_EQ(tags.count(Tag::Normal), 1);
         EXPECT_EQ(tags.count(Tag::Change), 1);
     }
     {
-        const auto tags = wallet.GetTags({transactions_.at(1)->Bytes(), 1});
+        const auto tags = wallet.GetTags({transactions_.at(1).Bytes(), 1});
 
         EXPECT_EQ(tags.size(), 0);
     }

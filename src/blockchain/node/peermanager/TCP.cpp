@@ -45,7 +45,7 @@ public:
         const auto bytes = [&] {
             auto out = Space{};
             const auto data = address.Bytes();
-            copy(data->Bytes(), writer(out));
+            copy(data.Bytes(), writer(out));
 
             return out;
         }();
