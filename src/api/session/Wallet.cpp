@@ -2051,8 +2051,9 @@ auto Wallet::process_p2p_publish_contract(
         const auto type = base->Type();
 
         if (Type::publish_contract != type) {
-            const auto error = CString{} + "Unsupported message type " +
-                               opentxs::print(type).c_str();
+            const auto error = CString{}
+                                   .append("Unsupported message type ")
+                                   .append(print(type));
 
             throw std::runtime_error{error.c_str()};
         }
@@ -2116,8 +2117,9 @@ auto Wallet::process_p2p_query_contract(
         const auto type = base->Type();
 
         if (Type::contract_query != type) {
-            const auto error = CString{} + "Unsupported message type " +
-                               opentxs::print(type).c_str();
+            const auto error = CString{}
+                                   .append("Unsupported message type ")
+                                   .append(print(type));
 
             throw std::runtime_error{error.c_str()};
         }
@@ -2265,8 +2267,9 @@ auto Wallet::process_p2p_response(
                 log.Flush();
             } break;
             default:
-                const auto error = CString{} + "Unsupported message type " +
-                                   opentxs::print(type).c_str();
+                const auto error = CString{}
+                                       .append("Unsupported message type ")
+                                       .append(print(type));
 
                 throw std::runtime_error{error.c_str()};
         }
