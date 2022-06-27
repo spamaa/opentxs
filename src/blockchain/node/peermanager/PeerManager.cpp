@@ -15,6 +15,7 @@
 #include "core/Worker.hpp"
 #include "internal/api/network/Blockchain.hpp"
 #include "internal/blockchain/bitcoin/block/Transaction.hpp"
+#include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Factory.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"  // IWYU pragma: keep
 #include "internal/util/LogMacros.hpp"
@@ -32,6 +33,7 @@
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
+#include "opentxs/util/BlockchainProfile.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
@@ -48,9 +50,8 @@ auto BlockchainPeerManager(
     const blockchain::node::internal::BlockOracle& block,
     blockchain::database::Peer& database,
     const blockchain::Type type,
-    const blockchain::database::BlockStorage policy,
-    const UnallocatedCString& seednode,
-    const UnallocatedCString& shutdown) noexcept
+    std::string_view seednode,
+    std::string_view shutdown) noexcept
     -> std::unique_ptr<blockchain::node::internal::PeerManager>
 {
     using ReturnType = blockchain::node::implementation::PeerManager;
@@ -65,7 +66,6 @@ auto BlockchainPeerManager(
         block,
         database,
         type,
-        policy,
         seednode,
         shutdown);
 }
@@ -83,15 +83,14 @@ PeerManager::PeerManager(
     const internal::BlockOracle& block,
     database::Peer& database,
     const Type chain,
-    const database::BlockStorage policy,
-    const UnallocatedCString& seednode,
-    const UnallocatedCString& shutdown) noexcept
+    std::string_view seednode,
+    std::string_view shutdown) noexcept
     : internal::PeerManager()
     , Worker(api, 100ms)
     , node_(node)
     , database_(database)
     , chain_(chain)
-    , peer_target_(peer_target(chain_, policy))
+    , peer_target_(peer_target(chain_, config))
     , jobs_(api)
     , peers_(
           api,
@@ -103,7 +102,6 @@ PeerManager::PeerManager(
           block,
           database_,
           *this,
-          policy,
           shutdown,
           chain,
           seednode,
@@ -113,7 +111,7 @@ PeerManager::PeerManager(
     , init_promise_()
     , init_(init_promise_.get_future())
 {
-    init_executor({shutdown});
+    init_executor({UnallocatedCString{shutdown}});
 }
 
 auto PeerManager::AddIncomingPeer(const int id, std::uintptr_t endpoint)
@@ -271,23 +269,27 @@ auto PeerManager::LookupIncomingSocket(const int id) const noexcept(false)
 
 auto PeerManager::peer_target(
     const Type chain,
-    const database::BlockStorage policy) noexcept -> std::size_t
+    const node::internal::Config& config) noexcept -> std::size_t
 {
-    if (Type::UnitTest == chain) { return 0; }
+    if (Type::UnitTest == chain) { return 0_uz; }
 
-    switch (policy) {
-        case database::BlockStorage::All: {
+    switch (config.profile_) {
+        case BlockchainProfile::mobile: {
 
-            return 6;
+            return 2_uz;
         }
-        case database::BlockStorage::Cache: {
+        case BlockchainProfile::desktop:
+        case BlockchainProfile::desktop_native: {
 
-            return 4;
+            return 4_uz;
         }
-        case database::BlockStorage::None:
+        case BlockchainProfile::server: {
+
+            return 6_uz;
+        }
         default: {
 
-            return 2;
+            OT_FAIL;
         }
     }
 }

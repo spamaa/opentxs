@@ -125,7 +125,8 @@ struct Sync::Imp final : private util::MappedFileStorage {
         return reorg(chain, height);
     }
 
-    auto Store(const Chain chain, const Items& items) const noexcept -> bool
+    auto Store(const Chain chain, const network::p2p::SyncData& items)
+        const noexcept -> bool
     {
         if (0 == items.size()) { return true; }
 
@@ -364,7 +365,8 @@ private:
 
                 return output;
             }();
-            auto output = Items{};
+            // TODO allocator
+            auto output = network::p2p::SyncData{};
             const auto header =
                 api_.Factory().DataFromHex(data.genesis_header_hex_);
             const auto filter = [&] {
@@ -448,7 +450,8 @@ auto Sync::Reorg(const Chain chain, const Height height) const noexcept -> bool
     return imp_->Reorg(chain, height);
 }
 
-auto Sync::Store(const Chain chain, const Items& items) const noexcept -> bool
+auto Sync::Store(const Chain chain, const network::p2p::SyncData& items)
+    const noexcept -> bool
 {
     return imp_->Store(chain, items);
 }

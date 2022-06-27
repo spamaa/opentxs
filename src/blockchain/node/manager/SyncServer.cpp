@@ -268,8 +268,8 @@ auto SyncServer::process_zmq(const Lock& lock) noexcept -> void
     const auto base = api_.Factory().BlockchainSyncMessage(incoming);
 
     if (auto type = base->Type(); type != bcsync::MessageType::sync_request) {
-        LogError()(OT_PRETTY_CLASS())(__func__)(
-            ": Invalid or unsupported message type ")(opentxs::print(type))
+        LogError()(OT_PRETTY_CLASS())("Invalid or unsupported message type ")(
+            print(type))
             .Flush();
 
         return;
@@ -308,7 +308,8 @@ auto SyncServer::queue_processing(DownloadedData&& data) noexcept -> void
     if (0 == data.size()) { return; }
 
     const auto& tip = data.back();
-    auto items = UnallocatedVector<network::p2p::Block>{};
+    // TODO allocator
+    auto items = network::p2p::SyncData{};
     auto previousFilterHeader = api_.Factory().Data();
 
     for (const auto& task : data) {
