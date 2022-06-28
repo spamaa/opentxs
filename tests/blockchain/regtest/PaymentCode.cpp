@@ -17,7 +17,11 @@
 #include "internal/blockchain/block/Block.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "ottest/data/crypto/PaymentCodeV3.hpp"
-#include "ottest/fixtures/blockchain/Regtest.hpp"
+#include "ottest/fixtures/blockchain/Common.hpp"
+#include "ottest/fixtures/blockchain/ScanListener.hpp"
+#include "ottest/fixtures/blockchain/TXOs.hpp"
+#include "ottest/fixtures/blockchain/regtest/Base.hpp"
+#include "ottest/fixtures/blockchain/regtest/PaymentCode.hpp"
 #include "ottest/fixtures/common/Counter.hpp"
 #include "ottest/fixtures/common/User.hpp"
 #include "ottest/fixtures/integration/Helpers.hpp"
@@ -300,8 +304,11 @@ TEST_F(Regtest_payment_code, mature_initial_balance)
 
 TEST_F(Regtest_payment_code, first_block)
 {
-    const auto& blockchain =
-        client_1_.Network().Blockchain().GetChain(test_chain_);
+    const auto handle = client_1_.Network().Blockchain().GetChain(test_chain_);
+
+    ASSERT_TRUE(handle);
+
+    const auto& blockchain = handle.get();
     const auto blockHash = blockchain.HeaderOracle().BestHash(1);
 
     ASSERT_FALSE(blockHash.IsNull());
@@ -432,8 +439,11 @@ TEST_F(Regtest_payment_code, send_to_bob)
     account_tree_bob_.expected_ += 1;
     contact_list_alice_.expected_ += 1;
     contact_list_bob_.expected_ += 1;
-    const auto& network =
-        client_1_.Network().Blockchain().GetChain(test_chain_);
+    const auto handle = client_1_.Network().Blockchain().GetChain(test_chain_);
+
+    ASSERT_TRUE(handle);
+
+    const auto& network = handle.get();
     auto future = network.SendToPaymentCode(
         alice_.nym_id_,
         client_1_.Factory().PaymentCode(
@@ -486,7 +496,11 @@ TEST_F(Regtest_payment_code, first_outgoing_transaction)
 {
     const auto& api = client_1_;
     const auto& blockchain = api.Crypto().Blockchain();
-    const auto& chain = api.Network().Blockchain().GetChain(test_chain_);
+    const auto handle = api.Network().Blockchain().GetChain(test_chain_);
+
+    ASSERT_TRUE(handle);
+
+    const auto& chain = handle.get();
     const auto& contact = api.Contacts();
     const auto& me = alice_.nym_id_;
     const auto self = contact.ContactID(me);
@@ -912,8 +926,11 @@ TEST_F(Regtest_payment_code, confirm_send)
 
 TEST_F(Regtest_payment_code, second_block)
 {
-    const auto& blockchain =
-        client_1_.Network().Blockchain().GetChain(test_chain_);
+    const auto handle = client_1_.Network().Blockchain().GetChain(test_chain_);
+
+    ASSERT_TRUE(handle);
+
+    const auto& blockchain = handle.get();
     const auto blockHash = blockchain.HeaderOracle().BestHash(height_);
     auto expected = ot::Vector<ot::Vector<std::byte>>{};
 
@@ -1078,7 +1095,8 @@ TEST_F(Regtest_payment_code, alice_account_activity_first_spend_confirmed)
     const auto& account = pc.at(0);
     const auto lookahead = account.Lookahead() - 1;
 
-    EXPECT_EQ(account.Type(), bca::SubaccountType::PaymentCode);
+    EXPECT_EQ(
+        account.Type(), ot::blockchain::crypto::SubaccountType::PaymentCode);
     EXPECT_TRUE(account.IsNotified());
 
     {
@@ -1219,7 +1237,8 @@ TEST_F(Regtest_payment_code, bob_account_activity_first_spend_confirmed)
     const auto& account = pc.at(0);
     const auto lookahead = account.Lookahead() - 1u;
 
-    EXPECT_EQ(account.Type(), bca::SubaccountType::PaymentCode);
+    EXPECT_EQ(
+        account.Type(), ot::blockchain::crypto::SubaccountType::PaymentCode);
     EXPECT_FALSE(account.IsNotified());
 
     {
@@ -1376,8 +1395,11 @@ TEST_F(Regtest_payment_code, send_to_bob_again)
     account_tree_bob_.expected_ += 1;
     activity_thread_alice_bob_.expected_ += 1;
     activity_thread_bob_alice_.expected_ += 1;
-    const auto& network =
-        client_1_.Network().Blockchain().GetChain(test_chain_);
+    const auto handle = client_1_.Network().Blockchain().GetChain(test_chain_);
+
+    ASSERT_TRUE(handle);
+
+    const auto& network = handle.get();
     auto future = network.SendToPaymentCode(
         alice_.nym_id_,
         client_1_.Factory().PaymentCode(
@@ -1505,7 +1527,8 @@ TEST_F(Regtest_payment_code, alice_account_activity_second_spend_unconfirmed)
     const auto& account = pc.at(0);
     const auto lookahead = account.Lookahead() - 1u;
 
-    EXPECT_EQ(account.Type(), bca::SubaccountType::PaymentCode);
+    EXPECT_EQ(
+        account.Type(), ot::blockchain::crypto::SubaccountType::PaymentCode);
     EXPECT_TRUE(account.IsNotified());
 
     {
@@ -1773,7 +1796,8 @@ TEST_F(Regtest_payment_code, bob_account_activity_second_unconfirmed_incoming)
     const auto& account = pc.at(0);
     const auto lookahead = account.Lookahead() - 1u;
 
-    EXPECT_EQ(account.Type(), bca::SubaccountType::PaymentCode);
+    EXPECT_EQ(
+        account.Type(), ot::blockchain::crypto::SubaccountType::PaymentCode);
     EXPECT_FALSE(account.IsNotified());
 
     {
@@ -2186,7 +2210,8 @@ TEST_F(Regtest_payment_code, bob_account_activity_after_otx)
     const auto& account = pc.at(0);
     const auto lookahead = account.Lookahead() - 1u;
 
-    EXPECT_EQ(account.Type(), bca::SubaccountType::PaymentCode);
+    EXPECT_EQ(
+        account.Type(), ot::blockchain::crypto::SubaccountType::PaymentCode);
     EXPECT_FALSE(account.IsNotified());
 
     {

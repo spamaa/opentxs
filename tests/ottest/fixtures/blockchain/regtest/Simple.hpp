@@ -11,7 +11,8 @@
 #include <memory>
 #include <utility>
 
-#include "Regtest.hpp"
+#include "ottest/fixtures/blockchain/regtest/Base.hpp"
+#include "ottest/fixtures/blockchain/regtest/Normal.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs
@@ -52,7 +53,9 @@ class Options;
 
 namespace ottest
 {
+class BlockListener;
 class User;
+class WalletListener;
 }  // namespace ottest
 // NOLINTEND(modernize-concat-nested-namespaces)
 
@@ -65,6 +68,8 @@ struct RegtestListener {
 
     std::unique_ptr<BlockListener> block_listener;
     std::unique_ptr<WalletListener> wallet_listener;
+
+    ~RegtestListener();
 };
 
 class Regtest_fixture_simple : public Regtest_fixture_normal
@@ -99,7 +104,8 @@ protected:
         int instance,
         const ot::UnallocatedCString& name,
         const ot::UnallocatedCString& words,
-        const b::p2p::Address& address) -> std::pair<const User&, bool>;
+        const ot::blockchain::p2p::Address& address)
+        -> std::pair<const User&, bool>;
 
     auto CloseClient(const ot::UnallocatedCString& name) -> void;
 
@@ -140,6 +146,7 @@ protected:
     auto GetNextBlockchainAddress(const User& user)
         -> const ot::UnallocatedCString;
 
-    auto GetHDAccount(const User& user) const noexcept -> const bca::HD&;
+    auto GetHDAccount(const User& user) const noexcept
+        -> const ot::blockchain::crypto::HD&;
 };
 }  // namespace ottest

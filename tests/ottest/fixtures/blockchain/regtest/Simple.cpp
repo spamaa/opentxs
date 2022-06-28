@@ -1,9 +1,9 @@
 // Copyright (c) 2010-2022 The Open-Transactions developers
-// // This Source Code Form is subject to the terms of the Mozilla Public
-// // License, v. 2.0. If a copy of the MPL was not distributed with this
-// // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "ottest/fixtures/blockchain/RegtestSimple.hpp"  // IWYU pragma: associated
+#include "ottest/fixtures/blockchain/regtest/Simple.hpp"  // IWYU pragma: associated
 
 #include <gtest/gtest.h>
 #include <opentxs/opentxs.hpp>
@@ -15,8 +15,11 @@
 #include <string_view>
 #include <tuple>
 
+#include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
-#include "ottest/fixtures/blockchain/Regtest.hpp"
+#include "ottest/fixtures/blockchain/BlockListener.hpp"
+#include "ottest/fixtures/blockchain/Common.hpp"
+#include "ottest/fixtures/blockchain/WalletListener.hpp"
 #include "ottest/fixtures/common/User.hpp"
 
 namespace ottest
@@ -24,10 +27,12 @@ namespace ottest
 using namespace opentxs::literals;
 
 RegtestListener::RegtestListener(const ot::api::session::Client& client)
-    : block_listener(std::make_unique<BlockListener>(client))
+    : block_listener(std::make_unique<BlockListener>(client, "client"))
     , wallet_listener(std::make_unique<WalletListener>(client))
 {
 }
+
+RegtestListener::~RegtestListener() = default;
 
 Regtest_fixture_simple::Regtest_fixture_simple()
     : Regtest_fixture_normal(0, ot::Options{})
@@ -82,7 +87,7 @@ auto Regtest_fixture_simple::TransactionGenerator(
 {
     using OutputBuilder = ot::api::session::Factory::OutputBuilder;
     using Index = ot::Bip32Index;
-    using Subchain = bca::Subchain;
+    using Subchain = ot::blockchain::crypto::Subchain;
 
     auto output = ot::UnallocatedVector<OutputBuilder>{};
     auto meta = ot::UnallocatedVector<OutpointMetadata>{};
@@ -206,7 +211,13 @@ auto Regtest_fixture_simple::MineBlocks(
     const ot::UnallocatedVector<Transaction>& extra) noexcept
     -> std::unique_ptr<opentxs::blockchain::bitcoin::block::Header>
 {
-    const auto& network = miner_.Network().Blockchain().GetChain(test_chain_);
+    const auto handle = miner_.Network().Blockchain().GetChain(test_chain_);
+
+    EXPECT_TRUE(handle);
+
+    if (false == handle.IsValid()) { return {}; }
+
+    const auto& network = handle.get();
     const auto& headerOracle = network.HeaderOracle();
     auto previousHeader =
         headerOracle.LoadHeader(headerOracle.BestHash(ancestor))->as_Bitcoin();
@@ -244,13 +255,15 @@ auto Regtest_fixture_simple::CreateClient(
     int instance,
     const ot::UnallocatedCString& name,
     const ot::UnallocatedCString& words,
-    const b::p2p::Address& address) -> std::pair<const User&, bool>
+    const ot::blockchain::p2p::Address& address) -> std::pair<const User&, bool>
 {
     const auto& client = ot_.StartClientSession(client_args, instance);
-
     const auto start = client.Network().Blockchain().Start(test_chain_);
+    const auto handle = client.Network().Blockchain().GetChain(test_chain_);
 
-    const auto& network = client.Network().Blockchain().GetChain(test_chain_);
+    OT_ASSERT(handle);
+
+    const auto& network = handle.get();
     const auto added = network.AddPeer(address);
 
     auto seed = ImportBip39(client, words);
@@ -278,9 +291,7 @@ auto Regtest_fixture_simple::CreateClient(
 
     std::promise<void> promise;
     std::future<void> done = promise.get_future();
-    auto cb_connected = [&](zmq::Message&& msg, std::atomic_int& counter) {
-        promise.set_value();
-    };
+    auto cb_connected = [&](auto&& msg, auto& counter) { promise.set_value(); };
     std::atomic_int client_peers;
     ot::OTZMQListenCallback client_cb_(
         ot::network::zeromq::ListenCallback::Factory(
@@ -344,7 +355,7 @@ auto Regtest_fixture_simple::GetSyncPercentage(const User& user) -> double
 }
 
 auto Regtest_fixture_simple::GetHDAccount(const User& user) const noexcept
-    -> const bca::HD&
+    -> const ot::blockchain::crypto::HD&
 {
     return user.api_->Crypto()
         .Blockchain()

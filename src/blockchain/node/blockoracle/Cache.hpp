@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "blockchain/node/blockoracle/MemDB.hpp"
+#include "internal/blockchain/node/Job.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
@@ -82,7 +83,7 @@ namespace opentxs::blockchain::node::blockoracle
 class Cache final : public Allocated
 {
 public:
-    using BatchID = std::size_t;
+    using BatchID = download::JobID;
 
     auto DownloadQueue() const noexcept -> std::size_t;
     auto get_allocator() const noexcept -> allocator_type final
@@ -131,6 +132,7 @@ private:
     database::Block& db_;
     const blockchain::Type chain_;
     const bool save_blocks_;
+    const std::size_t peer_target_;
     opentxs::network::zeromq::socket::Raw block_available_;
     opentxs::network::zeromq::socket::Raw cache_size_publisher_;
     Pending pending_;
@@ -139,14 +141,10 @@ private:
     HashIndex hash_index_;
     HashCache hash_cache_;
     MemDB mem_;
-    std::optional<std::size_t> peer_target_;
     bool running_;
-
-    static auto next_batch_id() noexcept -> BatchID;
 
     auto download(const block::Hash& block) const noexcept -> bool;
 
-    auto get_peer_target() noexcept -> std::size_t;
     auto publish(const block::Hash& block) noexcept -> void;
     auto publish_download_queue() noexcept -> void;
     auto queue_hash(const block::Hash& id) noexcept -> void;

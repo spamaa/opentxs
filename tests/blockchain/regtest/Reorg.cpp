@@ -11,7 +11,11 @@
 #include <optional>
 #include <utility>
 
-#include "ottest/fixtures/blockchain/Regtest.hpp"
+#include "ottest/fixtures/blockchain/Common.hpp"
+#include "ottest/fixtures/blockchain/ScanListener.hpp"
+#include "ottest/fixtures/blockchain/TXOs.hpp"
+#include "ottest/fixtures/blockchain/regtest/Base.hpp"
+#include "ottest/fixtures/blockchain/regtest/HD.hpp"
 #include "ottest/fixtures/common/Counter.hpp"
 #include "ottest/fixtures/rpc/Helpers.hpp"
 #include "ottest/fixtures/ui/AccountActivity.hpp"
@@ -137,8 +141,11 @@ TEST_F(Regtest_fixture_hd, generate)
 
 TEST_F(Regtest_fixture_hd, first_block)
 {
-    const auto& blockchain =
-        client_1_.Network().Blockchain().GetChain(test_chain_);
+    const auto handle = client_1_.Network().Blockchain().GetChain(test_chain_);
+
+    ASSERT_TRUE(handle);
+
+    const auto& blockchain = handle.get();
     const auto blockHash = blockchain.HeaderOracle().BestHash(1);
 
     ASSERT_FALSE(blockHash.IsNull());
@@ -263,8 +270,12 @@ TEST_F(Regtest_fixture_hd, key_index)
         using Tag = ot::blockchain::node::TxoTag;
         const auto& element = account.BalanceElement(Subchain::External, i);
         const auto key = element.KeyID();
-        const auto& chain =
+        const auto handle =
             client_1_.Network().Blockchain().GetChain(test_chain_);
+
+        ASSERT_TRUE(handle);
+
+        const auto& chain = handle.get();
         const auto& wallet = chain.Wallet();
         const auto balance = wallet.GetBalance(key);
         const auto allOutputs = wallet.GetOutputs(key, State::All);

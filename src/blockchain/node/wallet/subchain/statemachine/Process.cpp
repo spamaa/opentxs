@@ -115,15 +115,13 @@ auto Process::Imp::check_cache() noexcept -> void
         }
 
         if (0u < status.size()) {
-            const auto sent = to_index_.SendDeferred([&] {
+            to_index_.SendDeferred([&] {
                 auto out = MakeWork(Work::update);
                 add_last_reorg(out);
                 encode(status, out);
 
                 return out;
             }());
-
-            OT_ASSERT(sent);
         }
     };
     const auto queue = waiting_.size() + downloading_.size() + ready_.size();

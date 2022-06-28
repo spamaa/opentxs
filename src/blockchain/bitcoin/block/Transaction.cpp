@@ -15,6 +15,7 @@
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>  // IWYU pragma: keep
 #include <utility>
 
 #include "Proto.hpp"
