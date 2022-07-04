@@ -125,7 +125,7 @@ auto Wallet::GetBalance(const crypto::Key& key) const noexcept -> Balance
     return outputs_.GetBalance(key);
 }
 
-auto Wallet::GetOutputs(node::TxoState type, alloc::Resource* alloc)
+auto Wallet::GetOutputs(node::TxoState type, alloc::Default alloc)
     const noexcept -> Vector<UTXO>
 {
     return outputs_.GetOutputs(type, alloc);
@@ -134,7 +134,7 @@ auto Wallet::GetOutputs(node::TxoState type, alloc::Resource* alloc)
 auto Wallet::GetOutputs(
     const identifier::Nym& owner,
     node::TxoState type,
-    alloc::Resource* alloc) const noexcept -> Vector<UTXO>
+    alloc::Default alloc) const noexcept -> Vector<UTXO>
 {
     return outputs_.GetOutputs(owner, type, alloc);
 }
@@ -143,7 +143,7 @@ auto Wallet::GetOutputs(
     const identifier::Nym& owner,
     const Identifier& node,
     node::TxoState type,
-    alloc::Resource* alloc) const noexcept -> Vector<UTXO>
+    alloc::Default alloc) const noexcept -> Vector<UTXO>
 {
     return outputs_.GetOutputs(owner, node, type, alloc);
 }
@@ -151,7 +151,7 @@ auto Wallet::GetOutputs(
 auto Wallet::GetOutputs(
     const crypto::Key& key,
     node::TxoState type,
-    alloc::Resource* alloc) const noexcept -> Vector<UTXO>
+    alloc::Default alloc) const noexcept -> Vector<UTXO>
 {
     return outputs_.GetOutputs(key, type, alloc);
 }
@@ -162,7 +162,7 @@ auto Wallet::GetOutputTags(const block::Outpoint& output) const noexcept
     return outputs_.GetOutputTags(output);
 }
 
-auto Wallet::GetPatterns(const SubchainIndex& index, alloc::Resource* alloc)
+auto Wallet::GetPatterns(const SubchainIndex& index, alloc::Default alloc)
     const noexcept -> Patterns
 {
     return subchains_.GetPatterns(index, alloc);
@@ -197,7 +197,7 @@ auto Wallet::GetUnconfirmedTransactions() const noexcept
     return outputs_.GetUnconfirmedTransactions();
 }
 
-auto Wallet::GetUnspentOutputs(alloc::Resource* alloc) const noexcept
+auto Wallet::GetUnspentOutputs(alloc::Default alloc) const noexcept
     -> Vector<UTXO>
 {
     return outputs_.GetUnspentOutputs(alloc);
@@ -206,7 +206,7 @@ auto Wallet::GetUnspentOutputs(alloc::Resource* alloc) const noexcept
 auto Wallet::GetUnspentOutputs(
     const NodeID& balanceNode,
     const crypto::Subchain subchain,
-    alloc::Resource* alloc) const noexcept -> Vector<UTXO>
+    alloc::Default alloc) const noexcept -> Vector<UTXO>
 {
     const auto id = subchains_.GetSubchainID(balanceNode, subchain, nullptr);
 

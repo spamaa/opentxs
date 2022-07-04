@@ -9,13 +9,13 @@
 
 #include <boost/json.hpp>
 #include <exception>
-#include <new>
 #include <optional>
 #include <utility>
 
 #include "blockchain/node/wallet/feeoracle/FeeSource.hpp"
 #include "internal/blockchain/node/wallet/FeeSource.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
 #include "opentxs/core/Amount.hpp"
 #include "opentxs/util/Allocated.hpp"
 #include "opentxs/util/Log.hpp"
@@ -365,68 +365,82 @@ namespace opentxs::factory
 auto BTCFeeSources(
     const api::Session& api,
     const std::string_view endpoint,
-    alloc::Resource* mr) noexcept
+    alloc::Default pmr) noexcept
     -> ForwardList<blockchain::node::wallet::FeeSource>
 {
-    if (nullptr == mr) { mr = alloc::System(); }
-
     using ReturnType = blockchain::node::wallet::FeeSource;
-    auto alloc = ReturnType::allocator_type{mr};
-    auto* res = alloc.resource();
-    auto sources = ForwardList<ReturnType>{alloc};
+    auto sources = ForwardList<ReturnType>{pmr};
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::Bitcoiner_live;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::BitGo;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::Bitpay;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::Blockchain_info;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::Blockchair;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::BlockCypher;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::Blockstream;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::BTC_com;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
     sources.emplace_front([&] {
         using Imp = blockchain::node::wallet::Earn;
-        auto* out = res->allocate(sizeof(Imp), alignof(Imp));
+        auto alloc = alloc::PMR<Imp>{pmr};
+        auto* out = alloc.allocate(1_uz);
+        alloc.construct(out, api, endpoint);
 
-        return new (out) Imp{api, endpoint, alloc};
+        return out;
     }());
 
     return sources;
