@@ -49,11 +49,9 @@ namespace network
 namespace implementation
 {
 class Context;
-class Dht;
 class ZMQ;
 }  // namespace implementation
 
-class Dht;
 class ZAP;
 class ZMQ;
 }  // namespace network
@@ -287,7 +285,6 @@ class Txos;
 class Units;
 }  // namespace storage
 
-class DhtConfig;
 class Flag;
 class Libsecp256k1;
 class Libsodium;
