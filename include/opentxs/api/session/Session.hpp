@@ -8,6 +8,7 @@
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
 #include <chrono>
+#include <filesystem>
 
 #include "opentxs/api/Periodic.hpp"
 #include "opentxs/util/Container.hpp"
@@ -63,7 +64,8 @@ class OPENTXS_EXPORT Session : virtual public Periodic
 public:
     virtual auto Config() const noexcept -> const api::Settings& = 0;
     virtual auto Crypto() const noexcept -> const session::Crypto& = 0;
-    virtual auto DataFolder() const noexcept -> const UnallocatedCString& = 0;
+    virtual auto DataFolder() const noexcept
+        -> const std::filesystem::path& = 0;
     virtual auto Endpoints() const noexcept -> const session::Endpoints& = 0;
     virtual auto Factory() const noexcept -> const session::Factory& = 0;
     virtual auto GetOptions() const noexcept -> const Options& = 0;

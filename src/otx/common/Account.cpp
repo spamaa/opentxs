@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <memory>
 
 #include "internal/api/Legacy.hpp"
@@ -602,13 +603,11 @@ auto Account::LoadExistingAccount(
     const Identifier& accountId,
     const identifier::Notary& notaryID) -> Account*
 {
-    auto strDataFolder = String::Factory(api.DataFolder().c_str());
-    auto strAccountPath = String::Factory("");
+    auto strDataFolder = api.DataFolder();
+    auto strAccountPath = std::filesystem::path{};
 
     if (!api.Internal().Legacy().AppendFolder(
-            strAccountPath,
-            strDataFolder,
-            String::Factory(api.Internal().Legacy().Account()))) {
+            strAccountPath, strDataFolder, api.Internal().Legacy().Account())) {
         OT_FAIL;
     }
 
@@ -639,8 +638,7 @@ auto Account::LoadExistingAccount(
             "",
             "")) {
         LogVerbose()(OT_PRETTY_STATIC(Account))("File does not exist: ")(
-            account->m_strFoldername)(api::Legacy::PathSeparator())(
-            account->m_strFilename)(".")
+            account->m_strFoldername)('/')(account->m_strFilename)
             .Flush();
 
         return nullptr;

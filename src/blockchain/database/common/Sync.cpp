@@ -134,6 +134,8 @@ struct Sync::Imp final : private util::MappedFileStorage {
 
         if (const auto& first = items.front();
             first.Height() <= tips_.at(chain)) {
+#include <filesystem>
+
             const auto parent = std::max<Height>(first.Height() - 1, 0);
 
             if (false == reorg(chain, parent)) {
@@ -243,7 +245,7 @@ struct Sync::Imp final : private util::MappedFileStorage {
     }
     Imp(const api::Session& api,
         storage::lmdb::LMDB& lmdb,
-        const UnallocatedCString& path) noexcept(false)
+        const std::filesystem::path& path) noexcept(false)
         : MappedFileStorage(
               lmdb,
               path,
@@ -434,7 +436,7 @@ const std::array<unsigned char, 16> Sync::Imp::checksum_key_{};
 Sync::Sync(
     const api::Session& api,
     storage::lmdb::LMDB& lmdb,
-    const UnallocatedCString& path) noexcept(false)
+    const std::filesystem::path& path) noexcept(false)
     : imp_(std::make_unique<Imp>(api, lmdb, path))
 {
 }
