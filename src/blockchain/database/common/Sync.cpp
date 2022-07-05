@@ -100,7 +100,7 @@ struct Sync::Imp final : private util::MappedFileStorage {
                 haveOne = true;
                 total += view.size();
 
-                return total < 4_MiB;
+                return total < 4_mib;
             } catch (const std::exception& e) {
                 LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
 
