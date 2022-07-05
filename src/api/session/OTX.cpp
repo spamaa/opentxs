@@ -7,6 +7,9 @@
 #include "1_Internal.hpp"       // IWYU pragma: associated
 #include "api/session/OTX.hpp"  // IWYU pragma: associated
 
+#include <PeerRequest.pb.h>
+#include <ServerContract.pb.h>
+#include <ServerReply.pb.h>
 #include <atomic>
 #include <chrono>
 #include <ctime>
@@ -94,9 +97,6 @@
 #include "opentxs/util/WorkType.hpp"
 #include "otx/client/PaymentTasks.hpp"
 #include "otx/client/StateMachine.hpp"
-#include "serialization/protobuf/PeerRequest.pb.h"
-#include "serialization/protobuf/ServerContract.pb.h"
-#include "serialization/protobuf/ServerReply.pb.h"
 
 #define VALIDATE_NYM(a)                                                        \
     {                                                                          \

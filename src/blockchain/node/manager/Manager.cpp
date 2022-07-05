@@ -7,6 +7,11 @@
 #include "1_Internal.hpp"                       // IWYU pragma: associated
 #include "blockchain/node/manager/Manager.hpp"  // IWYU pragma: associated
 
+#include <BlockchainTransactionProposal.pb.h>
+#include <BlockchainTransactionProposedNotification.pb.h>
+#include <BlockchainTransactionProposedOutput.pb.h>
+#include <HDPath.pb.h>
+#include <PaymentCode.pb.h>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 #include <algorithm>
@@ -92,11 +97,6 @@
 #include "opentxs/util/Numbers.hpp"
 #include "opentxs/util/Options.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/BlockchainTransactionProposal.pb.h"
-#include "serialization/protobuf/BlockchainTransactionProposedNotification.pb.h"
-#include "serialization/protobuf/BlockchainTransactionProposedOutput.pb.h"
-#include "serialization/protobuf/HDPath.pb.h"
-#include "serialization/protobuf/PaymentCode.pb.h"
 
 namespace opentxs::blockchain::node::internal
 {
