@@ -8,6 +8,7 @@
 #include "internal/otx/common/transaction/Helpers.hpp"  // IWYU pragma: associated
 
 #include <cstdint>
+#include <filesystem>
 
 #include "internal/api/Legacy.hpp"
 #include "internal/api/session/FactoryAPI.hpp"
@@ -344,10 +345,9 @@ auto VerifyBoxReceiptExists(
         strFilename->Get());
 
     LogDetail()(__func__)(
-        bExists ? "(Already have this one)" : "(Need to download this one) : ")(
-        strFolder1name)(api::Legacy::PathSeparator())(
-        strFolder2name)(api::Legacy::PathSeparator())(
-        strFolder3name)(api::Legacy::PathSeparator())(strFilename)
+        bExists ? "(Already have this one)"
+                : "(Need to download this one) : ")(strFolder1name)('/')(
+        strFolder2name)('/')(strFolder3name)('/')(strFilename)
         .Flush();
 
     return bExists;
@@ -411,9 +411,8 @@ auto LoadBoxReceipt(
             strFolder3name->Get(),
             strFilename->Get())) {
         LogDetail()(__func__)("Box receipt does not exist: ")(
-            strFolder1name)(api::Legacy::PathSeparator())(
-            strFolder2name)(api::Legacy::PathSeparator())(
-            strFolder3name)(api::Legacy::PathSeparator())(strFilename)
+            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
+            strFilename)
             .Flush();
         return nullptr;
     }
@@ -428,10 +427,8 @@ auto LoadBoxReceipt(
         strFolder3name->Get(),
         strFilename->Get()));
     if (strFileContents.length() < 2) {
-        LogError()(__func__)("Error reading file: ")(
-            strFolder1name)(api::Legacy::PathSeparator())(
-            strFolder2name)(api::Legacy::PathSeparator())(
-            strFolder3name)(api::Legacy::PathSeparator())(strFilename)(".")
+        LogError()(__func__)("Error reading file: ")(strFolder1name)('/')(
+            strFolder2name)('/')(strFolder3name)('/')(strFilename)
             .Flush();
         return nullptr;
     }
@@ -440,10 +437,9 @@ auto LoadBoxReceipt(
 
     if (!strRawFile->Exists()) {
         LogError()(__func__)(
-            "Error reading file (resulting output "
-            "string is empty): ")(strFolder1name)(api::Legacy::PathSeparator())(
-            strFolder2name)(api::Legacy::PathSeparator())(
-            strFolder3name)(api::Legacy::PathSeparator())(strFilename)(".")
+            "Error reading file (resulting output string is empty): ")(
+            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
+            strFilename)
             .Flush();
         return nullptr;
     }
@@ -454,11 +450,10 @@ auto LoadBoxReceipt(
     auto pTransType = api.Factory().InternalSession().Transaction(strRawFile);
 
     if (false == bool(pTransType)) {
-        LogError()(__func__)("Error instantiating transaction "
-                             "type based on strRawFile: ")(
-            strFolder1name)(api::Legacy::PathSeparator())(
-            strFolder2name)(api::Legacy::PathSeparator())(
-            strFolder3name)(api::Legacy::PathSeparator())(strFilename)(".")
+        LogError()(__func__)(
+            "Error instantiating transaction type based on strRawFile: ")(
+            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
+            strFilename)
             .Flush();
         return nullptr;
     }
@@ -467,11 +462,10 @@ auto LoadBoxReceipt(
         dynamic_cast<OTTransaction*>(pTransType.release())};
 
     if (false == bool(pBoxReceipt)) {
-        LogError()(__func__)("Error dynamic_cast from transaction "
-                             "type to transaction, based on strRawFile: ")(
-            strFolder1name)(api::Legacy::PathSeparator())(
-            strFolder2name)(api::Legacy::PathSeparator())(
-            strFolder3name)(api::Legacy::PathSeparator())(strFilename)(".")
+        LogError()(__func__)(
+            "Error dynamic_cast from transaction type to "
+            "transaction, based on strRawFile: ")(strFolder1name)('/')(
+            strFolder2name)('/')(strFolder3name)('/')(strFilename)
             .Flush();
         return nullptr;
     }
@@ -486,17 +480,15 @@ auto LoadBoxReceipt(
 
     if (!bSuccess) {
         LogError()(__func__)("Failed verifying Box Receipt: ")(
-            strFolder1name)(api::Legacy::PathSeparator())(
-            strFolder2name)(api::Legacy::PathSeparator())(
-            strFolder3name)(api::Legacy::PathSeparator())(strFilename)(".")
+            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
+            strFilename)
             .Flush();
 
         return nullptr;
     } else {
         LogVerbose()(__func__)("Successfully loaded Box Receipt in: ")(
-            strFolder1name)(api::Legacy::PathSeparator())(
-            strFolder2name)(api::Legacy::PathSeparator())(
-            strFolder3name)(api::Legacy::PathSeparator())(strFilename)
+            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
+            strFilename)
             .Flush();
     }
 

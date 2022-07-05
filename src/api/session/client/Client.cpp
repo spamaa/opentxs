@@ -61,7 +61,7 @@ auto ClientSession(
     const api::Settings& config,
     const api::Crypto& crypto,
     const network::zeromq::Context& context,
-    const UnallocatedCString& dataFolder,
+    const std::filesystem::path& dataFolder,
     const int instance) noexcept -> std::unique_ptr<api::session::Client>
 {
     using ReturnType = api::session::imp::Client;
@@ -93,7 +93,7 @@ Client::Client(
     const api::Settings& config,
     const api::Crypto& crypto,
     const opentxs::network::zeromq::Context& context,
-    const UnallocatedCString& dataFolder,
+    const std::filesystem::path& dataFolder,
     const int instance)
     : Session(
           parent,
