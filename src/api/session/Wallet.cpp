@@ -9,6 +9,15 @@
 #include "1_Internal.hpp"          // IWYU pragma: associated
 #include "api/session/Wallet.hpp"  // IWYU pragma: associated
 
+#include <Context.pb.h>
+#include <Credential.pb.h>
+#include <Issuer.pb.h>  // IWYU pragma: keep
+#include <Nym.pb.h>
+#include <PeerReply.pb.h>
+#include <PeerRequest.pb.h>
+#include <Purse.pb.h>
+#include <ServerContract.pb.h>
+#include <UnitDefinition.pb.h>
 #include <algorithm>
 #include <atomic>
 #include <functional>
@@ -102,15 +111,6 @@
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/SharedPimpl.hpp"
 #include "opentxs/util/WorkType.hpp"
-#include "serialization/protobuf/Context.pb.h"
-#include "serialization/protobuf/Credential.pb.h"
-#include "serialization/protobuf/Issuer.pb.h"  // IWYU pragma: keep
-#include "serialization/protobuf/Nym.pb.h"
-#include "serialization/protobuf/PeerReply.pb.h"
-#include "serialization/protobuf/PeerRequest.pb.h"
-#include "serialization/protobuf/Purse.pb.h"
-#include "serialization/protobuf/ServerContract.pb.h"
-#include "serialization/protobuf/UnitDefinition.pb.h"
 #include "util/Exclusive.tpp"
 
 template class opentxs::Exclusive<opentxs::Account>;
@@ -231,7 +231,7 @@ auto Wallet::account(
     const Identifier& account,
     const bool create) const -> Wallet::AccountLock&
 {
-    OT_ASSERT(CheckLock(lock, account_map_lock_))
+    OT_ASSERT(CheckLock(lock, account_map_lock_));
 
     auto& row = account_map_[account];
     auto& [rowMutex, pAccount] = row;
@@ -487,7 +487,7 @@ auto Wallet::CreateAccount(
                 type,
                 stash));
 
-        OT_ASSERT(newAccount)
+        OT_ASSERT(newAccount);
 
         const auto& accountID = newAccount->GetRealAccountID();
         auto& [rowMutex, pAccount] = account(mapLock, accountID, true);
@@ -499,7 +499,7 @@ auto Wallet::CreateAccount(
         } else {
             pAccount.reset(newAccount.release());
 
-            OT_ASSERT(pAccount)
+            OT_ASSERT(pAccount);
 
             const auto id = accountID.str();
             pAccount->SetNymID(ownerNymID);
@@ -519,7 +519,7 @@ auto Wallet::CreateAccount(
                 instrumentDefinitionID,
                 extract_unit(instrumentDefinitionID));
 
-            OT_ASSERT(saved)
+            OT_ASSERT(saved);
 
             std::function<void(
                 std::unique_ptr<opentxs::Account>&, eLock&, bool)>
@@ -694,7 +694,7 @@ auto Wallet::UpdateAccount(
 
     pAccount.reset(newAccount.release());
 
-    OT_ASSERT(pAccount)
+    OT_ASSERT(pAccount);
 
     const auto& unitID = pAccount->GetInstrumentDefinitionID();
 
@@ -854,7 +854,7 @@ auto Wallet::context(
 
         LogError()(OT_PRETTY_CLASS())("Invalid signature on context.").Flush();
 
-        OT_FAIL
+        OT_FAIL;
     }
 
     return entry;
@@ -918,7 +918,7 @@ auto Wallet::ImportAccount(std::unique_ptr<opentxs::Account>& imported) const
 
         pAccount.reset(imported.release());
 
-        OT_ASSERT(pAccount)
+        OT_ASSERT(pAccount);
 
         const auto& contractID = pAccount->GetInstrumentDefinitionID();
 
@@ -1034,7 +1034,7 @@ auto Wallet::issuer(
         } else {
             pIssuer.reset(factory::Issuer(*this, nymID, serialized));
 
-            OT_ASSERT(pIssuer)
+            OT_ASSERT(pIssuer);
 
             return output;
         }
@@ -1315,7 +1315,7 @@ auto Wallet::mutable_Nym(
     auto mapLock = Lock{nym_map_lock_};
     auto it = nym_map_.find(id);
 
-    if (nym_map_.end() == it) { OT_FAIL }
+    if (nym_map_.end() == it) { OT_FAIL; }
 
     std::function<void(NymData*, Lock&)> callback = [&](NymData* nymData,
                                                         Lock& lock) -> void {
@@ -1338,7 +1338,7 @@ auto Wallet::Nymfile(const identifier::Nym& id, const PasswordPrompt& reason)
     auto nymfile = std::unique_ptr<opentxs::internal::NymFile>(
         opentxs::Factory::NymFile(api_, targetNym, signerNym));
 
-    OT_ASSERT(nymfile)
+    OT_ASSERT(nymfile);
 
     if (false == nymfile->LoadSignedNymFile(reason)) {
         LogError()(OT_PRETTY_CLASS())(" Failure calling load_signed_nymfile: ")(
@@ -1370,7 +1370,7 @@ auto Wallet::mutable_nymfile(
     auto nymfile = std::unique_ptr<opentxs::internal::NymFile>(
         opentxs::Factory::NymFile(api_, targetNym, signerNym));
 
-    OT_ASSERT(nymfile)
+    OT_ASSERT(nymfile);
 
     if (false == nymfile->LoadSignedNymFile(reason)) {
         nymfile->SaveSignedNymFile(reason);
@@ -2478,7 +2478,7 @@ void Wallet::save(
     eLock&,
     bool success) const
 {
-    OT_ASSERT(in)
+    OT_ASSERT(in);
 
     auto& account = *in;
     const auto accountID = Identifier::Factory(id);
@@ -2489,7 +2489,7 @@ void Wallet::save(
         UnallocatedCString alias{""};
         const auto loaded = api_.Storage().Load(id, serialized, alias, false);
 
-        OT_ASSERT(loaded)
+        OT_ASSERT(loaded);
 
         in.reset(account_factory(accountID, alias, serialized));
 
@@ -2500,29 +2500,29 @@ void Wallet::save(
 
     const auto signerID = api_.Storage().AccountSigner(accountID);
 
-    OT_ASSERT(false == signerID->empty())
+    OT_ASSERT(false == signerID->empty());
 
     const auto signerNym = Nym(signerID);
 
-    OT_ASSERT(signerNym)
+    OT_ASSERT(signerNym);
 
     account.ReleaseSignatures();
     auto saved = account.SignContract(*signerNym, reason);
 
-    OT_ASSERT(saved)
+    OT_ASSERT(saved);
 
     saved = account.SaveContract();
 
-    OT_ASSERT(saved)
+    OT_ASSERT(saved);
 
     auto serialized = String::Factory();
     saved = in->SaveContractRaw(serialized);
 
-    OT_ASSERT(saved)
+    OT_ASSERT(saved);
 
     const auto contractID = api_.Storage().AccountContract(accountID);
 
-    OT_ASSERT(false == contractID->empty())
+    OT_ASSERT(false == contractID->empty());
 
     saved = api_.Storage().Store(
         accountID->str(),
@@ -2535,7 +2535,7 @@ void Wallet::save(
         contractID,
         extract_unit(contractID));
 
-    OT_ASSERT(saved)
+    OT_ASSERT(saved);
 }
 
 void Wallet::save(
@@ -2555,8 +2555,8 @@ void Wallet::save(
 
 void Wallet::save(const Lock& lock, otx::client::Issuer* in) const
 {
-    OT_ASSERT(nullptr != in)
-    OT_ASSERT(lock.owns_lock())
+    OT_ASSERT(nullptr != in);
+    OT_ASSERT(lock.owns_lock());
 
     const auto& nymID = in->LocalNymID();
     const auto& issuerID = in->IssuerID();
@@ -2579,8 +2579,8 @@ void Wallet::save(const Lock& lock, otx::client::Issuer* in) const
 void Wallet::save(const eLock& lock, const OTNymID nym, otx::blind::Purse* in)
     const
 {
-    OT_ASSERT(nullptr != in)
-    OT_ASSERT(lock.owns_lock())
+    OT_ASSERT(nullptr != in);
+    OT_ASSERT(lock.owns_lock());
 
     auto& purse = *in;
 
@@ -2603,7 +2603,7 @@ void Wallet::save(const eLock& lock, const OTNymID nym, otx::blind::Purse* in)
 void Wallet::save(NymData* nymData, const Lock& lock) const
 {
     OT_ASSERT(nullptr != nymData);
-    OT_ASSERT(lock.owns_lock())
+    OT_ASSERT(lock.owns_lock());
 
     SaveCredentialIDs(nymData->nym());
     notify_changed(nymData->nym().ID());
@@ -2615,11 +2615,11 @@ void Wallet::save(
     const Lock& lock) const
 {
     OT_ASSERT(nullptr != nymfile);
-    OT_ASSERT(lock.owns_lock())
+    OT_ASSERT(lock.owns_lock());
 
     auto* internal = dynamic_cast<opentxs::internal::NymFile*>(nymfile);
 
-    OT_ASSERT(nullptr != internal)
+    OT_ASSERT(nullptr != internal);
 
     const auto saved = internal->SaveSignedNymFile(reason);
 

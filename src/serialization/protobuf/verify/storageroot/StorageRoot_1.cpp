@@ -5,15 +5,17 @@
 
 #include "internal/serialization/protobuf/verify/StorageRoot.hpp"  // IWYU pragma: associated
 
-#include "serialization/protobuf/StorageRoot.pb.h"
+#include <StorageRoot.pb.h>
+#include <string>
+
 #include "serialization/protobuf/verify/Check.hpp"
 
 namespace opentxs::proto
 {
 auto CheckProto_1(const StorageRoot& input, const bool silent) -> bool
 {
-    CHECK_IDENTIFIER(items)
-    CHECK_EXCLUDED(sequence)
+    CHECK_IDENTIFIER(items);
+    CHECK_EXCLUDED(sequence);
 
     return true;
 }

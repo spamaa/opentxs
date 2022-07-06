@@ -7,13 +7,14 @@
 #include "1_Internal.hpp"              // IWYU pragma: associated
 #include "util/storage/tree/Node.hpp"  // IWYU pragma: associated
 
+#include <Contact.pb.h>
+#include <Nym.pb.h>
+#include <Seed.pb.h>
+#include <StorageEnums.pb.h>
+#include <StorageItemHash.pb.h>
+
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/storage/Driver.hpp"
-#include "serialization/protobuf/Contact.pb.h"
-#include "serialization/protobuf/Nym.pb.h"
-#include "serialization/protobuf/Seed.pb.h"
-#include "serialization/protobuf/StorageEnums.pb.h"
-#include "serialization/protobuf/StorageItemHash.pb.h"
 
 namespace opentxs::storage
 {
@@ -53,7 +54,7 @@ auto Node::delete_item(const UnallocatedCString& id) -> bool
 
 auto Node::delete_item(const Lock& lock, const UnallocatedCString& id) -> bool
 {
-    OT_ASSERT(verify_write_lock(lock))
+    OT_ASSERT(verify_write_lock(lock));
 
     const auto items = item_map_.erase(id);
 
@@ -269,7 +270,7 @@ auto Node::store_raw(
     const UnallocatedCString& id,
     const UnallocatedCString& alias) -> bool
 {
-    OT_ASSERT(verify_write_lock(lock))
+    OT_ASSERT(verify_write_lock(lock));
 
     auto& metadata = item_map_[id];
     auto& hash = std::get<0>(metadata);

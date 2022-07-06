@@ -7,8 +7,13 @@
 #include "1_Internal.hpp"          // IWYU pragma: associated
 #include "core/contract/Unit.hpp"  // IWYU pragma: associated
 
+#include <CurrencyParams.pb.h>
+#include <DisplayScale.pb.h>
+#include <Nym.pb.h>
+#include <ScaleRatio.pb.h>
+#include <Signature.pb.h>
+#include <UnitDefinition.pb.h>
 #include <cmath>  // IWYU pragma: keep
-#include <cstdio>
 #include <memory>
 #include <sstream>  // IWYU pragma: keep
 #include <string_view>
@@ -49,12 +54,6 @@
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "otx/common/OTStorage.hpp"
-#include "serialization/protobuf/CurrencyParams.pb.h"
-#include "serialization/protobuf/DisplayScale.pb.h"
-#include "serialization/protobuf/Nym.pb.h"
-#include "serialization/protobuf/ScaleRatio.pb.h"
-#include "serialization/protobuf/Signature.pb.h"
-#include "serialization/protobuf/UnitDefinition.pb.h"
 
 namespace opentxs
 {
@@ -99,6 +98,8 @@ const VersionNumber Unit::MaxVersion{2};
 
 namespace opentxs::contract::implementation
 {
+using namespace std::literals;
+
 const UnallocatedMap<VersionNumber, VersionNumber>
     Unit::unit_of_account_version_map_{{2, 6}};
 const Unit::Locale Unit::locale_{};
@@ -297,36 +298,31 @@ auto Unit::contract(const Lock& lock) const -> SerializedType
 
 auto Unit::DisplayStatistics(String& strContents) const -> bool
 {
-    const char* type = "error";
+    const auto type = [&] {
+        switch (Type()) {
+            case contract::UnitType::Currency: {
 
-    switch (Type()) {
-        case contract::UnitType::Currency:
-            type = "error";
+                return "currency"sv;
+            }
+            case contract::UnitType::Security: {
 
-            break;
-        case contract::UnitType::Security:
-            type = "security";
+                return "security"sv;
+            }
+            case contract::UnitType::Basket: {
 
-            break;
-        case contract::UnitType::Basket:
-            type =
-                "basket currency";  // length 15 if it changes adjust it in buf
+                return "basket currency"sv;
+            }
+            default: {
 
-            break;
-        default:
-            break;
-    }
-
-    static std::string fmt{" Asset Type:  %s\n InstrumentDefinitionID: %s\n\n"};
-    UnallocatedVector<char> buf;
-    buf.reserve(fmt.length() + 1 + 15 + id_->size());
-    auto size = std::snprintf(
-        &buf[0],
-        buf.capacity(),
-        fmt.c_str(),
-        type,
-        reinterpret_cast<const char*>(id_->data()));
-    strContents.Concatenate(String::Factory(&buf[0], size));
+                return "error"sv;
+            }
+        }
+    }();
+    strContents.Concatenate(" Asset Type: "sv)
+        .Concatenate(type)
+        .Concatenate(" InstrumentDefinitionID: "sv)
+        .Concatenate(id_->str())
+        .Concatenate("\n\n"sv);
 
     return true;
 }
@@ -340,7 +336,7 @@ auto Unit::EraseAccountRecord(
     const auto strAcctID = String::Factory(theAcctID);
 
     const auto strInstrumentDefinitionID = String::Factory(id(lock));
-    std::string strAcctRecordFile =
+    UnallocatedCString strAcctRecordFile =
         api::Legacy::GetFilenameA(strInstrumentDefinitionID->Get());
 
     OTDB::Storable* pStorable = nullptr;

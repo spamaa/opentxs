@@ -5,39 +5,16 @@
 
 #pragma once
 
+#if defined(OTDB_PROTOCOL_BUFFERS)
+
+#include <Bitcoin.pb.h>
+#include <Generics.pb.h>
+#include <Markets.pb.h>
+#include <Moneychanger.pb.h>
 #include <iostream>
 
 #include "opentxs/Version.hpp"
 #include "opentxs/util/Container.hpp"
-
-#if defined(OTDB_PROTOCOL_BUFFERS)
-
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable : 4244)
-#pragma warning(disable : 4267)
-#else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
-#ifndef __clang__
-// -Wuseless-cast does not exist in clang
-#pragma GCC diagnostic ignored "-Wuseless-cast"
-#endif
-#endif
-#ifndef PROTOBUF_INLINE_NOT_IN_HEADERS
-#define PROTOBUF_INLINE_NOT_IN_HEADERS 0
-#endif
-
-#include "Bitcoin.pb.h"
-#include "Generics.pb.h"
-#include "Markets.pb.h"
-#include "Moneychanger.pb.h"
-
-#ifdef _WIN32
-#pragma warning(pop)
-#else
-#pragma GCC diagnostic pop
-#endif
 
 namespace opentxs::OTDB
 {
@@ -95,7 +72,7 @@ template <
 class ProtobufSubclass : public theBaseType, public IStorablePB
 {
 private:
-    theInternalType __pb_obj;
+    theInternalType pb_obj_;
     UnallocatedCString m_Type;
 
 public:
@@ -108,7 +85,7 @@ public:
     ProtobufSubclass()
         : theBaseType()
         , IStorablePB()
-        , __pb_obj()
+        , pb_obj_()
         , m_Type(
               StoredObjectTypeStrings[static_cast<std::int32_t>(theObjectType)])
     {
@@ -165,7 +142,7 @@ public:
     {
         Storable* pNewStorable =
             Storable::Create(theObjectType, PACK_PROTOCOL_BUFFERS);
-        if (nullptr == pNewStorable) OT_FAIL;
+        if (nullptr == pNewStorable) { OT_FAIL; }
         CopyToObject(
             *(dynamic_cast<
                 ProtobufSubclass<theBaseType, theInternalType, theObjectType>*>(
@@ -319,11 +296,11 @@ using AskData_InternalPB = OfferDataMarket_InternalPB;
 /*
 void SUBCLASS_HERE::hookBeforePack()
 {
-__pb_obj.set_PROPERTY_NAME_GOES_HERE(PROPERTY_NAME_GOES_HERE);
+pb_obj_.set_PROPERTY_NAME_GOES_HERE(PROPERTY_NAME_GOES_HERE);
 }
 void SUBCLASS_HERE::hookAfterUnpack()
 {
-PROPERTY_NAME_GOES_HERE    = __pb_obj.PROPERTY_NAME_GOES_HERE();
+PROPERTY_NAME_GOES_HERE    = pb_obj_.PROPERTY_NAME_GOES_HERE();
 }
 */
 

@@ -5,6 +5,12 @@
 
 #include "internal/serialization/protobuf/verify/RPCResponse.hpp"  // IWYU pragma: associated
 
+#include <RPCEnums.pb.h>
+#include <RPCResponse.pb.h>
+#include <RPCStatus.pb.h>
+#include <string>
+
+#include "Proto.hpp"
 #include "internal/serialization/protobuf/Basic.hpp"
 #include "internal/serialization/protobuf/verify/AccountData.hpp"  // IWYU pragma: keep
 #include "internal/serialization/protobuf/verify/AccountEvent.hpp"  // IWYU pragma: keep
@@ -18,16 +24,13 @@
 #include "internal/serialization/protobuf/verify/ServerContract.hpp"  // IWYU pragma: keep
 #include "internal/serialization/protobuf/verify/SessionData.hpp"  // IWYU pragma: keep
 #include "internal/serialization/protobuf/verify/VerifyRPC.hpp"
-#include "serialization/protobuf/RPCEnums.pb.h"
-#include "serialization/protobuf/RPCResponse.pb.h"
-#include "serialization/protobuf/RPCStatus.pb.h"
 #include "serialization/protobuf/verify/Check.hpp"
 
 namespace opentxs::proto
 {
 auto CheckProto_1(const RPCResponse& input, const bool silent) -> bool
 {
-    CHECK_IDENTIFIER(cookie)
+    CHECK_IDENTIFIER(cookie);
 
     bool atLeastOne = false;
     for (auto status : input.status()) {
@@ -812,7 +815,7 @@ auto CheckProto_1(const RPCResponse& input, const bool silent) -> bool
         case RPCCOMMAND_RENAMEACCOUNT:
         case RPCCOMMAND_ERROR:
         default: {
-            FAIL_1("invalid type")
+            FAIL_1("invalid type");
         }
     }
 

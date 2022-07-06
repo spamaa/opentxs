@@ -7,6 +7,7 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "interface/ui/accountactivity/BalanceItem.hpp"  // IWYU pragma: associated
 
+#include <PaymentWorkflow.pb.h>
 #include <chrono>
 #include <memory>
 
@@ -35,7 +36,6 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/PaymentWorkflow.pb.h"
 
 namespace opentxs::factory
 {
@@ -209,11 +209,11 @@ auto BalanceItem::get_contact_name(const identifier::Nym& nymID) const noexcept
 auto BalanceItem::recover_workflow(CustomData& custom) noexcept
     -> const proto::PaymentWorkflow&
 {
-    OT_ASSERT(2 <= custom.size())
+    OT_ASSERT(2 <= custom.size());
 
     const auto& input = custom.at(0);
 
-    OT_ASSERT(nullptr != input)
+    OT_ASSERT(nullptr != input);
 
     return *static_cast<const proto::PaymentWorkflow*>(input);
 }

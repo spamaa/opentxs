@@ -7,6 +7,7 @@
 #include "1_Internal.hpp"                        // IWYU pragma: associated
 #include "opentxs/identity/wot/claim/Group.hpp"  // IWYU pragma: associated
 
+#include <ContactSection.pb.h>
 #include <utility>
 
 #include "internal/identity/wot/claim/Types.hpp"
@@ -17,7 +18,6 @@
 #include "opentxs/identity/wot/claim/SectionType.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/ContactSection.pb.h"
 
 namespace opentxs::identity::wot::claim
 {
@@ -169,7 +169,7 @@ auto Group::operator+(const Group& rhs) const -> Group
             map.emplace(id, item);
         }
 
-        OT_ASSERT(map[id])
+        OT_ASSERT(map[id]);
     }
 
     return {imp_->nym_, imp_->section_, imp_->type_, map};

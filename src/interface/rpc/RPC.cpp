@@ -7,6 +7,31 @@
 #include "1_Internal.hpp"         // IWYU pragma: associated
 #include "interface/rpc/RPC.tpp"  // IWYU pragma: associated
 
+#include <APIArgument.pb.h>
+#include <AcceptPendingPayment.pb.h>
+#include <AccountEvent.pb.h>
+#include <AddClaim.pb.h>
+#include <AddContact.pb.h>
+#include <ContactItem.pb.h>
+#include <CreateInstrumentDefinition.pb.h>
+#include <CreateNym.pb.h>
+#include <GetWorkflow.pb.h>
+#include <HDSeed.pb.h>
+#include <ModifyAccount.pb.h>
+#include <MoveFunds.pb.h>
+#include <Nym.pb.h>
+#include <PaymentEvent.pb.h>
+#include <PaymentWorkflow.pb.h>
+#include <RPCCommand.pb.h>
+#include <RPCEnums.pb.h>
+#include <RPCPush.pb.h>
+#include <RPCResponse.pb.h>
+#include <RPCStatus.pb.h>
+#include <RPCTask.pb.h>
+#include <ServerContract.pb.h>
+#include <SessionData.pb.h>
+#include <TaskComplete.pb.h>
+#include <UnitDefinition.pb.h>
 #include <algorithm>
 #include <cstdint>
 #include <functional>
@@ -96,31 +121,6 @@
 #include "opentxs/util/Options.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/SharedPimpl.hpp"
-#include "serialization/protobuf/APIArgument.pb.h"
-#include "serialization/protobuf/AcceptPendingPayment.pb.h"
-#include "serialization/protobuf/AccountEvent.pb.h"
-#include "serialization/protobuf/AddClaim.pb.h"
-#include "serialization/protobuf/AddContact.pb.h"
-#include "serialization/protobuf/ContactItem.pb.h"
-#include "serialization/protobuf/CreateInstrumentDefinition.pb.h"
-#include "serialization/protobuf/CreateNym.pb.h"
-#include "serialization/protobuf/GetWorkflow.pb.h"
-#include "serialization/protobuf/HDSeed.pb.h"
-#include "serialization/protobuf/ModifyAccount.pb.h"
-#include "serialization/protobuf/MoveFunds.pb.h"
-#include "serialization/protobuf/Nym.pb.h"
-#include "serialization/protobuf/PaymentEvent.pb.h"
-#include "serialization/protobuf/PaymentWorkflow.pb.h"
-#include "serialization/protobuf/RPCCommand.pb.h"
-#include "serialization/protobuf/RPCEnums.pb.h"
-#include "serialization/protobuf/RPCPush.pb.h"
-#include "serialization/protobuf/RPCResponse.pb.h"
-#include "serialization/protobuf/RPCStatus.pb.h"
-#include "serialization/protobuf/RPCTask.pb.h"
-#include "serialization/protobuf/ServerContract.pb.h"
-#include "serialization/protobuf/SessionData.pb.h"
-#include "serialization/protobuf/TaskComplete.pb.h"
-#include "serialization/protobuf/UnitDefinition.pb.h"
 
 namespace opentxs
 {
@@ -137,7 +137,8 @@ constexpr auto TASKCOMPLETE_VERSION = 2;
         add_output_status(output, error);                                      \
                                                                                \
         return output;                                                         \
-    }
+    }                                                                          \
+    static_assert(0 < sizeof(char))  // NOTE silence -Wextra-semi-stmt
 
 #define CHECK_OWNER()                                                          \
     if (false == session.Wallet().IsLocalNym(command.owner())) {               \
@@ -146,9 +147,9 @@ constexpr auto TASKCOMPLETE_VERSION = 2;
         return output;                                                         \
     }                                                                          \
                                                                                \
-    const auto ownerID = identifier::Nym::Factory(command.owner());
+    const auto ownerID = identifier::Nym::Factory(command.owner())
 
-#define INIT() auto output = init(command);
+#define INIT() auto output = init(command)
 
 #define INIT_SESSION()                                                         \
     INIT();                                                                    \
@@ -160,7 +161,7 @@ constexpr auto TASKCOMPLETE_VERSION = 2;
     }                                                                          \
                                                                                \
     [[maybe_unused]] auto& session = get_session(command.session());           \
-    [[maybe_unused]] auto reason = session.Factory().PasswordPrompt("RPC");
+    [[maybe_unused]] auto reason = session.Factory().PasswordPrompt("RPC")
 
 #define INIT_CLIENT_ONLY()                                                     \
     INIT_SESSION();                                                            \
@@ -173,9 +174,9 @@ constexpr auto TASKCOMPLETE_VERSION = 2;
                                                                                \
     const auto pClient = get_client(command.session());                        \
                                                                                \
-    OT_ASSERT(nullptr != pClient)                                              \
+    OT_ASSERT(nullptr != pClient);                                             \
                                                                                \
-    [[maybe_unused]] const auto& client = *pClient;
+    [[maybe_unused]] const auto& client = *pClient
 
 #define INIT_SERVER_ONLY()                                                     \
     INIT_SESSION();                                                            \
@@ -188,15 +189,15 @@ constexpr auto TASKCOMPLETE_VERSION = 2;
                                                                                \
     const auto pServer = get_server(command.session());                        \
                                                                                \
-    OT_ASSERT(nullptr != pServer)                                              \
+    OT_ASSERT(nullptr != pServer);                                             \
                                                                                \
-    [[maybe_unused]] const auto& server = *pServer;
+    [[maybe_unused]] const auto& server = *pServer
 
 #define INIT_OTX(a, ...)                                                       \
     api::session::OTX::Result result{otx::LastReplyStatus::NotSent, nullptr};  \
     [[maybe_unused]] const auto& [status, pReply] = result;                    \
     [[maybe_unused]] auto [taskID, future] = client.OTX().a(__VA_ARGS__);      \
-    [[maybe_unused]] const auto ready = (0 != taskID);
+    [[maybe_unused]] const auto ready = (0 != taskID)
 
 namespace opentxs
 {
@@ -235,12 +236,12 @@ RPC::RPC(const api::Context& native)
     auto bound = push_receiver_->Start(
         network::zeromq::MakeDeterministicInproc("rpc/push/internal", -1, 1));
 
-    OT_ASSERT(bound)
+    OT_ASSERT(bound);
 
     bound = rpc_publisher_->Start(
         network::zeromq::MakeDeterministicInproc("rpc/push", -1, 1));
 
-    OT_ASSERT(bound)
+    OT_ASSERT(bound);
 }
 
 auto RPC::accept_pending_payments(const proto::RPCCommand& command) const
@@ -1963,7 +1964,7 @@ auto RPC::start_client(const proto::RPCCommand& command) const
         auto bound = task_subscriber_->Start(
             UnallocatedCString{manager.Endpoints().TaskComplete()});
 
-        OT_ASSERT(bound)
+        OT_ASSERT(bound);
 
     } catch (...) {
         add_output_status(output, proto::RPCRESPONSE_INVALID);
@@ -2062,3 +2063,11 @@ RPC::~RPC()
     push_receiver_->Close();
 }
 }  // namespace opentxs::rpc::implementation
+
+#undef INIT_OTX
+#undef INIT_SERVER_ONLY
+#undef INIT_CLIENT_ONLY
+#undef INIT_SESSION
+#undef INIT
+#undef CHECK_OWNER
+#undef CHECK_INPUT

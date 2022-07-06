@@ -12,6 +12,7 @@ extern "C" {
 #include <sodium.h>
 }
 
+#include <BlockchainBlockHeader.pb.h>
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
@@ -41,7 +42,6 @@ extern "C" {
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"  // IWYU pragma: keep
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "serialization/protobuf/BlockchainBlockHeader.pb.h"
 #include "util/LMDB.hpp"
 
 constexpr auto false_byte_ = std::byte{0x0};
@@ -302,7 +302,7 @@ Database::Database(
     : imp_p_(std::make_unique<Imp>(api, blockchain, legacy, dataFolder, args))
     , imp_(*imp_p_)
 {
-    OT_ASSERT(imp_p_)
+    OT_ASSERT(imp_p_);
 }
 
 auto Database::AddOrUpdate(Address_p address) const noexcept -> bool

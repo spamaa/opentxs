@@ -7,6 +7,8 @@
 #include "1_Internal.hpp"          // IWYU pragma: associated
 #include "otx/consensus/Base.hpp"  // IWYU pragma: associated
 
+#include <Context.pb.h>
+#include <Signature.pb.h>
 #include <cstdint>
 #include <filesystem>
 #include <stdexcept>
@@ -34,8 +36,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/Context.pb.h"
-#include "serialization/protobuf/Signature.pb.h"
 
 #ifndef OT_MAX_ACK_NUMS
 #define OT_MAX_ACK_NUMS 100
@@ -349,7 +349,7 @@ auto Base::InitializeNymbox(const PasswordPrompt& reason) -> bool
 
     nymbox->ReleaseSignatures();
 
-    OT_ASSERT(nym_)
+    OT_ASSERT(nym_);
 
     if (false == nymbox->SignContract(*nym_, reason)) {
         LogError()(OT_PRETTY_CLASS())("(")(type())(") ")(
@@ -442,7 +442,7 @@ auto Base::LocalNymboxHash() const -> OTIdentifier
 auto Base::mutable_Nymfile(const PasswordPrompt& reason)
     -> Editor<opentxs::NymFile>
 {
-    OT_ASSERT(nym_)
+    OT_ASSERT(nym_);
 
     return api_.Wallet().Internal().mutable_Nymfile(nym_->ID(), reason);
 }

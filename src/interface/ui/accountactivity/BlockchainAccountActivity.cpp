@@ -7,6 +7,10 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "interface/ui/accountactivity/BlockchainAccountActivity.hpp"  // IWYU pragma: associated
 
+#include <BlockchainTransaction.pb.h>
+#include <PaymentEvent.pb.h>
+#include <PaymentWorkflow.pb.h>
+#include <PaymentWorkflowEnums.pb.h>
 #include <atomic>
 #include <functional>
 #include <future>
@@ -58,10 +62,6 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/BlockchainTransaction.pb.h"
-#include "serialization/protobuf/PaymentEvent.pb.h"
-#include "serialization/protobuf/PaymentWorkflow.pb.h"
-#include "serialization/protobuf/PaymentWorkflowEnums.pb.h"
 #include "util/Container.hpp"
 
 namespace opentxs::factory

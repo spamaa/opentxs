@@ -331,24 +331,10 @@ if(MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4217")
   set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4217")
 else()
+  # TODO c++20 disable -Wreturn-std-move-in-c++11 and enable -Wredundant-move
   set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -Wno-format-nonliteral -Wno-noexcept -Wno-redundant-move -Wno-shadow -Wno-sign-conversion -Wno-switch-enum -Wno-undef -Wno-unused-parameter"
+      "${CMAKE_CXX_FLAGS} -Wno-c++2a-compat -Wno-c++20-compat -Wno-deprecated-declarations -Wno-implicit-int-conversion -Wno-noexcept -Wno-redundant-move -Wno-shadow -Wno-sign-conversion -Wno-switch-enum -Wno-unused-parameter"
   )
-endif()
-
-if(${CMAKE_CXX_COMPILER_ID}
-   MATCHES
-   Clang
-)
-  # TODO c++20 disable -Wreturn-std-move-in-c++11
-  set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -Wno-c++2a-compat -Wno-c++20-compat -Wno-comma -Wno-disabled-macro-expansion -Wno-documentation -Wno-documentation-unknown-command -Wno-extra-semi-stmt -Wno-implicit-int-conversion -Wno-redundant-parens -Wno-unused-template -Wno-reserved-identifier -Wno-inline-namespace-reopened-noninline"
-  )
-endif()
-
-# Protobuf generated code will generate this warning
-if(NOT MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=extra-semi")
 endif()
 
 # -----------------------------------------------------------------------------
@@ -770,8 +756,6 @@ endif()
 # -----------------------------------------------------------------------------
 # Build source
 
-add_subdirectory(generated)
-
 include_directories(
   "${opentxs_BINARY_DIR}/include"
   "${opentxs_BINARY_DIR}/src"
@@ -804,6 +788,7 @@ add_library(
   opentxs
 )
 
+add_subdirectory(generated)
 add_subdirectory(deps)
 add_subdirectory(src)
 

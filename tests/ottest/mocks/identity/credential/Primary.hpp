@@ -7,15 +7,15 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
 
+#include <BlockchainBlockHeader.pb.h>
+#include <ContactData.pb.h>
+#include <Credential.pb.h>
+#include <VerificationSet.pb.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <opentxs/opentxs.hpp>
 
 #include "internal/identity/Types.hpp"
-#include "serialization/protobuf/BlockchainBlockHeader.pb.h"
-#include "serialization/protobuf/ContactData.pb.h"
-#include "serialization/protobuf/Credential.pb.h"
-#include "serialization/protobuf/VerificationSet.pb.h"
 
 namespace opentxs::identity::credential
 {
@@ -30,7 +30,7 @@ public:
     MOCK_METHOD(UnallocatedCString, Name, (), (const, noexcept, override));
     MOCK_METHOD(Nym_p, Nym, (), (const, noexcept, override));
     MOCK_METHOD(
-        const UnallocatedCString&,
+        const ot::UnallocatedCString&,
         Terms,
         (),
         (const, noexcept, override));
@@ -39,7 +39,7 @@ public:
     MOCK_METHOD(VersionNumber, Version, (), (const, noexcept, override));
     MOCK_METHOD(Signable*, clone, (), (const, noexcept, override));
     MOCK_METHOD(
-        UnallocatedCString,
+        ot::UnallocatedCString,
         asString,
         (const bool asPrivate),
         (const, noexcept, override));
@@ -81,7 +81,7 @@ public:
     MOCK_METHOD(
         bool,
         SetAlias,
-        (const UnallocatedCString& alias),
+        (const ot::UnallocatedCString& alias),
         (noexcept, override));
     MOCK_METHOD(
         const crypto::key::Keypair&,

@@ -7,6 +7,7 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "blockchain/database/common/BlockHeaders.hpp"  // IWYU pragma: associated
 
+#include <BlockchainBlockHeader.pb.h>
 #include <cstring>
 #include <stdexcept>
 #include <type_traits>
@@ -23,7 +24,6 @@
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "serialization/protobuf/BlockchainBlockHeader.pb.h"
 #include "util/LMDB.hpp"
 #include "util/MappedFileStorage.hpp"
 

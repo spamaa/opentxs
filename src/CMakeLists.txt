@@ -133,6 +133,17 @@ if(OT_QT_EXPORT)
       ${OPENTXS_QT_PRIVATE_HEADERS}
       ${OPENTXS_MOC_SOURCES}
   )
+
+  if(NOT MSVC)
+    target_compile_options(
+      opentxs-moc
+      PRIVATE
+        -Wno-extra-semi-stmt
+        -Wno-redundant-parens
+        -Wno-reserved-identifier
+    )
+  endif()
+
   set_target_properties(
     opentxs-moc
     PROPERTIES

@@ -7,6 +7,8 @@
 #include "1_Internal.hpp"                     // IWYU pragma: associated
 #include "identity/wot/verification/Nym.hpp"  // IWYU pragma: associated
 
+#include <Verification.pb.h>
+#include <VerificationIdentity.pb.h>
 #include <chrono>
 #include <memory>
 #include <stdexcept>
@@ -24,8 +26,6 @@
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "serialization/protobuf/Verification.pb.h"
-#include "serialization/protobuf/VerificationIdentity.pb.h"
 
 namespace opentxs
 {
@@ -155,7 +155,7 @@ auto Nym::AddItem(const Item::SerializedType item) noexcept -> bool
 
 auto Nym::add_item(Child pCandidate) noexcept -> bool
 {
-    OT_ASSERT(pCandidate)
+    OT_ASSERT(pCandidate);
 
     auto accept{true};
     const auto& candidate = *pCandidate;

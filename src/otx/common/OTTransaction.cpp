@@ -3037,12 +3037,12 @@ auto OTTransaction::DeleteBoxReceipt(Ledger& theLedger) -> bool
         return tmp;
     };
 
-    static std::string marked_for_deletion{"MARKED_FOR_DELETION"};
+    static UnallocatedCString marked_for_deletion{"MARKED_FOR_DELETION"};
     if (m_strRawFile->Exists()) {
         strOutput->Set(
             concatenation_lambda(strFinal->Get(), marked_for_deletion).c_str());
     } else {
-        static std::string trx_empty{
+        static UnallocatedCString trx_empty{
             "(Transaction was already empty -- strange.)"};
         strOutput->Set(
             concatenation_lambda(trx_empty, marked_for_deletion).c_str());
@@ -4333,7 +4333,7 @@ void OTTransaction::UpdateContents(const PasswordPrompt& reason)
                         "block. (Error).")
                         .Flush();
 
-                    OT_FAIL
+                    OT_FAIL;
                 }
                 default:
                     LogError()(OT_PRETTY_CLASS())(

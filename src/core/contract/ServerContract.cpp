@@ -7,11 +7,15 @@
 #include "1_Internal.hpp"                    // IWYU pragma: associated
 #include "core/contract/ServerContract.hpp"  // IWYU pragma: associated
 
+#include <ListenAddress.pb.h>
+#include <Nym.pb.h>
+#include <ServerContract.pb.h>
+#include <Signature.pb.h>
 #include <algorithm>
-#include <cstdio>
 #include <iterator>
 #include <memory>
 #include <stdexcept>
+#include <string_view>
 #include <tuple>
 #include <utility>
 
@@ -37,10 +41,6 @@
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/ListenAddress.pb.h"
-#include "serialization/protobuf/Nym.pb.h"
-#include "serialization/protobuf/ServerContract.pb.h"
-#include "serialization/protobuf/Signature.pb.h"
 
 namespace opentxs
 {
@@ -149,6 +149,8 @@ const VersionNumber Server::DefaultVersion{2};
 
 namespace opentxs::contract::implementation
 {
+using namespace std::literals;
+
 Server::Server(
     const api::Session& api,
     const Nym_p& nym,
@@ -208,7 +210,7 @@ Server::Server(const Server& rhs)
 }
 auto Server::EffectiveName() const -> UnallocatedCString
 {
-    OT_ASSERT(nym_)
+    OT_ASSERT(nym_);
 
     // TODO The version stored in nym_ might be out of date so load it from the
     // wallet. This can be fixed correctly by implementing in-place updates of
@@ -385,19 +387,11 @@ auto Server::Serialize(proto::ServerContract& serialized, bool includeNym) const
 
 auto Server::Statistics(String& strContents) const -> bool
 {
-    auto alias = nym_->Alias();
-
-    static std::string fmt{" Notary Provider:  %s\n NotaryID: %s\n\n"};
-    UnallocatedVector<char> buf;
-    buf.reserve(fmt.length() + 1 + alias.length() + id_->size());
-    auto size = std::snprintf(
-        &buf[0],
-        buf.capacity(),
-        fmt.c_str(),
-        alias.c_str(),
-        reinterpret_cast<const char*>(id_->data()));
-
-    strContents.Concatenate(String::Factory(&buf[0], size));
+    strContents.Concatenate(" Notary Provider: "sv)
+        .Concatenate(nym_->Alias())
+        .Concatenate(" NotaryID: "sv)
+        .Concatenate(id_->str())
+        .Concatenate("\n\n"sv);
 
     return true;
 }

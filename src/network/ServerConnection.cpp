@@ -7,6 +7,8 @@
 #include "1_Internal.hpp"                // IWYU pragma: associated
 #include "network/ServerConnection.hpp"  // IWYU pragma: associated
 
+#include <ServerReply.pb.h>
+#include <ServerRequest.pb.h>
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -61,8 +63,6 @@
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/WorkType.hpp"
-#include "serialization/protobuf/ServerReply.pb.h"
-#include "serialization/protobuf/ServerRequest.pb.h"
 
 namespace zmq = opentxs::network::zeromq;
 
@@ -184,10 +184,10 @@ auto ServerConnection::Imp::activity_timer() -> void
                 if (otx::client::SendResult::TIMEOUT != result.first) {
                     reset_timer();
 
-                    if (status_->On()) { publish(); };
+                    if (status_->On()) { publish(); }
                 }
             } else {
-                if (status_->Off()) { publish(); };
+                if (status_->Off()) { publish(); }
             }
         }
 
@@ -286,7 +286,7 @@ auto ServerConnection::Imp::form_endpoint(
 auto ServerConnection::Imp::get_async(const Lock& lock)
     -> zeromq::socket::Dealer&
 {
-    OT_ASSERT(verify_lock(lock))
+    OT_ASSERT(verify_lock(lock));
 
     if (false == sockets_ready_.get()) {
         registration_socket_ = async_socket(lock);
@@ -300,7 +300,7 @@ auto ServerConnection::Imp::get_async(const Lock& lock)
 auto ServerConnection::Imp::get_sync(const Lock& lock)
     -> zeromq::socket::Request&
 {
-    OT_ASSERT(verify_lock(lock))
+    OT_ASSERT(verify_lock(lock));
 
     if (false == sockets_ready_.get()) {
         registration_socket_ = async_socket(lock);
@@ -430,7 +430,7 @@ auto ServerConnection::Imp::register_for_push(
 
 auto ServerConnection::Imp::reset_socket(const Lock& lock) -> void
 {
-    OT_ASSERT(verify_lock(lock))
+    OT_ASSERT(verify_lock(lock));
 
     sockets_ready_->Off();
 }

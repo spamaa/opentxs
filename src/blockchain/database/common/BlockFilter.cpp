@@ -7,6 +7,8 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "blockchain/database/common/BlockFilter.hpp"  // IWYU pragma: associated
 
+#include <BlockchainFilterHeader.pb.h>
+#include <GCS.pb.h>
 #include <google/protobuf/arena.h>  // IWYU pragma: keep
 #include <array>
 #include <cstddef>
@@ -30,8 +32,6 @@
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "serialization/protobuf/BlockchainFilterHeader.pb.h"
-#include "serialization/protobuf/GCS.pb.h"
 #include "util/ByteLiterals.hpp"
 #include "util/LMDB.hpp"
 #include "util/MappedFileStorage.hpp"
@@ -361,14 +361,14 @@ auto BlockFilter::StoreFilters(
         // NOTE do as much work as possible before locking mutexes
         static const auto options = [] {
             auto out = google::protobuf::ArenaOptions{};
-            out.start_block_size = 8_MiB;
-            out.max_block_size = 8_MiB;
+            out.start_block_size = 8_mib;
+            out.max_block_size = 8_mib;
 
             return out;
         }();
         auto arena = google::protobuf::Arena{options};
         auto upstream = alloc::StandardToBoost(alloc::System());
-        auto alloc = alloc::BoostMonotonic{4_MiB, &upstream};
+        auto alloc = alloc::BoostMonotonic{4_mib, &upstream};
         auto data = [&] {
             auto out = Vector<StorageItem>{&alloc};
             out.reserve(headers.size());

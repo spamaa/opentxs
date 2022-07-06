@@ -7,6 +7,8 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "interface/ui/activitysummary/ActivitySummary.hpp"  // IWYU pragma: associated
 
+#include <StorageThread.pb.h>
+#include <StorageThreadItem.pb.h>
 #include <chrono>
 #include <memory>
 #include <sstream>
@@ -28,8 +30,6 @@
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Time.hpp"
-#include "serialization/protobuf/StorageThread.pb.h"
-#include "serialization/protobuf/StorageThreadItem.pb.h"
 
 namespace opentxs::factory
 {
@@ -63,7 +63,7 @@ ActivitySummary::ActivitySummary(
     setup_listeners(listeners_);
     startup_ = std::make_unique<std::thread>(&ActivitySummary::startup, this);
 
-    OT_ASSERT(startup_)
+    OT_ASSERT(startup_);
 }
 
 auto ActivitySummary::construct_row(
@@ -161,7 +161,7 @@ void ActivitySummary::process_thread(const Message& message) noexcept
 
     const auto threadID = api_.Factory().Identifier(body.at(1));
 
-    OT_ASSERT(false == threadID->empty())
+    OT_ASSERT(false == threadID->empty());
 
     delete_item(threadID);
     process_thread(threadID->str());

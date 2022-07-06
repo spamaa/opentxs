@@ -7,6 +7,10 @@
 #include "1_Internal.hpp"                     // IWYU pragma: associated
 #include "api/session/activity/Activity.hpp"  // IWYU pragma: associated
 
+#include <BlockchainTransaction.pb.h>
+#include <PaymentWorkflow.pb.h>
+#include <StorageThread.pb.h>
+#include <StorageThreadItem.pb.h>
 #include <algorithm>
 #include <iterator>
 #include <limits>
@@ -52,10 +56,6 @@
 #include "opentxs/util/PasswordPrompt.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/WorkType.hpp"
-#include "serialization/protobuf/BlockchainTransaction.pb.h"
-#include "serialization/protobuf/PaymentWorkflow.pb.h"
-#include "serialization/protobuf/StorageThread.pb.h"
-#include "serialization/protobuf/StorageThreadItem.pb.h"
 
 namespace opentxs::factory
 {
@@ -302,7 +302,7 @@ auto Activity::Cheque(
     auto instantiated = session::Workflow::InstantiateCheque(api_, workflow);
     cheque.reset(std::get<1>(instantiated).release());
 
-    OT_ASSERT(cheque)
+    OT_ASSERT(cheque);
 
     const auto& unit = cheque->GetInstrumentDefinitionID();
 
@@ -359,7 +359,7 @@ auto Activity::Transfer(
     auto instantiated = session::Workflow::InstantiateTransfer(api_, workflow);
     transfer.reset(std::get<1>(instantiated).release());
 
-    OT_ASSERT(transfer)
+    OT_ASSERT(transfer);
 
     if (0 == workflow.account_size()) {
         LogError()(OT_PRETTY_CLASS())("Workflow does not list any accounts.")
@@ -605,7 +605,7 @@ auto Activity::PaymentText(
             auto chequeData = Cheque(nym, id, workflowID);
             const auto& [cheque, contract] = chequeData;
 
-            OT_ASSERT(cheque)
+            OT_ASSERT(cheque);
 
             if (0 < contract->Version()) {
                 const auto& definition =
@@ -626,7 +626,7 @@ auto Activity::PaymentText(
             auto transferData = Transfer(nym, id, workflowID);
             const auto& [transfer, contract] = transferData;
 
-            OT_ASSERT(transfer)
+            OT_ASSERT(transfer);
 
             if (0 < contract->Version()) {
                 const auto& definition =

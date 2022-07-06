@@ -7,6 +7,10 @@
 #include "1_Internal.hpp"                        // IWYU pragma: associated
 #include "crypto/key/asymmetric/Asymmetric.hpp"  // IWYU pragma: associated
 
+#include <AsymmetricKey.pb.h>
+#include <Ciphertext.pb.h>
+#include <Enums.pb.h>
+#include <Signature.pb.h>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -40,10 +44,6 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/AsymmetricKey.pb.h"
-#include "serialization/protobuf/Ciphertext.pb.h"
-#include "serialization/protobuf/Enums.pb.h"
-#include "serialization/protobuf/Signature.pb.h"
 #include "util/Container.hpp"
 
 template class opentxs::Pimpl<opentxs::crypto::key::Asymmetric>;
@@ -370,7 +370,7 @@ auto Asymmetric::create_key(
     generate_key(provider, options, role, publicKey, privateKey, params);
     auto pOutput = std::make_unique<proto::Ciphertext>();
 
-    OT_ASSERT(pOutput)
+    OT_ASSERT(pOutput);
 
     auto& output = *pOutput;
 

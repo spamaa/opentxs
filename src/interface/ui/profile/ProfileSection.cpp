@@ -7,6 +7,7 @@
 #include "1_Internal.hpp"                           // IWYU pragma: associated
 #include "interface/ui/profile/ProfileSection.hpp"  // IWYU pragma: associated
 
+#include <ContactEnums.pb.h>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
@@ -27,7 +28,6 @@
 #include "opentxs/identity/wot/claim/SectionType.hpp"
 #include "opentxs/interface/ui/ProfileSection.hpp"
 #include "opentxs/util/Container.hpp"
-#include "serialization/protobuf/ContactEnums.pb.h"
 
 template class opentxs::SharedPimpl<opentxs::ui::ProfileSection>;
 
@@ -163,7 +163,7 @@ ProfileSection::ProfileSection(
         this,
         extract_custom<identity::wot::claim::Section>(custom));
 
-    OT_ASSERT(startup_)
+    OT_ASSERT(startup_);
 }
 
 auto ProfileSection::AddClaim(
@@ -223,12 +223,12 @@ auto ProfileSection::process_section(
     const identity::wot::claim::Section& section) noexcept
     -> UnallocatedSet<ProfileSectionRowID>
 {
-    OT_ASSERT(row_id_ == section.Type())
+    OT_ASSERT(row_id_ == section.Type());
 
     UnallocatedSet<ProfileSectionRowID> active{};
 
     for (const auto& [type, group] : section) {
-        OT_ASSERT(group)
+        OT_ASSERT(group);
 
         const ProfileSectionRowID key{row_id_, type};
 

@@ -7,11 +7,13 @@
 #include "1_Internal.hpp"                         // IWYU pragma: associated
 #include "blockchain/database/common/Wallet.hpp"  // IWYU pragma: associated
 
+#include <BlockchainTransaction.pb.h>
 #include <algorithm>
 #include <cstring>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 #include "Proto.hpp"
@@ -31,7 +33,6 @@
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "serialization/protobuf/BlockchainTransaction.pb.h"
 #include "util/Container.hpp"
 #include "util/LMDB.hpp"
 #include "util/MappedFileStorage.hpp"

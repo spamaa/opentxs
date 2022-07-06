@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <StorageEnums.pb.h>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -23,7 +24,6 @@
 #include "opentxs/util/Numbers.hpp"
 #include "opentxs/util/Types.hpp"
 #include "opentxs/util/storage/Driver.hpp"
-#include "serialization/protobuf/StorageEnums.pb.h"
 #include "util/storage/Plugin.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
@@ -90,7 +90,7 @@ protected:
         const UnallocatedCString& alias,
         UnallocatedCString& plaintext) -> bool
     {
-        OT_ASSERT(verify_write_lock(lock))
+        OT_ASSERT(verify_write_lock(lock));
 
         auto& metadata = item_map_[id];
         auto& hash = std::get<0>(metadata);

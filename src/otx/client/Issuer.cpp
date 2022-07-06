@@ -7,6 +7,14 @@
 #include "1_Internal.hpp"         // IWYU pragma: associated
 #include "otx/client/Issuer.hpp"  // IWYU pragma: associated
 
+#include <Bailment.pb.h>
+#include <ConnectionInfo.pb.h>
+#include <Issuer.pb.h>
+#include <PeerReply.pb.h>
+#include <PeerRequest.pb.h>
+#include <PeerRequestHistory.pb.h>
+#include <PeerRequestWorkflow.pb.h>
+#include <UnitAccountMap.pb.h>
 #include <cstdint>
 #include <ctime>
 #include <iosfwd>
@@ -44,14 +52,6 @@
 #include "opentxs/otx/client/Types.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/Bailment.pb.h"
-#include "serialization/protobuf/ConnectionInfo.pb.h"
-#include "serialization/protobuf/Issuer.pb.h"
-#include "serialization/protobuf/PeerReply.pb.h"
-#include "serialization/protobuf/PeerRequest.pb.h"
-#include "serialization/protobuf/PeerRequestHistory.pb.h"
-#include "serialization/protobuf/PeerRequestWorkflow.pb.h"
-#include "serialization/protobuf/UnitAccountMap.pb.h"
 
 namespace opentxs::factory
 {
@@ -228,7 +228,7 @@ auto Issuer::toString() const -> UnallocatedCString
                 output << "faucet";
             } break;
             default: {
-                OT_FAIL
+                OT_FAIL;
             }
         }
 
@@ -286,7 +286,7 @@ auto Issuer::add_request(
     const Identifier& requestID,
     const Identifier& replyID) -> bool
 {
-    OT_ASSERT(verify_lock(lock))
+    OT_ASSERT(verify_lock(lock));
 
     auto [found, it] = find_request(lock, type, requestID);
     const auto& notUsed [[maybe_unused]] = it;
@@ -613,7 +613,7 @@ auto Issuer::find_request(
     const contract::peer::PeerRequestType type,
     const Identifier& requestID) -> std::pair<bool, Issuer::Workflow::iterator>
 {
-    OT_ASSERT(verify_lock(lock))
+    OT_ASSERT(verify_lock(lock));
 
     auto& work = peer_requests_[type];
     auto it = work.find(requestID);
@@ -765,7 +765,7 @@ auto Issuer::Serialize(proto::Issuer& output) const -> bool
         }
     }
 
-    OT_ASSERT(proto::Validate(output, VERBOSE))
+    OT_ASSERT(proto::Validate(output, VERBOSE));
 
     return true;
 }

@@ -7,6 +7,9 @@
 #include "1_Internal.hpp"         // IWYU pragma: associated
 #include "otx/server/Notary.hpp"  // IWYU pragma: associated
 
+#include <OTXEnums.pb.h>
+#include <OTXPush.pb.h>
+#include <Purse.pb.h>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -84,9 +87,6 @@
 #include "otx/server/Server.hpp"
 #include "otx/server/ServerSettings.hpp"
 #include "otx/server/Transactor.hpp"
-#include "serialization/protobuf/OTXEnums.pb.h"
-#include "serialization/protobuf/OTXPush.pb.h"
-#include "serialization/protobuf/Purse.pb.h"
 
 namespace zmq = opentxs::network::zeromq;
 
@@ -5269,7 +5269,7 @@ void Notary::NotarizeExchangeBasket(
                                 // now, let's Save them ALL to disk..
 
                                 for (auto& account : listUserAccounts) {
-                                    OT_ASSERT(account)
+                                    OT_ASSERT(account);
 
                                     if (bSuccess) {
                                         account.Release();
@@ -5279,7 +5279,7 @@ void Notary::NotarizeExchangeBasket(
                                 }
 
                                 for (auto& account : listServerAccounts) {
-                                    OT_ASSERT(account)
+                                    OT_ASSERT(account);
 
                                     if (bSuccess) {
                                         account.Release();
@@ -5292,7 +5292,7 @@ void Notary::NotarizeExchangeBasket(
                                 // if everything was successful.)
                                 while (!listInboxes.empty()) {
                                     Ledger* pTempInbox = listInboxes.front();
-                                    if (nullptr == pTempInbox) OT_FAIL;
+                                    if (nullptr == pTempInbox) { OT_FAIL; }
                                     listInboxes.pop_front();
 
                                     if (true == bSuccess) {

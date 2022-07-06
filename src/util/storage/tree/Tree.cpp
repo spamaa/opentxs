@@ -7,6 +7,8 @@
 #include "1_Internal.hpp"              // IWYU pragma: associated
 #include "util/storage/tree/Tree.hpp"  // IWYU pragma: associated
 
+#include <Ciphertext.pb.h>
+#include <StorageItems.pb.h>
 #include <functional>
 #include <stdexcept>
 
@@ -16,8 +18,6 @@
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/storage/Driver.hpp"
-#include "serialization/protobuf/Ciphertext.pb.h"
-#include "serialization/protobuf/StorageItems.pb.h"
 #include "util/storage/Plugin.hpp"
 #include "util/storage/tree/Accounts.hpp"
 #include "util/storage/tree/Contacts.hpp"
@@ -211,7 +211,7 @@ void Tree::init(const UnallocatedCString& hash)
     } catch (const std::exception& e) {
         LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
 
-        OT_FAIL
+        OT_FAIL;
     }
 }
 
@@ -316,7 +316,7 @@ auto Tree::save(const Lock& lock) const -> bool
 {
     if (!verify_write_lock(lock)) {
         LogError()(OT_PRETTY_CLASS())("Lock failure.").Flush();
-        OT_FAIL
+        OT_FAIL;
     }
 
     auto serialized = serialize();
@@ -335,12 +335,12 @@ void Tree::save_child(
 {
     if (false == verify_write_lock(lock)) {
         LogError()(OT_PRETTY_CLASS())("Lock failure.").Flush();
-        OT_FAIL
+        OT_FAIL;
     }
 
     if (nullptr == input) {
         LogError()(OT_PRETTY_CLASS())("Null target.").Flush();
-        OT_FAIL
+        OT_FAIL;
     }
 
     Lock rootLock(hashLock);
@@ -349,7 +349,7 @@ void Tree::save_child(
 
     if (false == save(lock)) {
         LogError()(OT_PRETTY_CLASS())("Save error.").Flush();
-        OT_FAIL
+        OT_FAIL;
     }
 }
 

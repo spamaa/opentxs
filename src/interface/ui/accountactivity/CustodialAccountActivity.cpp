@@ -7,6 +7,9 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "interface/ui/accountactivity/CustodialAccountActivity.hpp"  // IWYU pragma: associated
 
+#include <PaymentEvent.pb.h>
+#include <PaymentWorkflow.pb.h>
+#include <PaymentWorkflowEnums.pb.h>
 #include <atomic>
 #include <chrono>
 #include <future>
@@ -43,9 +46,6 @@
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Time.hpp"
-#include "serialization/protobuf/PaymentEvent.pb.h"
-#include "serialization/protobuf/PaymentWorkflow.pb.h"
-#include "serialization/protobuf/PaymentWorkflowEnums.pb.h"
 
 namespace opentxs::factory
 {
@@ -442,7 +442,7 @@ auto CustodialAccountActivity::process_balance(const Message& message) noexcept
     wait_for_startup();
     const auto body = message.Body();
 
-    OT_ASSERT(2 < body.size())
+    OT_ASSERT(2 < body.size());
 
     const auto accountID = Widget::api_.Factory().Identifier(body.at(1));
 
@@ -544,7 +544,7 @@ auto CustodialAccountActivity::process_workflow(const Message& message) noexcept
 
     const auto accountID = Widget::api_.Factory().Identifier(body.at(1));
 
-    OT_ASSERT(false == accountID->empty())
+    OT_ASSERT(false == accountID->empty());
 
     if (account_id_ == accountID) { startup(); }
 }

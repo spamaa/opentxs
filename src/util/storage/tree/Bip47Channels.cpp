@@ -7,6 +7,12 @@
 #include "1_Internal.hpp"                       // IWYU pragma: associated
 #include "util/storage/tree/Bip47Channels.hpp"  // IWYU pragma: associated
 
+#include <Bip47Channel.pb.h>
+#include <BlockchainAccountData.pb.h>
+#include <BlockchainDeterministicAccountData.pb.h>
+#include <StorageBip47ChannelList.pb.h>
+#include <StorageBip47Contexts.pb.h>
+#include <StorageItemHash.pb.h>
 #include <mutex>
 #include <stdexcept>
 #include <tuple>
@@ -25,12 +31,6 @@
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Types.hpp"
 #include "opentxs/util/storage/Driver.hpp"
-#include "serialization/protobuf/Bip47Channel.pb.h"
-#include "serialization/protobuf/BlockchainAccountData.pb.h"
-#include "serialization/protobuf/BlockchainDeterministicAccountData.pb.h"
-#include "serialization/protobuf/StorageBip47ChannelList.pb.h"
-#include "serialization/protobuf/StorageBip47Contexts.pb.h"
-#include "serialization/protobuf/StorageItemHash.pb.h"
 #include "util/storage/Plugin.hpp"
 #include "util/storage/tree/Node.hpp"
 
@@ -121,7 +121,7 @@ auto Bip47Channels::init(const UnallocatedCString& hash) -> void
         LogError()(OT_PRETTY_CLASS())(
             "Failed to load bip47 channel index file.")
             .Flush();
-        OT_FAIL
+        OT_FAIL;
     }
 
     init_version(CHANNEL_VERSION, *proto);
@@ -180,7 +180,7 @@ auto Bip47Channels::save(const std::unique_lock<std::mutex>& lock) const -> bool
 {
     if (!verify_write_lock(lock)) {
         LogError()(OT_PRETTY_CLASS())("Lock failure.").Flush();
-        OT_FAIL
+        OT_FAIL;
     }
 
     auto serialized = serialize();

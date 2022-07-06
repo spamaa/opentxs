@@ -7,6 +7,11 @@
 #include "1_Internal.hpp"       // IWYU pragma: associated
 #include "otx/client/Pair.hpp"  // IWYU pragma: associated
 
+#include <PairEvent.pb.h>
+#include <PeerReply.pb.h>
+#include <PeerRequest.pb.h>
+#include <PendingBailment.pb.h>
+#include <ZMQEnums.pb.h>
 #include <algorithm>
 #include <chrono>
 #include <ctime>
@@ -71,20 +76,13 @@
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/SharedPimpl.hpp"
 #include "opentxs/util/Time.hpp"
-#include "serialization/protobuf/PairEvent.pb.h"
-#include "serialization/protobuf/PeerReply.pb.h"
-#include "serialization/protobuf/PeerRequest.pb.h"
-#include "serialization/protobuf/PendingBailment.pb.h"
-#include "serialization/protobuf/ZMQEnums.pb.h"
 
 #define MINIMUM_UNUSED_BAILMENTS 3
 
 #define PAIR_SHUTDOWN()                                                        \
-    {                                                                          \
-        if (!running_) { return; }                                             \
+    if (!running_) { return; }                                                 \
                                                                                \
-        Sleep(50ms);                                                           \
-    }
+    Sleep(50ms)
 
 namespace opentxs::factory
 {
@@ -541,13 +539,13 @@ void Pair::check_accounts(
     if (false == haveAccounts) { return; }
 
     for (const auto& [type, pGroup] : *contractSection) {
-        PAIR_SHUTDOWN()
+        PAIR_SHUTDOWN();
         OT_ASSERT(pGroup);
 
         const auto& group = *pGroup;
 
         for (const auto& [id, pClaim] : group) {
-            PAIR_SHUTDOWN()
+            PAIR_SHUTDOWN();
             OT_ASSERT(pClaim);
 
             const auto& notUsed [[maybe_unused]] = id;
@@ -859,11 +857,11 @@ auto Pair::process_connection_info(
     const identifier::Nym& nymID,
     const proto::PeerReply& reply) const -> bool
 {
-    OT_ASSERT(CheckLock(lock, decision_lock_))
-    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()))
+    OT_ASSERT(CheckLock(lock, decision_lock_));
+    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()));
     OT_ASSERT(
         contract::peer::PeerRequestType::ConnectionInfo ==
-        translate(reply.type()))
+        translate(reply.type()));
 
     const auto requestID = Identifier::Factory(reply.cookie());
     const auto replyID = Identifier::Factory(reply.id());
@@ -997,11 +995,11 @@ auto Pair::process_pending_bailment(
     const identifier::Nym& nymID,
     const proto::PeerRequest& request) const -> bool
 {
-    OT_ASSERT(CheckLock(lock, decision_lock_))
-    OT_ASSERT(nymID == Identifier::Factory(request.recipient()))
+    OT_ASSERT(CheckLock(lock, decision_lock_));
+    OT_ASSERT(nymID == Identifier::Factory(request.recipient()));
     OT_ASSERT(
         contract::peer::PeerRequestType::PendingBailment ==
-        translate(request.type()))
+        translate(request.type()));
 
     const auto requestID = Identifier::Factory(request.id());
     const auto issuerNymID = identifier::Nym::Factory(request.initiator());
@@ -1069,10 +1067,10 @@ auto Pair::process_request_bailment(
     const identifier::Nym& nymID,
     const proto::PeerReply& reply) const -> bool
 {
-    OT_ASSERT(CheckLock(lock, decision_lock_))
-    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()))
+    OT_ASSERT(CheckLock(lock, decision_lock_));
+    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()));
     OT_ASSERT(
-        contract::peer::PeerRequestType::Bailment == translate(reply.type()))
+        contract::peer::PeerRequestType::Bailment == translate(reply.type()));
 
     const auto requestID = Identifier::Factory(reply.cookie());
     const auto replyID = Identifier::Factory(reply.id());
@@ -1099,10 +1097,11 @@ auto Pair::process_request_outbailment(
     const identifier::Nym& nymID,
     const proto::PeerReply& reply) const -> bool
 {
-    OT_ASSERT(CheckLock(lock, decision_lock_))
-    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()))
+    OT_ASSERT(CheckLock(lock, decision_lock_));
+    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()));
     OT_ASSERT(
-        contract::peer::PeerRequestType::OutBailment == translate(reply.type()))
+        contract::peer::PeerRequestType::OutBailment ==
+        translate(reply.type()));
 
     const auto requestID = Identifier::Factory(reply.cookie());
     const auto replyID = Identifier::Factory(reply.id());
@@ -1129,10 +1128,11 @@ auto Pair::process_store_secret(
     const identifier::Nym& nymID,
     const proto::PeerReply& reply) const -> bool
 {
-    OT_ASSERT(CheckLock(lock, decision_lock_))
-    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()))
+    OT_ASSERT(CheckLock(lock, decision_lock_));
+    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()));
     OT_ASSERT(
-        contract::peer::PeerRequestType::StoreSecret == translate(reply.type()))
+        contract::peer::PeerRequestType::StoreSecret ==
+        translate(reply.type()));
 
     const auto requestID = Identifier::Factory(reply.cookie());
     const auto replyID = Identifier::Factory(reply.id());
@@ -1323,7 +1323,7 @@ void Pair::state_machine(const IssuerID& id) const
         return;
     }
 
-    PAIR_SHUTDOWN()
+    PAIR_SHUTDOWN();
 
     const auto& issuerClaims = issuerNym->Claims();
     serverID = issuerClaims.PreferredOTServer();
@@ -1339,14 +1339,14 @@ void Pair::state_machine(const IssuerID& id) const
         return;
     }
 
-    PAIR_SHUTDOWN()
+    PAIR_SHUTDOWN();
 
     auto editor =
         client_.Wallet().Internal().mutable_Issuer(localNymID, issuerNymID);
     auto& issuer = editor.get();
     trusted = issuer.Paired();
 
-    PAIR_SHUTDOWN()
+    PAIR_SHUTDOWN();
 
     switch (status) {
         case Status::Error: {
@@ -1366,7 +1366,7 @@ void Pair::state_machine(const IssuerID& id) const
                 try {
                     const auto contract = client_.Wallet().Server(serverID);
 
-                    PAIR_SHUTDOWN()
+                    PAIR_SHUTDOWN();
 
                     pending.emplace_back(
                         queue_nym_registration(localNymID, serverID, trusted));
@@ -1388,7 +1388,7 @@ void Pair::state_machine(const IssuerID& id) const
             [[fallthrough]];
         }
         case Status::Registered: {
-            PAIR_SHUTDOWN()
+            PAIR_SHUTDOWN();
 
             LogDetail()(OT_PRETTY_CLASS())(
                 ": Local nym is registered on issuer's notary.")
@@ -1404,19 +1404,19 @@ void Pair::state_machine(const IssuerID& id) const
                 }
             }
 
-            PAIR_SHUTDOWN()
+            PAIR_SHUTDOWN();
 
             check_rename(issuer, serverID, reason, needRename);
 
-            PAIR_SHUTDOWN()
+            PAIR_SHUTDOWN();
 
             check_store_secret(issuer, serverID);
 
-            PAIR_SHUTDOWN()
+            PAIR_SHUTDOWN();
 
             check_connection_info(issuer, serverID);
 
-            PAIR_SHUTDOWN()
+            PAIR_SHUTDOWN();
 
             check_accounts(
                 issuerClaims,
@@ -1465,3 +1465,6 @@ auto Pair::store_secret(
     return output;
 }
 }  // namespace opentxs::otx::client::implementation
+
+#undef PAIR_SHUTDOWN
+#undef MINIMUM_UNUSED_BAILMENTS

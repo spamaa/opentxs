@@ -7,6 +7,12 @@
 #include "1_Internal.hpp"                          // IWYU pragma: associated
 #include "util/storage/tree/PaymentWorkflows.hpp"  // IWYU pragma: associated
 
+#include <InstrumentRevision.pb.h>
+#include <PaymentWorkflow.pb.h>
+#include <StorageItemHash.pb.h>
+#include <StoragePaymentWorkflows.pb.h>
+#include <StorageWorkflowIndex.pb.h>
+#include <StorageWorkflowType.pb.h>
 #include <tuple>
 #include <type_traits>
 
@@ -20,12 +26,6 @@
 #include "opentxs/otx/client/PaymentWorkflowType.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/storage/Driver.hpp"
-#include "serialization/protobuf/InstrumentRevision.pb.h"
-#include "serialization/protobuf/PaymentWorkflow.pb.h"
-#include "serialization/protobuf/StorageItemHash.pb.h"
-#include "serialization/protobuf/StoragePaymentWorkflows.pb.h"
-#include "serialization/protobuf/StorageWorkflowIndex.pb.h"
-#include "serialization/protobuf/StorageWorkflowType.pb.h"
 #include "util/storage/Plugin.hpp"
 #include "util/storage/tree/Node.hpp"
 
@@ -56,10 +56,10 @@ void PaymentWorkflows::add_state_index(
     otx::client::PaymentWorkflowType type,
     otx::client::PaymentWorkflowState state)
 {
-    OT_ASSERT(verify_write_lock(lock))
-    OT_ASSERT(false == workflowID.empty())
-    OT_ASSERT(otx::client::PaymentWorkflowType::Error != type)
-    OT_ASSERT(otx::client::PaymentWorkflowState::Error != state)
+    OT_ASSERT(verify_write_lock(lock));
+    OT_ASSERT(false == workflowID.empty());
+    OT_ASSERT(otx::client::PaymentWorkflowType::Error != type);
+    OT_ASSERT(otx::client::PaymentWorkflowState::Error != state);
 
     const State key{type, state};
     workflow_state_map_.emplace(workflowID, key);
@@ -118,7 +118,7 @@ void PaymentWorkflows::init(const UnallocatedCString& hash)
     if (!serialized) {
         LogError()(OT_PRETTY_CLASS())("Failed to load workflow index file.")
             .Flush();
-        OT_FAIL
+        OT_FAIL;
     }
 
     init_version(current_version_, *serialized);
@@ -215,8 +215,8 @@ void PaymentWorkflows::reindex(
     const otx::client::PaymentWorkflowState newState,
     otx::client::PaymentWorkflowState& state)
 {
-    OT_ASSERT(verify_write_lock(lock))
-    OT_ASSERT(false == workflowID.empty())
+    OT_ASSERT(verify_write_lock(lock));
+    OT_ASSERT(false == workflowID.empty());
 
     const State oldKey{type, state};
     auto& oldSet = state_workflow_map_[oldKey];
@@ -226,8 +226,8 @@ void PaymentWorkflows::reindex(
 
     state = newState;
 
-    OT_ASSERT(otx::client::PaymentWorkflowType::Error != type)
-    OT_ASSERT(otx::client::PaymentWorkflowState::Error != state)
+    OT_ASSERT(otx::client::PaymentWorkflowType::Error != type);
+    OT_ASSERT(otx::client::PaymentWorkflowState::Error != state);
 
     const State newKey{type, newState};
     state_workflow_map_[newKey].emplace(workflowID);
@@ -237,7 +237,7 @@ auto PaymentWorkflows::save(const Lock& lock) const -> bool
 {
     if (!verify_write_lock(lock)) {
         LogError()(OT_PRETTY_CLASS())("Lock failure.").Flush();
-        OT_FAIL
+        OT_FAIL;
     }
 
     auto serialized = serialize();
@@ -274,10 +274,10 @@ auto PaymentWorkflows::serialize() const -> proto::StoragePaymentWorkflows
     }
 
     for (const auto& [account, workflowSet] : account_workflow_map_) {
-        OT_ASSERT(false == account.empty())
+        OT_ASSERT(false == account.empty());
 
         for (const auto& workflow : workflowSet) {
-            OT_ASSERT(false == workflow.empty())
+            OT_ASSERT(false == workflow.empty());
 
             auto& newAccount = *serialized.add_accounts();
             newAccount.set_version(index_version_);
@@ -287,10 +287,10 @@ auto PaymentWorkflows::serialize() const -> proto::StoragePaymentWorkflows
     }
 
     for (const auto& [unit, workflowSet] : unit_workflow_map_) {
-        OT_ASSERT(false == unit.empty())
+        OT_ASSERT(false == unit.empty());
 
         for (const auto& workflow : workflowSet) {
-            OT_ASSERT(false == workflow.empty())
+            OT_ASSERT(false == workflow.empty());
 
             auto& newUnit = *serialized.add_units();
             newUnit.set_version(index_version_);
@@ -300,12 +300,12 @@ auto PaymentWorkflows::serialize() const -> proto::StoragePaymentWorkflows
     }
 
     for (const auto& [workflow, stateTuple] : workflow_state_map_) {
-        OT_ASSERT(false == workflow.empty())
+        OT_ASSERT(false == workflow.empty());
 
         const auto& [type, state] = stateTuple;
 
-        OT_ASSERT(otx::client::PaymentWorkflowType::Error != type)
-        OT_ASSERT(otx::client::PaymentWorkflowState::Error != state)
+        OT_ASSERT(otx::client::PaymentWorkflowType::Error != type);
+        OT_ASSERT(otx::client::PaymentWorkflowState::Error != state);
 
         auto& newIndex = *serialized.add_types();
         newIndex.set_version(type_version_);
@@ -315,7 +315,7 @@ auto PaymentWorkflows::serialize() const -> proto::StoragePaymentWorkflows
     }
 
     for (const auto& archived : archived_) {
-        OT_ASSERT(false == archived.empty())
+        OT_ASSERT(false == archived.empty());
 
         serialized.add_archived(archived);
     }

@@ -7,9 +7,10 @@
 #include "1_Internal.hpp"                  // IWYU pragma: associated
 #include "internal/interface/rpc/RPC.hpp"  // IWYU pragma: associated
 
+#include <RPCResponse.pb.h>
+
 #include "2_Factory.hpp"
 #include "opentxs/interface/rpc/response/Base.hpp"
-#include "serialization/protobuf/RPCResponse.pb.h"
 
 namespace opentxs
 {

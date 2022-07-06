@@ -7,6 +7,7 @@
 #include "1_Internal.hpp"           // IWYU pragma: associated
 #include "api/session/Session.hpp"  // IWYU pragma: associated
 
+#include <Ciphertext.pb.h>
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -32,7 +33,6 @@
 #include "opentxs/util/PasswordPrompt.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Types.hpp"
-#include "serialization/protobuf/Ciphertext.pb.h"
 #include "util/NullCallback.hpp"
 #include "util/ScopeGuard.hpp"
 
@@ -298,7 +298,7 @@ void Session::SetMasterKeyTimeout(
 
 auto Session::Storage() const noexcept -> const api::session::Storage&
 {
-    OT_ASSERT(storage_)
+    OT_ASSERT(storage_);
 
     return *storage_;
 }

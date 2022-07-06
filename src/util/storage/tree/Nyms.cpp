@@ -7,6 +7,9 @@
 #include "1_Internal.hpp"              // IWYU pragma: associated
 #include "util/storage/tree/Nyms.hpp"  // IWYU pragma: associated
 
+#include <Nym.pb.h>
+#include <StorageItemHash.pb.h>
+#include <StorageNymList.pb.h>
 #include <cstdlib>
 #include <functional>
 #include <mutex>
@@ -23,9 +26,6 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/storage/Driver.hpp"
-#include "serialization/protobuf/Nym.pb.h"
-#include "serialization/protobuf/StorageItemHash.pb.h"
-#include "serialization/protobuf/StorageNymList.pb.h"
 #include "util/storage/Plugin.hpp"
 #include "util/storage/tree/Node.hpp"
 #include "util/storage/tree/Nym.hpp"
@@ -158,7 +158,7 @@ auto Nyms::nym(const UnallocatedCString& id) const -> storage::Nym*
 auto Nyms::nym(const Lock& lock, const UnallocatedCString& id) const
     -> storage::Nym*
 {
-    OT_ASSERT(verify_write_lock(lock))
+    OT_ASSERT(verify_write_lock(lock));
 
     const auto index = item_map_[id];
     const auto hash = std::get<0>(index);
@@ -229,7 +229,7 @@ auto Nyms::save(const Lock& lock) const -> bool
 
     if (!proto::Validate(serialized, VERBOSE)) { return false; }
 
-    OT_ASSERT(current_version_ == serialized.version())
+    OT_ASSERT(current_version_ == serialized.version());
 
     return driver_.StoreProto(serialized, root_);
 }
@@ -313,7 +313,7 @@ void Nyms::UpgradeLocalnym()
 
         if (false == loaded) { continue; }
 
-        OT_ASSERT(node.checked_.get())
+        OT_ASSERT(node.checked_.get());
 
         if (node.private_.get()) {
             LogError()(OT_PRETTY_CLASS())("Adding nym ")(

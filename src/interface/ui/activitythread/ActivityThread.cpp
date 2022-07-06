@@ -7,6 +7,8 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "interface/ui/activitythread/ActivityThread.hpp"  // IWYU pragma: associated
 
+#include <StorageThread.pb.h>
+#include <StorageThreadItem.pb.h>
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -52,8 +54,6 @@
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Time.hpp"
-#include "serialization/protobuf/StorageThread.pb.h"
-#include "serialization/protobuf/StorageThreadItem.pb.h"
 
 template class std::tuple<
     opentxs::OTIdentifier,
@@ -214,7 +214,7 @@ auto ActivityThread::construct_row(
         case otx::client::StorageBox::PROCESSEDPEERREPLY:
         case otx::client::StorageBox::UNKNOWN:
         default: {
-            OT_FAIL
+            OT_FAIL;
         }
     }
 }
@@ -434,7 +434,7 @@ auto ActivityThread::process_contact(const Message& in) noexcept -> void
     const auto contactID = Widget::api_.Factory().Identifier(body.at(1));
     auto changed{false};
 
-    OT_ASSERT(false == contactID->empty())
+    OT_ASSERT(false == contactID->empty());
 
     if (self_contact_ == contactID) {
         auto name = Widget::api_.Contacts().ContactName(self_contact_);
@@ -639,7 +639,7 @@ auto ActivityThread::process_thread(const Message& message) noexcept -> void
 
     const auto threadID = Widget::api_.Factory().Identifier(body.at(1));
 
-    OT_ASSERT(false == threadID->empty())
+    OT_ASSERT(false == threadID->empty());
 
     if (threadID_ != threadID) { return; }
 
@@ -652,7 +652,7 @@ auto ActivityThread::refresh_thread() noexcept -> void
     auto loaded =
         Widget::api_.Activity().Thread(primary_id_, threadID_, thread);
 
-    OT_ASSERT(loaded)
+    OT_ASSERT(loaded);
 
     auto active = UnallocatedSet<ActivityThreadRowID>{};
 

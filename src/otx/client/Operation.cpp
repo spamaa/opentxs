@@ -7,6 +7,14 @@
 #include "1_Internal.hpp"            // IWYU pragma: associated
 #include "otx/client/Operation.hpp"  // IWYU pragma: associated
 
+#include <Nym.pb.h>
+#include <PaymentWorkflow.pb.h>
+#include <PeerObject.pb.h>
+#include <PeerReply.pb.h>
+#include <PeerRequest.pb.h>
+#include <Purse.pb.h>
+#include <ServerContract.pb.h>
+#include <UnitDefinition.pb.h>  // IWYU pragma: keep
 #include <robin_hood.h>
 #include <atomic>
 #include <chrono>
@@ -88,14 +96,6 @@
 #include "opentxs/util/SharedPimpl.hpp"
 #include "opentxs/util/Time.hpp"
 #include "otx/common/OTStorage.hpp"
-#include "serialization/protobuf/Nym.pb.h"
-#include "serialization/protobuf/PaymentWorkflow.pb.h"
-#include "serialization/protobuf/PeerObject.pb.h"
-#include "serialization/protobuf/PeerReply.pb.h"
-#include "serialization/protobuf/PeerRequest.pb.h"
-#include "serialization/protobuf/Purse.pb.h"
-#include "serialization/protobuf/ServerContract.pb.h"
-#include "serialization/protobuf/UnitDefinition.pb.h"  // IWYU pragma: keep
 
 #define START_OPERATION()                                                      \
     Lock lock(decision_lock_);                                                 \
@@ -107,7 +107,7 @@
         return {};                                                             \
     }                                                                          \
                                                                                \
-    reset();
+    reset()
 
 #define OPERATION_POLL_MILLISECONDS 100
 #define OPERATION_JOIN_MILLISECONDS OPERATION_POLL_MILLISECONDS
@@ -120,7 +120,7 @@
     [[maybe_unused]] auto& nymID = nym.ID();                                   \
     [[maybe_unused]] auto& serverID = context.Notary();                        \
     [[maybe_unused]] auto& serverNym = context.RemoteNym();                    \
-    context.SetPush(enable_otx_push_.load());
+    context.SetPush(enable_otx_push_.load())
 
 #define CREATE_MESSAGE(a, ...)                                                 \
     [[maybe_unused]] auto [nextNumber, pMessage] =                             \
@@ -133,7 +133,7 @@
         return {};                                                             \
     }                                                                          \
                                                                                \
-    auto& message = *pMessage;
+    auto& message = *pMessage
 
 #define FINISH_MESSAGE(b)                                                      \
     const auto finalized = context.FinalizeServerCommand(message, reason_);    \
@@ -144,7 +144,7 @@
         return {};                                                             \
     }                                                                          \
                                                                                \
-    return std::move(pMessage);
+    return std::move(pMessage)
 
 #define PREPARE_TRANSACTION_WITHOUT_BALANCE_ITEM(                              \
     TRANSACTION_TYPE, ORIGIN_TYPE, ITEM_TYPE, DESTINATION_ACCOUNT)             \
@@ -253,7 +253,7 @@
                                                                                \
     auto& inbox = *inbox_;                                                     \
     auto& outbox = *outbox_;                                                   \
-    set_consensus_hash(transaction, context, account.get(), reason_);
+    set_consensus_hash(transaction, context, account.get(), reason_)
 
 #define ADD_BALANCE_ITEM(AMOUNT)                                               \
     std::shared_ptr<Item> pBalanceItem{inbox.GenerateBalanceStatement(         \
@@ -266,23 +266,23 @@
         return {};                                                             \
     }                                                                          \
                                                                                \
-    transaction.AddItem(pBalanceItem);
+    transaction.AddItem(pBalanceItem)
 
 #define PREPARE_TRANSACTION(                                                   \
     TRANSACTION_TYPE, ORIGIN_TYPE, ITEM_TYPE, DESTINATION_ACCOUNT, AMOUNT)     \
     PREPARE_TRANSACTION_WITHOUT_BALANCE_ITEM(                                  \
         TRANSACTION_TYPE, ORIGIN_TYPE, ITEM_TYPE, DESTINATION_ACCOUNT);        \
-    ADD_BALANCE_ITEM(AMOUNT);
+    ADD_BALANCE_ITEM(AMOUNT)
 
 #define SIGN_ITEM()                                                            \
     item.SignContract(nym, reason_);                                           \
-    item.SaveContract();
+    item.SaveContract()
 
 #define SIGN_TRANSACTION_AND_LEDGER()                                          \
     transaction.SignContract(nym, reason_);                                    \
     transaction.SaveContract();                                                \
     ledger.SignContract(nym, reason_);                                         \
-    ledger.SaveContract();
+    ledger.SaveContract()
 
 #define FINISH_TRANSACTION()                                                   \
     SIGN_ITEM();                                                               \
@@ -292,7 +292,7 @@
         Armored::Factory(String::Factory(ledger)),                             \
         account_id_,                                                           \
         -1);                                                                   \
-    FINISH_MESSAGE(notarizeTransaction);
+    FINISH_MESSAGE(notarizeTransaction)
 
 namespace zmq = opentxs::network::zeromq;
 
@@ -442,7 +442,7 @@ auto Operation::AddClaim(
     const String& value,
     const bool primary) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     memo_ = value;
     bool_ = primary;
@@ -1446,7 +1446,7 @@ auto Operation::ConveyPayment(
     const identifier::Nym& recipient,
     const std::shared_ptr<const OTPayment> payment) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     target_nym_id_ = recipient;
     payment_ = payment;
@@ -1489,7 +1489,7 @@ auto Operation::DepositCash(
         return false;
     }
 
-    START_OPERATION()
+    START_OPERATION();
 
     account_id_ = depositAccountID;
     affected_accounts_.insert(depositAccountID);
@@ -1502,7 +1502,7 @@ auto Operation::DepositCheque(
     const Identifier& depositAccountID,
     const std::shared_ptr<Cheque> cheque) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     account_id_ = depositAccountID;
     affected_accounts_.insert(depositAccountID);
@@ -1652,7 +1652,7 @@ auto Operation::DownloadContract(
     const Identifier& ID,
     const contract::Type type) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     generic_id_ = ID;
     contract_type_ = type;
@@ -1994,7 +1994,7 @@ auto Operation::IssueUnitDefinition(
         return false;
     }
 
-    START_OPERATION()
+    START_OPERATION();
 
     unit_definition_ = unitDefinition;
 
@@ -2301,7 +2301,7 @@ auto Operation::process_inbox(
 
 auto Operation::PublishContract(const identifier::Nym& id) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     target_nym_id_ = id;
 
@@ -2310,7 +2310,7 @@ auto Operation::PublishContract(const identifier::Nym& id) -> bool
 
 auto Operation::PublishContract(const identifier::Notary& id) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     target_server_id_ = id;
 
@@ -2319,7 +2319,7 @@ auto Operation::PublishContract(const identifier::Notary& id) -> bool
 
 auto Operation::PublishContract(const identifier::UnitDefinition& id) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     target_unit_id_ = id;
 
@@ -2335,7 +2335,7 @@ void Operation::refresh()
 
 auto Operation::RequestAdmin(const String& password) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     memo_ = password;
 
@@ -2438,7 +2438,7 @@ auto Operation::SendCash(
             return false;
         }
 
-        START_OPERATION()
+        START_OPERATION();
 
         target_nym_id_ = recipientID;
         generic_id_ = workflowID;
@@ -2457,7 +2457,7 @@ auto Operation::SendMessage(
     const String& message,
     const SetID setID) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     target_nym_id_ = recipient;
     memo_ = message;
@@ -2471,7 +2471,7 @@ auto Operation::SendPeerReply(
     const OTPeerReply peerreply,
     const OTPeerRequest peerrequest) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     target_nym_id_ = targetNymID;
     peer_reply_ = peerreply;
@@ -2484,7 +2484,7 @@ auto Operation::SendPeerRequest(
     const identifier::Nym& targetNymID,
     const OTPeerRequest peerrequest) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     target_nym_id_ = targetNymID;
     peer_request_ = peerrequest;
@@ -2498,7 +2498,7 @@ auto Operation::SendTransfer(
     const Amount& amount,
     const String& memo) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     account_id_ = sourceAccountID;
     generic_id_ = destinationAccountID;
@@ -2541,7 +2541,7 @@ auto Operation::Start(
     const otx::OperationType type,
     const otx::context::Server::ExtraArgs& args) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     switch (type) {
         case otx::OperationType::GetTransactionNumbers:
@@ -2563,7 +2563,7 @@ auto Operation::Start(
     const identifier::UnitDefinition& targetUnitID,
     const otx::context::Server::ExtraArgs& args) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     switch (type) {
         case otx::OperationType::DownloadMint:
@@ -2587,7 +2587,7 @@ auto Operation::Start(
     const identifier::Nym& targetNymID,
     const otx::context::Server::ExtraArgs& args) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     switch (type) {
         case otx::OperationType::CheckNym: {
@@ -2799,7 +2799,7 @@ void Operation::update_workflow_send_cash(
 
 auto Operation::UpdateAccount(const Identifier& accountID) -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     affected_accounts_.insert(accountID);
     redownload_accounts_.clear();
@@ -2810,7 +2810,7 @@ auto Operation::UpdateAccount(const Identifier& accountID) -> bool
 auto Operation::WithdrawCash(const Identifier& accountID, const Amount& amount)
     -> bool
 {
-    START_OPERATION()
+    START_OPERATION();
 
     account_id_ = accountID;
     amount_ = amount;
@@ -2831,3 +2831,17 @@ Operation::~Operation()
     if (needPromise) { set_result({otx::LastReplyStatus::Unknown, nullptr}); }
 }
 }  // namespace opentxs::otx::client::implementation
+
+#undef FINISH_TRANSACTION
+#undef SIGN_TRANSACTION_AND_LEDGER
+#undef SIGN_ITEM
+#undef PREPARE_TRANSACTION
+#undef ADD_BALANCE_ITEM
+#undef PREPARE_TRANSACTION_WITHOUT_BALANCE_ITEM
+#undef FINISH_MESSAGE
+#undef CREATE_MESSAGE
+#undef PREPARE_CONTEXT
+#undef MAX_ERROR_COUNT
+#undef OPERATION_JOIN_MILLISECONDS
+#undef OPERATION_POLL_MILLISECONDS
+#undef START_OPERATION

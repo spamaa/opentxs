@@ -7,6 +7,10 @@
 #include "1_Internal.hpp"                      // IWYU pragma: associated
 #include "blockchain/bitcoin/block/Input.hpp"  // IWYU pragma: associated
 
+#include <BlockchainInputWitness.pb.h>
+#include <BlockchainPreviousOutput.pb.h>
+#include <BlockchainTransactionInput.pb.h>
+#include <BlockchainWalletKey.pb.h>
 #include <boost/container/vector.hpp>
 #include <boost/endian/buffers.hpp>
 #include <algorithm>
@@ -48,10 +52,6 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "serialization/protobuf/BlockchainInputWitness.pb.h"
-#include "serialization/protobuf/BlockchainPreviousOutput.pb.h"
-#include "serialization/protobuf/BlockchainTransactionInput.pb.h"
-#include "serialization/protobuf/BlockchainWalletKey.pb.h"
 
 namespace be = boost::endian;
 
@@ -849,7 +849,6 @@ auto Input::Print() const noexcept -> UnallocatedCString
     if (Script::Position::Coinbase == script_->Role()) {
         out << "    coinbase: " << '\n';
         out << decode_coinbase() << '\n';
-        ;
     } else {
         out << "    script: " << '\n';
         out << script_->Print();
