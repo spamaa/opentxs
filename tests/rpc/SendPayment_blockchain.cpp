@@ -50,7 +50,7 @@ protected:
 
                 alex_p_ = client_1_.Wallet().Nym(reason, "Alex");
 
-                OT_ASSERT(alex_p_)
+                OT_ASSERT(alex_p_);
 
                 client_1_.Crypto().Blockchain().NewHDSubaccount(
                     alex_p_->ID(),
@@ -59,7 +59,7 @@ protected:
                     reason);
             }
 
-            OT_ASSERT(alex_p_)
+            OT_ASSERT(alex_p_);
 
             return *alex_p_;
         }())

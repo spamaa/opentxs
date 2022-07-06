@@ -396,6 +396,6 @@ auto BalanceItem::qt_data(const int column, const int role, QVariant& out)
         } break;
         default: {
         }
-    };
+    }
 }
 }  // namespace opentxs::ui::implementation

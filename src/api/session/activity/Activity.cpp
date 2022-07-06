@@ -302,7 +302,7 @@ auto Activity::Cheque(
     auto instantiated = session::Workflow::InstantiateCheque(api_, workflow);
     cheque.reset(std::get<1>(instantiated).release());
 
-    OT_ASSERT(cheque)
+    OT_ASSERT(cheque);
 
     const auto& unit = cheque->GetInstrumentDefinitionID();
 
@@ -359,7 +359,7 @@ auto Activity::Transfer(
     auto instantiated = session::Workflow::InstantiateTransfer(api_, workflow);
     transfer.reset(std::get<1>(instantiated).release());
 
-    OT_ASSERT(transfer)
+    OT_ASSERT(transfer);
 
     if (0 == workflow.account_size()) {
         LogError()(OT_PRETTY_CLASS())("Workflow does not list any accounts.")
@@ -605,7 +605,7 @@ auto Activity::PaymentText(
             auto chequeData = Cheque(nym, id, workflowID);
             const auto& [cheque, contract] = chequeData;
 
-            OT_ASSERT(cheque)
+            OT_ASSERT(cheque);
 
             if (0 < contract->Version()) {
                 const auto& definition =
@@ -626,7 +626,7 @@ auto Activity::PaymentText(
             auto transferData = Transfer(nym, id, workflowID);
             const auto& [transfer, contract] = transferData;
 
-            OT_ASSERT(transfer)
+            OT_ASSERT(transfer);
 
             if (0 < contract->Version()) {
                 const auto& definition =

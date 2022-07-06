@@ -58,6 +58,7 @@ if(NOT MSVC)
     PRIVATE
       -Wno-cast-align
       -Wno-effc++
+      -Wno-extra-semi-stmt
       -Wno-implicit-fallthrough
       -Wno-old-style-cast
       -Wno-shadow

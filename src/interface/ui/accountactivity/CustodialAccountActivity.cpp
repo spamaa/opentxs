@@ -442,7 +442,7 @@ auto CustodialAccountActivity::process_balance(const Message& message) noexcept
     wait_for_startup();
     const auto body = message.Body();
 
-    OT_ASSERT(2 < body.size())
+    OT_ASSERT(2 < body.size());
 
     const auto accountID = Widget::api_.Factory().Identifier(body.at(1));
 
@@ -544,7 +544,7 @@ auto CustodialAccountActivity::process_workflow(const Message& message) noexcept
 
     const auto accountID = Widget::api_.Factory().Identifier(body.at(1));
 
-    OT_ASSERT(false == accountID->empty())
+    OT_ASSERT(false == accountID->empty());
 
     if (account_id_ == accountID) { startup(); }
 }

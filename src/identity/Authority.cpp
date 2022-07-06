@@ -1294,7 +1294,7 @@ auto Authority::WriteCredentials() const -> bool
             .Flush();
 
         return false;
-    };
+    }
 
     bool output{true};
     const auto save = [&](const auto& item) -> void {

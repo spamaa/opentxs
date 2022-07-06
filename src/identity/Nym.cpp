@@ -449,7 +449,7 @@ auto Nym::AddPreferredOTServer(
 
     if (false == bool(contact_data_)) { init_claims(lock); }
 
-    OT_ASSERT(contact_data_)
+    OT_ASSERT(contact_data_);
 
     // NOLINTNEXTLINE(modernize-make-unique)
     contact_data_.reset(
@@ -592,7 +592,7 @@ auto Nym::CompareID(const identifier::Nym& rhs) const -> bool
 auto Nym::ContactCredentialVersion() const -> VersionNumber
 {
     // TODO support multiple authorities
-    OT_ASSERT(0 < active_.size())
+    OT_ASSERT(0 < active_.size());
 
     return active_.cbegin()->second->ContactCredentialVersion();
 }
@@ -721,7 +721,7 @@ auto Nym::get_private_auth_key(
         pCredential = it.second.get();
         if (nullptr != pCredential) { break; }
     }
-    if (nullptr == pCredential) OT_FAIL;
+    if (nullptr == pCredential) { OT_FAIL; }
 
     return pCredential->GetPrivateAuthKey(
         keytype, &m_listRevokedIDs);  // success
@@ -756,7 +756,7 @@ auto Nym::GetPrivateEncrKey(crypto::key::asymmetric::Algorithm keytype) const
         pCredential = it.second.get();
         if (nullptr != pCredential) { break; }
     }
-    if (nullptr == pCredential) OT_FAIL;
+    if (nullptr == pCredential) { OT_FAIL; }
 
     return pCredential->GetPrivateEncrKey(
         keytype,
@@ -795,7 +795,7 @@ auto Nym::get_private_sign_key(
         pCredential = it.second.get();
         if (nullptr != pCredential) { break; }
     }
-    if (nullptr == pCredential) OT_FAIL;
+    if (nullptr == pCredential) { OT_FAIL; }
 
     return pCredential->GetPrivateSignKey(
         keytype,
@@ -826,7 +826,7 @@ auto Nym::get_public_sign_key(
         pCredential = it.second.get();
         if (nullptr != pCredential) { break; }
     }
-    if (nullptr == pCredential) OT_FAIL;
+    if (nullptr == pCredential) { OT_FAIL; }
 
     return pCredential->GetPublicSignKey(
         keytype,
@@ -854,7 +854,7 @@ auto Nym::GetPublicAuthKey(crypto::key::asymmetric::Algorithm keytype) const
         pCredential = it.second.get();
         if (nullptr != pCredential) { break; }
     }
-    if (nullptr == pCredential) OT_FAIL;
+    if (nullptr == pCredential) { OT_FAIL; }
 
     return pCredential->GetPublicAuthKey(
         keytype,
@@ -881,7 +881,7 @@ auto Nym::GetPublicEncrKey(crypto::key::asymmetric::Algorithm keytype) const
         pCredential = it.second.get();
         if (nullptr != pCredential) { break; }
     }
-    if (nullptr == pCredential) OT_FAIL;
+    if (nullptr == pCredential) { OT_FAIL; }
 
     return pCredential->GetPublicEncrKey(
         keytype,
@@ -991,7 +991,7 @@ void Nym::init_claims(const eLock& lock) const
         }
     }
 
-    OT_ASSERT(contact_data_)
+    OT_ASSERT(contact_data_);
 }
 
 auto Nym::load_authorities(
