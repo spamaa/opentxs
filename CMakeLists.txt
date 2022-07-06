@@ -333,7 +333,7 @@ if(MSVC)
 else()
   # TODO c++20 disable -Wreturn-std-move-in-c++11 and enable -Wredundant-move
   set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -Wno-c++2a-compat -Wno-c++20-compat -Wno-deprecated-declarations -Wno-format-nonliteral -Wno-implicit-int-conversion -Wno-noexcept -Wno-redundant-move -Wno-shadow -Wno-sign-conversion -Wno-switch-enum -Wno-undef -Wno-unused-parameter"
+      "${CMAKE_CXX_FLAGS} -Wno-c++2a-compat -Wno-c++20-compat -Wno-deprecated-declarations -Wno-format-nonliteral -Wno-implicit-int-conversion -Wno-noexcept -Wno-redundant-move -Wno-shadow -Wno-sign-conversion -Wno-switch-enum -Wno-unused-parameter"
   )
 endif()
 
