@@ -125,7 +125,7 @@ Set::operator SerializedType() const noexcept
 
 auto Set::AddItem(
     const identifier::Nym& claimOwner,
-    const Identifier& claim,
+    const identifier::Generic& claim,
     const identity::Nym& signer,
     const PasswordPrompt& reason,
     const Item::Type value,
@@ -148,7 +148,7 @@ auto Set::AddItem(
     return external_->AddItem(verifier, verification);
 }
 
-auto Set::DeleteItem(const Identifier& item) noexcept -> bool
+auto Set::DeleteItem(const identifier::Generic& item) noexcept -> bool
 {
     auto it = map_.find(item);
 
@@ -180,7 +180,8 @@ auto Set::instantiate(
     return output;
 }
 
-auto Set::Register(const Identifier& id, const bool external) noexcept -> void
+auto Set::Register(const identifier::Generic& id, const bool external) noexcept
+    -> void
 {
     auto it = map_.find(id);
 
@@ -191,7 +192,10 @@ auto Set::Register(const Identifier& id, const bool external) noexcept -> void
     }
 }
 
-auto Set::Unregister(const Identifier& id) noexcept -> void { map_.erase(id); }
+auto Set::Unregister(const identifier::Generic& id) noexcept -> void
+{
+    map_.erase(id);
+}
 
 auto Set::UpgradeGroupVersion(const VersionNumber groupVersion) noexcept -> bool
 {

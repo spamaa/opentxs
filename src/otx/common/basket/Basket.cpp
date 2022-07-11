@@ -17,6 +17,8 @@
 #include "internal/otx/common/basket/BasketItem.hpp"
 #include "internal/otx/common/util/Tag.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "opentxs/api/session/Factory.hpp"
+#include "opentxs/api/session/Session.hpp"
 #include "opentxs/core/String.hpp"
 #include "opentxs/core/identifier/Notary.hpp"
 #include "opentxs/otx/consensus/Server.hpp"
@@ -77,7 +79,7 @@ Basket::Basket(
     , m_nSubCount(nCount)
     , m_lMinimumTransfer(lMinimumTransferAmount)
     , m_nTransferMultiple(0)
-    , m_RequestAccountID(Identifier::Factory())
+    , m_RequestAccountID()
     , m_dequeItems()
     , m_bHideAccountID(false)
     , m_bExchangingIn(false)
@@ -126,8 +128,8 @@ void Basket::HarvestClosingNumbers(
 // For generating a user request to EXCHANGE in/out of a basket.
 // Assumes that SetTransferMultiple has already been called.
 void Basket::AddRequestSubContract(
-    const Identifier& SUB_CONTRACT_ID,
-    const Identifier& SUB_ACCOUNT_ID,
+    const identifier::Generic& SUB_CONTRACT_ID,
+    const identifier::Generic& SUB_ACCOUNT_ID,
     const std::int64_t& lClosingTransactionNo)
 {
     auto* pItem = new BasketItem;
@@ -155,7 +157,7 @@ void Basket::AddRequestSubContract(
 
 // For generating a real basket
 void Basket::AddSubContract(
-    const Identifier& SUB_CONTRACT_ID,
+    const identifier::Generic& SUB_CONTRACT_ID,
     std::int64_t lMinimumTransferAmount)
 {
     auto* pItem = new BasketItem;
@@ -236,7 +238,8 @@ auto Basket::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
             m_nTransferMultiple = atoi(strTransferMultiple->Get());
         }
         if (strRequestAccountID->Exists()) {
-            m_RequestAccountID->SetString(strRequestAccountID);
+            m_RequestAccountID = api_.Factory().IdentifierFromBase58(
+                strRequestAccountID->Bytes());
         }
         if (strDirection->Exists()) {
             m_bExchangingIn = strDirection->Compare("in");
@@ -274,8 +277,10 @@ auto Basket::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                  String::Factory(xml->getAttributeValue("accountID")),
              strContractID = String::Factory(
                  xml->getAttributeValue("instrumentDefinitionID"));
-        pItem->SUB_ACCOUNT_ID->SetString(strSubAccountID);
-        pItem->SUB_CONTRACT_ID->SetString(strContractID);
+        pItem->SUB_ACCOUNT_ID =
+            api_.Factory().IdentifierFromBase58(strSubAccountID->Bytes());
+        pItem->SUB_CONTRACT_ID =
+            api_.Factory().IdentifierFromBase58(strContractID->Bytes());
 
         m_dequeItems.push_back(pItem);
 
@@ -366,19 +371,19 @@ void Basket::GenerateContents(StringXML& xmlUnsigned, bool bHideAccountID) const
 // removed.
 // This way, the basket will produce a consistent ID across multiple different
 // servers.
-void Basket::CalculateContractID(Identifier& newID) const
+void Basket::CalculateContractID(identifier::Generic& newID) const
 {
     // Produce a version of the file without account IDs (which are different
     // from server to server.)
     // do this on a copy since we don't want to modify this basket
     auto xmlUnsigned = StringXML::Factory();
     GenerateContents(xmlUnsigned, true);
-    newID.CalculateDigest(xmlUnsigned->Bytes());
+    newID = api_.Factory().IdentifierFromPreimage(xmlUnsigned->Bytes());
 }
 
 void Basket::Release_Basket()
 {
-    m_RequestAccountID->clear();
+    m_RequestAccountID.clear();
 
     while (!m_dequeItems.empty()) {
         BasketItem* pItem = m_dequeItems.front();

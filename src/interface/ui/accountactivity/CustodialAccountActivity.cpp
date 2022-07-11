@@ -25,6 +25,7 @@
 #include "internal/util/Mutex.hpp"
 #include "internal/util/Shared.hpp"
 #include "opentxs/api/session/Client.hpp"
+#include "opentxs/api/session/Crypto.hpp"
 #include "opentxs/api/session/Endpoints.hpp"  // IWYU pragma: keep
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Storage.hpp"
@@ -35,8 +36,7 @@
 #include "opentxs/core/contract/Unit.hpp"
 #include "opentxs/core/display/Definition.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
-#include "opentxs/core/identifier/Notary.hpp"
-#include "opentxs/core/identifier/UnitDefinition.hpp"
+#include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/otx/client/PaymentWorkflowState.hpp"
@@ -44,7 +44,6 @@
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Time.hpp"
 
 namespace opentxs::factory
@@ -52,7 +51,7 @@ namespace opentxs::factory
 auto CustodialAccountActivityModel(
     const api::session::Client& api,
     const identifier::Nym& nymID,
-    const Identifier& accountID,
+    const identifier::Generic& accountID,
     const SimpleCallback& cb) noexcept
     -> std::unique_ptr<ui::internal::AccountActivity>
 {
@@ -67,7 +66,7 @@ namespace opentxs::ui::implementation
 CustodialAccountActivity::CustodialAccountActivity(
     const api::session::Client& api,
     const identifier::Nym& nymID,
-    const Identifier& accountID,
+    const identifier::Generic& accountID,
     const SimpleCallback& cb) noexcept
     : AccountActivity(api, nymID, accountID, AccountType::Custodial, cb)
     , alias_()
@@ -90,7 +89,7 @@ auto CustodialAccountActivity::ContractID() const noexcept -> UnallocatedCString
 {
     auto lock = sLock{shared_lock_};
 
-    return contract_->ID()->str();
+    return contract_->ID().asBase58(api_.Crypto());
 }
 
 auto CustodialAccountActivity::display_balance(
@@ -351,7 +350,7 @@ auto CustodialAccountActivity::extract_rows(
 
 auto CustodialAccountActivity::Name() const noexcept -> UnallocatedCString
 {
-    const auto& api = Widget::api_;
+    const auto& api = api_;
 
     return account_name_custodial(
         api,
@@ -368,7 +367,7 @@ auto CustodialAccountActivity::NotaryID() const noexcept -> UnallocatedCString
 {
     auto lock = sLock{shared_lock_};
 
-    return notary_->ID()->str();
+    return notary_->ID().asBase58(api_.Crypto());
 }
 
 auto CustodialAccountActivity::NotaryName() const noexcept -> UnallocatedCString
@@ -444,7 +443,8 @@ auto CustodialAccountActivity::process_balance(const Message& message) noexcept
 
     OT_ASSERT(2 < body.size());
 
-    const auto accountID = Widget::api_.Factory().Identifier(body.at(1));
+    const auto accountID =
+        api_.Factory().IdentifierFromHash(body.at(1).Bytes());
 
     if (account_id_ != accountID) { return; }
 
@@ -458,7 +458,7 @@ auto CustodialAccountActivity::process_balance(const Message& message) noexcept
     }();
     const auto balanceChanged = (oldBalance != balance);
     const auto alias = [&] {
-        auto account = Widget::api_.Wallet().Internal().Account(account_id_);
+        auto account = api_.Wallet().Internal().Account(account_id_);
 
         OT_ASSERT(account);
 
@@ -498,8 +498,8 @@ auto CustodialAccountActivity::process_notary(const Message& message) noexcept
     const auto newName = [&] {
         {
             eLock lock{shared_lock_};
-            notary_ = Widget::api_.Wallet().Server(
-                Widget::api_.Storage().AccountServer(account_id_));
+            notary_ =
+                api_.Wallet().Server(api_.Storage().AccountServer(account_id_));
         }
 
         return NotaryName();
@@ -512,12 +512,12 @@ auto CustodialAccountActivity::process_notary(const Message& message) noexcept
 }
 
 auto CustodialAccountActivity::process_workflow(
-    const Identifier& workflowID,
+    const identifier::Generic& workflowID,
     UnallocatedSet<AccountActivityRowID>& active) noexcept -> void
 {
     const auto workflow = [&] {
         auto out = proto::PaymentWorkflow{};
-        Widget::api_.Workflow().LoadWorkflow(primary_id_, workflowID, out);
+        api_.Workflow().LoadWorkflow(primary_id_, workflowID, out);
 
         return out;
     }();
@@ -525,7 +525,7 @@ auto CustodialAccountActivity::process_workflow(
 
     for (const auto& [type, row] : rows) {
         const auto& [time, event_p] = row;
-        auto key = AccountActivityRowID{Identifier::Factory(workflowID), type};
+        auto key = AccountActivityRowID{workflowID, type};
         auto custom = CustomData{
             new proto::PaymentWorkflow(workflow),
             new proto::PaymentEvent(*event_p)};
@@ -542,9 +542,10 @@ auto CustodialAccountActivity::process_workflow(const Message& message) noexcept
 
     OT_ASSERT(1 < body.size());
 
-    const auto accountID = Widget::api_.Factory().Identifier(body.at(1));
+    const auto accountID =
+        api_.Factory().IdentifierFromHash(body.at(1).Bytes());
 
-    OT_ASSERT(false == accountID->empty());
+    OT_ASSERT(false == accountID.empty());
 
     if (account_id_ == accountID) { startup(); }
 }
@@ -556,14 +557,14 @@ auto CustodialAccountActivity::process_unit(const Message& message) noexcept
     // TODO currently it doesn't matter if the unit definition alias changes
     // since we don't use it
     eLock lock{shared_lock_};
-    contract_ = Widget::api_.Wallet().UnitDefinition(
-        Widget::api_.Storage().AccountContract(account_id_));
+    contract_ = api_.Wallet().UnitDefinition(
+        api_.Storage().AccountContract(account_id_));
 }
 
 auto CustodialAccountActivity::startup() noexcept -> void
 {
     const auto alias = [&] {
-        auto account = Widget::api_.Wallet().Internal().Account(account_id_);
+        auto account = api_.Wallet().Internal().Account(account_id_);
 
         OT_ASSERT(account);
 
@@ -582,7 +583,7 @@ auto CustodialAccountActivity::startup() noexcept -> void
     }();
 
     const auto workflows =
-        Widget::api_.Workflow().WorkflowsByAccount(primary_id_, account_id_);
+        api_.Workflow().WorkflowsByAccount(primary_id_, account_id_);
     auto active = UnallocatedSet<AccountActivityRowID>{};
 
     for (const auto& id : workflows) { process_workflow(id, active); }

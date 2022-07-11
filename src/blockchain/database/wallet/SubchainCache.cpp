@@ -27,7 +27,6 @@
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Time.hpp"  // IWYU pragma: keep
 
 namespace opentxs::blockchain::database::wallet
@@ -147,7 +146,7 @@ auto SubchainCache::GetIndex(
     const crypto::Subchain subchain,
     const cfilter::Type type,
     const VersionNumber version,
-    MDB_txn* tx) noexcept -> pSubchainIndex
+    MDB_txn* tx) noexcept -> SubchainIndex
 {
     const auto index = subchain_index(subaccount, subchain, type, version);
 
@@ -168,7 +167,7 @@ auto SubchainCache::GetIndex(
         }
 
         const auto& decoded = it->second;
-        const auto key = index->Bytes();
+        const auto key = index.Bytes();
 
         if (false == lmdb_.Exists(wallet::id_index_, key)) {
             const auto rc =
@@ -351,8 +350,8 @@ auto SubchainCache::load_pattern_index(const SubchainIndex& key) noexcept
         key.Bytes(),
         [&](const auto bytes) {
             index.emplace([&] {
-                auto out = api_.Factory().Identifier();
-                out->Assign(bytes);
+                auto out = identifier::Generic{};
+                out.Assign(bytes);
 
                 return out;
             }());
@@ -430,17 +429,15 @@ auto SubchainCache::subchain_index(
     const NodeID& subaccount,
     const crypto::Subchain subchain,
     const cfilter::Type type,
-    const VersionNumber version) const noexcept -> pSubchainIndex
+    const VersionNumber version) const noexcept -> SubchainIndex
 {
     auto preimage = api_.Factory().Data();
     preimage.Assign(subaccount);
     preimage.Concatenate(&subchain, sizeof(subchain));
     preimage.Concatenate(&type, sizeof(type));
     preimage.Concatenate(&version, sizeof(version));
-    auto output = api_.Factory().Identifier();
-    output->CalculateDigest(preimage.Bytes());
 
-    return output;
+    return api_.Factory().IdentifierFromPreimage(preimage.Bytes());
 }
 
 SubchainCache::~SubchainCache() = default;

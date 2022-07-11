@@ -29,7 +29,6 @@
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/core/contract/Unit.hpp"
 #include "opentxs/core/display/Definition.hpp"
-#include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/interface/qt/AmountValidator.hpp"
 #include "opentxs/interface/qt/DestinationValidator.hpp"
 #include "opentxs/interface/qt/DisplayScale.hpp"
@@ -198,7 +197,8 @@ auto AccountActivityQt::sendToContact(
 
     try {
         return imp_->parent_.Send(
-            imp_->parent_.API().Factory().Identifier(contactID.toStdString()),
+            imp_->parent_.API().Factory().IdentifierFromBase58(
+                contactID.toStdString()),
             amount.toStdString(),
             memo.toStdString(),
             static_cast<AccountActivity::Scale>(scale),

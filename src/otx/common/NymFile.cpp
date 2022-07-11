@@ -24,6 +24,7 @@
 #include "internal/otx/common/crypto/OTSignedFile.hpp"
 #include "internal/otx/common/util/Tag.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "opentxs/api/session/Crypto.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/core/Armored.hpp"
@@ -193,8 +194,9 @@ auto NymFile::deserialize_nymfile(
                     // internal map so that it is available for future lookups.
                     //
                     if (strAccountID->Exists() && strHashValue->Exists()) {
-                        auto pID = opentxs::Identifier::Factory(strHashValue);
-                        OT_ASSERT(!pID->empty());
+                        auto pID = api_.Factory().IdentifierFromBase58(
+                            strHashValue->Bytes());
+                        OT_ASSERT(!pID.empty());
                         m_mapInboxHash.emplace(strAccountID->Get(), pID);
                     }
                 } else if (strNodeName->Compare("outboxHashItem")) {
@@ -213,9 +215,10 @@ auto NymFile::deserialize_nymfile(
                     // internal map so that it is available for future lookups.
                     //
                     if (strAccountID->Exists() && strHashValue->Exists()) {
-                        OTIdentifier pID =
-                            opentxs::Identifier::Factory(strHashValue);
-                        OT_ASSERT(!pID->empty());
+                        identifier::Generic pID =
+                            api_.Factory().IdentifierFromBase58(
+                                strHashValue->Bytes());
+                        OT_ASSERT(!pID.empty());
                         m_mapOutboxHash.emplace(strAccountID->Get(), pID);
                     }
                 } else if (strNodeName->Compare("MARKED_FOR_DELETION")) {
@@ -336,14 +339,14 @@ void NymFile::DisplayStatistics(opentxs::String& strOutput) const
         .Concatenate("\nOutpayments count: "sv)
         .Concatenate(std::to_string(m_dequeOutpayments.size()))
         .Concatenate("\nNym ID: "sv)
-        .Concatenate(target_nym_->ID().str())
+        .Concatenate(target_nym_->ID().asBase58(api_.Crypto()))
         .Concatenate("\n"sv);
 }
 
 auto NymFile::GetHash(
     const mapOfIdentifiers& the_map,
     const UnallocatedCString& str_id,
-    opentxs::Identifier& theOutput) const -> bool  // client-side
+    opentxs::identifier::Generic& theOutput) const -> bool  // client-side
 {
     auto lock = sLock{shared_lock_};
 
@@ -366,7 +369,7 @@ auto NymFile::GetHash(
         if (str_id == it.first) {
             // The call has succeeded
             bRetVal = true;
-            theOutput.SetString(it.second->str());
+            theOutput = it.second;
             break;
         }
     }
@@ -376,14 +379,14 @@ auto NymFile::GetHash(
 
 auto NymFile::GetInboxHash(
     const UnallocatedCString& acct_id,
-    opentxs::Identifier& theOutput) const -> bool  // client-side
+    opentxs::identifier::Generic& theOutput) const -> bool  // client-side
 {
     return GetHash(m_mapInboxHash, acct_id, theOutput);
 }
 
 auto NymFile::GetOutboxHash(
     const UnallocatedCString& acct_id,
-    opentxs::Identifier& theOutput) const -> bool  // client-side
+    opentxs::identifier::Generic& theOutput) const -> bool  // client-side
 {
     return GetHash(m_mapOutboxHash, acct_id, theOutput);
 }
@@ -679,7 +682,7 @@ auto NymFile::serialize_nymfile(const T& lock, opentxs::String& strNym) const
     // client-side
     for (const auto& it : m_mapInboxHash) {
         UnallocatedCString strAcctID = it.first;
-        const opentxs::Identifier& theID = it.second;
+        const identifier::Generic& theID = it.second;
 
         if ((strAcctID.size() > 0) && !theID.empty()) {
             const auto strHash = String::Factory(theID);
@@ -693,7 +696,7 @@ auto NymFile::serialize_nymfile(const T& lock, opentxs::String& strNym) const
     // client-side
     for (const auto& it : m_mapOutboxHash) {
         UnallocatedCString strAcctID = it.first;
-        const opentxs::Identifier& theID = it.second;
+        const identifier::Generic& theID = it.second;
 
         if ((strAcctID.size() > 0) && !theID.empty()) {
             const auto strHash = String::Factory(theID);
@@ -799,7 +802,7 @@ auto NymFile::save_signed_nymfile(const T& lock, const PasswordPrompt& reason)
 auto NymFile::SetHash(
     mapOfIdentifiers& the_map,
     const UnallocatedCString& str_id,
-    const opentxs::Identifier& theInput) -> bool  // client-side
+    const identifier::Generic& theInput) -> bool  // client-side
 {
     the_map.emplace(str_id, theInput);
 
@@ -808,7 +811,7 @@ auto NymFile::SetHash(
 
 auto NymFile::SetInboxHash(
     const UnallocatedCString& acct_id,
-    const opentxs::Identifier& theInput) -> bool  // client-side
+    const identifier::Generic& theInput) -> bool  // client-side
 {
     eLock lock(shared_lock_);
 
@@ -817,7 +820,7 @@ auto NymFile::SetInboxHash(
 
 auto NymFile::SetOutboxHash(
     const UnallocatedCString& acct_id,
-    const opentxs::Identifier& theInput) -> bool  // client-side
+    const identifier::Generic& theInput) -> bool  // client-side
 {
     eLock lock(shared_lock_);
 

@@ -24,6 +24,9 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/contract/peer/PeerRequestType.hpp"
+#include "opentxs/core/identifier/Generic.hpp"
+#include "opentxs/core/identifier/Notary.hpp"
+#include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/util/Log.hpp"
 
 namespace opentxs
@@ -32,7 +35,7 @@ auto Factory::ConnectionReply(
     const api::Session& api,
     const Nym_p& nym,
     const identifier::Nym& initiator,
-    const Identifier& request,
+    const identifier::Generic& request,
     const identifier::Notary& server,
     const bool ack,
     const UnallocatedCString& url,
@@ -54,7 +57,7 @@ auto Factory::ConnectionReply(
         auto output = std::make_shared<ReturnType>(
             api,
             nym,
-            api.Factory().NymID(peerRequest.initiator()),
+            api.Factory().NymIDFromBase58(peerRequest.initiator()),
             request,
             server,
             ack,
@@ -123,7 +126,7 @@ Connection::Connection(
     const api::Session& api,
     const Nym_p& nym,
     const identifier::Nym& initiator,
-    const Identifier& request,
+    const identifier::Generic& request,
     const identifier::Notary& server,
     const bool ack,
     const UnallocatedCString& url,

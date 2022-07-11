@@ -11,6 +11,7 @@
 #include <PeerRequest.pb.h>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 #include "2_Factory.hpp"
@@ -19,12 +20,14 @@
 #include "internal/serialization/protobuf/Check.hpp"
 #include "internal/serialization/protobuf/verify/PeerRequest.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "opentxs/api/session/Crypto.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/core/contract/Signable.hpp"
 #include "opentxs/core/contract/peer/PeerRequestType.hpp"
 #include "opentxs/core/identifier/Notary.hpp"
+#include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/core/identifier/UnitDefinition.hpp"
 #include "opentxs/util/Log.hpp"
 
@@ -129,8 +132,9 @@ Bailment::Bailment(
     const Nym_p& nym,
     const SerializedType& serialized)
     : Request(api, nym, serialized)
-    , unit_(api_.Factory().UnitID(serialized.bailment().unitid()))
-    , server_(api_.Factory().ServerID(serialized.bailment().serverid()))
+    , unit_(api_.Factory().UnitIDFromBase58(serialized.bailment().unitid()))
+    , server_(
+          api_.Factory().NotaryIDFromBase58(serialized.bailment().serverid()))
 {
     Lock lock(lock_);
     init_serialized(lock);
@@ -148,8 +152,8 @@ auto Bailment::IDVersion(const Lock& lock) const -> SerializedType
     auto contract = Request::IDVersion(lock);
     auto& bailment = *contract.mutable_bailment();
     bailment.set_version(version_);
-    bailment.set_unitid(unit_->str());
-    bailment.set_serverid(server_->str());
+    bailment.set_unitid(unit_.asBase58(api_.Crypto()));
+    bailment.set_serverid(server_.asBase58(api_.Crypto()));
 
     return contract;
 }

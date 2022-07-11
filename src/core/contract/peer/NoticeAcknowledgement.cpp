@@ -12,6 +12,7 @@
 #include <PeerRequest.pb.h>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 #include "2_Factory.hpp"
@@ -23,6 +24,9 @@
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/core/contract/Signable.hpp"
+#include "opentxs/core/identifier/Generic.hpp"
+#include "opentxs/core/identifier/Notary.hpp"
+#include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/util/Log.hpp"
 
 namespace opentxs
@@ -31,7 +35,7 @@ auto Factory::NoticeAcknowledgement(
     const api::Session& api,
     const Nym_p& nym,
     const identifier::Nym& initiator,
-    const Identifier& request,
+    const identifier::Generic& request,
     const identifier::Notary& server,
     const contract::peer::PeerRequestType type,
     const bool& ack,
@@ -50,7 +54,7 @@ auto Factory::NoticeAcknowledgement(
         auto output = std::make_shared<ReturnType>(
             api,
             nym,
-            api.Factory().NymID(peerRequest.initiator()),
+            api.Factory().NymIDFromBase58(peerRequest.initiator()),
             request,
             server,
             type,
@@ -116,7 +120,7 @@ Acknowledgement::Acknowledgement(
     const api::Session& api,
     const Nym_p& nym,
     const identifier::Nym& initiator,
-    const Identifier& request,
+    const identifier::Generic& request,
     const identifier::Notary& server,
     const contract::peer::PeerRequestType type,
     const bool& ack)
