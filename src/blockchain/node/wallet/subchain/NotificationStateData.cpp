@@ -47,7 +47,6 @@
 #include "opentxs/blockchain/crypto/Subchain.hpp"  // IWYU pragma: keep
 #include "opentxs/core/Contact.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
-#include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/key/HD.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
@@ -181,14 +180,14 @@ auto NotificationStateData::init_contacts() noexcept -> void
     auto alloc = alloc::BoostMonotonic{buf.data(), buf.size()};
     const auto& api = api_.Internal().Contacts();
     const auto contacts = [&] {
-        auto out = Vector<OTIdentifier>{&alloc};
+        auto out = Vector<identifier::Generic>{&alloc};
         const auto data = api.ContactList();
         std::transform(
             data.begin(),
             data.end(),
             std::back_inserter(out),
             [this](const auto& item) {
-                return api_.Factory().Identifier(item.first);
+                return api_.Factory().IdentifierFromBase58(item.first);
             });
 
         return out;

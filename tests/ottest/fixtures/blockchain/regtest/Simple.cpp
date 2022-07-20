@@ -35,7 +35,7 @@ RegtestListener::RegtestListener(const ot::api::session::Client& client)
 RegtestListener::~RegtestListener() = default;
 
 Regtest_fixture_simple::Regtest_fixture_simple()
-    : Regtest_fixture_normal(0, ot::Options{})
+    : Regtest_fixture_normal(ot_, 0, ot::Options{})
     , users_()
     , user_listeners_()
 {
@@ -271,7 +271,7 @@ auto Regtest_fixture_simple::CreateClient(
 
     auto cb = [](User& user) {
         const auto& api = *user.api_;
-        const auto& nymID = user.nym_id_.get();
+        const auto& nymID = user.nym_id_;
         const auto reason = api.Factory().PasswordPrompt(__func__);
         api.Crypto().Blockchain().NewHDSubaccount(
             nymID,

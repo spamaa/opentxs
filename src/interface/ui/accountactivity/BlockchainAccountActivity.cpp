@@ -69,7 +69,7 @@ namespace opentxs::factory
 auto BlockchainAccountActivityModel(
     const api::session::Client& api,
     const identifier::Nym& nymID,
-    const Identifier& accountID,
+    const identifier::Generic& accountID,
     const SimpleCallback& cb) noexcept
     -> std::unique_ptr<ui::internal::AccountActivity>
 {
@@ -89,22 +89,22 @@ BlockchainAccountActivity::BlockchainAccountActivity(
     const api::session::Client& api,
     const blockchain::Type chain,
     const identifier::Nym& nymID,
-    const Identifier& accountID,
+    const identifier::Generic& accountID,
     const SimpleCallback& cb) noexcept
     : AccountActivity(api, nymID, accountID, AccountType::Blockchain, cb)
     , chain_(chain)
     , confirmed_(0)
     , balance_cb_(network::zeromq::ListenCallback::Factory(
           [this](auto&& in) { pipeline_.Push(std::move(in)); }))
-    , balance_socket_(Widget::api_.Network().ZeroMQ().DealerSocket(
+    , balance_socket_(api_.Network().ZeroMQ().DealerSocket(
           balance_cb_,
           network::zeromq::socket::Direction::Connect,
           "BlockchainAccountActivity"))
     , progress_()
     , height_(0)
 {
-    const auto connected = balance_socket_->Start(
-        Widget::api_.Endpoints().BlockchainBalance().data());
+    const auto connected =
+        balance_socket_->Start(api_.Endpoints().BlockchainBalance().data());
 
     OT_ASSERT(connected);
 
@@ -134,9 +134,9 @@ auto BlockchainAccountActivity::DepositAddress(
     }
 
     const auto& wallet =
-        Widget::api_.Crypto().Blockchain().Account(primary_id_, chain_);
-    const auto reason = Widget::api_.Factory().PasswordPrompt(
-        "Calculating next deposit address");
+        api_.Crypto().Blockchain().Account(primary_id_, chain_);
+    const auto reason =
+        api_.Factory().PasswordPrompt("Calculating next deposit address");
     const auto& styles = blockchain::params::Chains().at(chain_).styles_;
 
     if (0u == styles.size()) { return {}; }
@@ -155,8 +155,7 @@ auto BlockchainAccountActivity::load_thread() noexcept -> void
     const auto transactions =
         [&]() -> UnallocatedVector<blockchain::block::pTxid> {
         try {
-            const auto handle =
-                Widget::api_.Network().Blockchain().GetChain(chain_);
+            const auto handle = api_.Network().Blockchain().GetChain(chain_);
 
             if (false == handle.IsValid()) {
                 throw std::runtime_error{"invalid chain"};
@@ -275,7 +274,7 @@ auto BlockchainAccountActivity::process_balance(const Message& in) noexcept
     const auto chain = body.at(1).as<blockchain::Type>();
     const auto confirmed = factory::Amount(body.at(2));
     const auto unconfirmed = factory::Amount(body.at(3));
-    const auto nym = Widget::api_.Factory().NymID(body.at(4));
+    const auto nym = api_.Factory().NymIDFromHash(body.at(4).Bytes());
 
     OT_ASSERT(chain_ == chain);
     OT_ASSERT(primary_id_ == nym);
@@ -326,14 +325,15 @@ auto BlockchainAccountActivity::process_contact(const Message& in) noexcept
 
     OT_ASSERT(1 < body.size());
 
-    const auto contactID = Widget::api_.Factory().Identifier(body.at(1))->str();
+    const auto contactID = api_.Factory()
+                               .IdentifierFromHash(body.at(1).Bytes())
+                               .asBase58(api_.Crypto());
     const auto txids = [&] {
         auto out = UnallocatedSet<ByteArray>{};
         for_each_row([&](const auto& row) {
             for (const auto& id : row.Contacts()) {
                 if (contactID == id) {
-                    out.emplace(
-                        blockchain::NumberToHash(Widget::api_, row.UUID()));
+                    out.emplace(blockchain::NumberToHash(api_, row.UUID()));
 
                     break;
                 }
@@ -387,8 +387,7 @@ auto BlockchainAccountActivity::process_state(const Message& in) noexcept
     }
 
     try {
-        const auto handle =
-            Widget::api_.Network().Blockchain().GetChain(chain_);
+        const auto handle = api_.Network().Blockchain().GetChain(chain_);
 
         if (false == handle.IsValid()) {
             throw std::runtime_error{"invalid chain"};
@@ -438,7 +437,7 @@ auto BlockchainAccountActivity::process_txid(const Message& in) noexcept -> void
 
     OT_ASSERT(3 < body.size());
 
-    const auto& api = Widget::api_;
+    const auto& api = api_;
     const auto txid = api.Factory().Data(body.at(1));
     const auto chain = body.at(2).as<blockchain::Type>();
 
@@ -452,7 +451,7 @@ auto BlockchainAccountActivity::process_txid(const Data& txid) noexcept
     -> std::optional<AccountActivityRowID>
 {
     return process_txid(
-        txid, Widget::api_.Crypto().Blockchain().LoadTransactionBitcoin(txid));
+        txid, api_.Crypto().Blockchain().LoadTransactionBitcoin(txid));
 }
 
 auto BlockchainAccountActivity::process_txid(
@@ -461,7 +460,7 @@ auto BlockchainAccountActivity::process_txid(
     -> std::optional<AccountActivityRowID>
 {
     const auto rowID = AccountActivityRowID{
-        blockchain_thread_item_id(Widget::api_.Crypto(), chain_, txid),
+        blockchain_thread_item_id(api_.Crypto(), api_.Factory(), chain_, txid),
         proto::PAYMENTEVENTTYPE_COMPLETE};
 
     if (false == bool(pTX)) { return std::nullopt; }
@@ -483,9 +482,8 @@ auto BlockchainAccountActivity::process_txid(
         new proto::PaymentEvent(),
         const_cast<void*>(static_cast<const void*>(pTX.release())),
         new blockchain::Type{chain_},
-        new UnallocatedCString{
-            Widget::api_.Crypto().Blockchain().ActivityDescription(
-                primary_id_, chain_, tx)},
+        new UnallocatedCString{api_.Crypto().Blockchain().ActivityDescription(
+            primary_id_, chain_, tx)},
         new ByteArray{tx.ID()},
         new int{conf},
     };
@@ -500,15 +498,14 @@ auto BlockchainAccountActivity::Send(
     const UnallocatedCString& memo) const noexcept -> bool
 {
     try {
-        const auto handle =
-            Widget::api_.Network().Blockchain().GetChain(chain_);
+        const auto handle = api_.Network().Blockchain().GetChain(chain_);
 
         if (false == handle.IsValid()) {
             throw std::runtime_error{"invalid chain"};
         }
 
         const auto& network = handle.get();
-        const auto recipient = Widget::api_.Factory().PaymentCode(address);
+        const auto recipient = api_.Factory().PaymentCode(address);
 
         if (0 < recipient.Version()) {
             network.SendToPaymentCode(primary_id_, recipient, amount, memo);
@@ -546,7 +543,7 @@ auto BlockchainAccountActivity::ValidateAddress(
     const UnallocatedCString& in) const noexcept -> bool
 {
     {
-        const auto code = Widget::api_.Factory().PaymentCode(in);
+        const auto code = api_.Factory().PaymentCode(in);
 
         if (0 < code.Version()) { return true; }
     }
@@ -554,7 +551,7 @@ auto BlockchainAccountActivity::ValidateAddress(
     using Style = blockchain::crypto::AddressStyle;
 
     const auto [data, style, chains, supported] =
-        Widget::api_.Crypto().Blockchain().DecodeAddress(in);
+        api_.Crypto().Blockchain().DecodeAddress(in);
 
     if (Style::Unknown == style) { return false; }
 

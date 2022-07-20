@@ -17,7 +17,6 @@
 #include "opentxs/identity/wot/claim/Item.hpp"
 #include "opentxs/identity/wot/claim/SectionType.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 
 namespace opentxs::identity::wot::claim
 {
@@ -25,12 +24,12 @@ struct Group::Imp {
     const UnallocatedCString nym_{};
     const claim::SectionType section_{claim::SectionType::Error};
     const claim::ClaimType type_{claim::ClaimType::Error};
-    const OTIdentifier primary_;
+    const identifier::Generic primary_;
     const ItemMap items_{};
 
-    static auto get_primary_item(const ItemMap& items) -> OTIdentifier
+    static auto get_primary_item(const ItemMap& items) -> identifier::Generic
     {
-        auto primary = Identifier::Factory();
+        auto primary = identifier::Generic{};
 
         for (const auto& it : items) {
             const auto& item = it.second;
@@ -54,7 +53,7 @@ struct Group::Imp {
         : nym_(nym)
         , section_(section)
         , type_(type)
-        , primary_(Identifier::Factory(get_primary_item(items)))
+        , primary_(get_primary_item(items))
         , items_(normalize_items(items))
     {
         for (const auto& it : items_) { OT_ASSERT(it.second); }
@@ -68,14 +67,14 @@ struct Group::Imp {
         : nym_(std::move(const_cast<UnallocatedCString&>(rhs.nym_)))
         , section_(rhs.section_)
         , type_(rhs.type_)
-        , primary_(std::move(const_cast<OTIdentifier&>(rhs.primary_)))
+        , primary_(std::move(const_cast<identifier::Generic&>(rhs.primary_)))
         , items_(std::move(const_cast<ItemMap&>(rhs.items_)))
     {
     }
 
     static auto normalize_items(const ItemMap& items) -> Group::ItemMap
     {
-        auto primary = Identifier::Factory();
+        auto primary = identifier::Generic{};
 
         auto map = items;
 
@@ -85,7 +84,7 @@ struct Group::Imp {
             OT_ASSERT(item);
 
             if (item->isPrimary()) {
-                if (primary->empty()) {
+                if (primary.empty()) {
                     primary = item->ID();
                 } else {
                     const auto& id = item->ID();
@@ -143,11 +142,9 @@ auto Group::operator+(const Group& rhs) const -> Group
 {
     OT_ASSERT(imp_->section_ == rhs.imp_->section_);
 
-    auto primary = Identifier::Factory();
+    auto primary = identifier::Generic{};
 
-    if (imp_->primary_->empty()) {
-        primary = Identifier::Factory(rhs.imp_->primary_);
-    }
+    if (imp_->primary_.empty()) { primary = rhs.imp_->primary_; }
 
     auto map{imp_->items_};
 
@@ -200,7 +197,7 @@ auto Group::AddPrimary(const std::shared_ptr<Item>& item) const -> Group
     const auto& incomingID = item->ID();
     const bool isExistingPrimary = (imp_->primary_ == incomingID);
     const bool haveExistingPrimary =
-        ((false == imp_->primary_->empty()) && (false == isExistingPrimary));
+        ((false == imp_->primary_.empty()) && (false == isExistingPrimary));
     auto map = imp_->items_;
     auto& newPrimary = map[incomingID];
     newPrimary.reset(new Item(item->SetPrimary(true)));
@@ -229,7 +226,7 @@ auto Group::Best() const -> std::shared_ptr<Item>
 {
     if (0 == imp_->items_.size()) { return {}; }
 
-    if (false == imp_->primary_->empty()) {
+    if (false == imp_->primary_.empty()) {
         return imp_->items_.at(imp_->primary_);
     }
 
@@ -244,7 +241,8 @@ auto Group::Best() const -> std::shared_ptr<Item>
     return imp_->items_.begin()->second;
 }
 
-auto Group::Claim(const Identifier& item) const -> std::shared_ptr<Item>
+auto Group::Claim(const identifier::Generic& item) const
+    -> std::shared_ptr<Item>
 {
     auto it = imp_->items_.find(item);
 
@@ -253,7 +251,7 @@ auto Group::Claim(const Identifier& item) const -> std::shared_ptr<Item>
     return it->second;
 }
 
-auto Group::Delete(const Identifier& id) const -> Group
+auto Group::Delete(const identifier::Generic& id) const -> Group
 {
     const bool exists = (1 == imp_->items_.count(id));
 
@@ -270,12 +268,15 @@ auto Group::end() const -> Group::ItemMap::const_iterator
     return imp_->items_.cend();
 }
 
-auto Group::HaveClaim(const Identifier& item) const -> bool
+auto Group::HaveClaim(const identifier::Generic& item) const -> bool
 {
     return (1 == imp_->items_.count(item));
 }
 
-auto Group::Primary() const -> const Identifier& { return imp_->primary_; }
+auto Group::Primary() const -> const identifier::Generic&
+{
+    return imp_->primary_;
+}
 
 auto Group::SerializeTo(proto::ContactSection& section, const bool withIDs)
     const -> bool
@@ -301,7 +302,7 @@ auto Group::SerializeTo(proto::ContactSection& section, const bool withIDs)
 
 auto Group::PrimaryClaim() const -> std::shared_ptr<Item>
 {
-    if (imp_->primary_->empty()) { return {}; }
+    if (imp_->primary_.empty()) { return {}; }
 
     return imp_->items_.at(imp_->primary_);
 }

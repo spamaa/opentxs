@@ -7,8 +7,6 @@
 
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
-#include "opentxs/core/identifier/Generic.hpp"
-#include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/interface/ui/List.hpp"
 #include "opentxs/util/SharedPimpl.hpp"
 
@@ -19,6 +17,7 @@ namespace opentxs  // NOLINT
 // {
 namespace identifier
 {
+class Generic;
 class Nym;
 }  // namespace identifier
 
@@ -37,8 +36,8 @@ class OPENTXS_EXPORT SeedTree : virtual public List
 {
 public:
     virtual auto Debug() const noexcept -> UnallocatedCString = 0;
-    virtual auto DefaultNym() const noexcept -> OTNymID = 0;
-    virtual auto DefaultSeed() const noexcept -> OTIdentifier = 0;
+    virtual auto DefaultNym() const noexcept -> identifier::Nym = 0;
+    virtual auto DefaultSeed() const noexcept -> identifier::Generic = 0;
     virtual auto First() const noexcept
         -> opentxs::SharedPimpl<SeedTreeItem> = 0;
     virtual auto Next() const noexcept

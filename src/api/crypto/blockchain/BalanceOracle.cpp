@@ -46,7 +46,6 @@
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "util/ScopeGuard.hpp"
@@ -220,10 +219,10 @@ auto BalanceOracle::Imp::process_registration(Message&& in) noexcept -> void
     const auto nym = [&] {
         if (haveNym) {
 
-            return api_.Factory().NymID(body.at(2));
+            return api_.Factory().NymIDFromHash(body.at(2).Bytes());
         } else {
 
-            return api_.Factory().NymID();
+            return identifier::Nym{};
         }
     }();
     const auto chain = chainFrame.as<Chain>();
@@ -370,7 +369,7 @@ auto BalanceOracle::Imp::process_update_nym_balance(Message&& in) noexcept
     OT_ASSERT(4 < body.size());
 
     const auto chain = body.at(1).as<Chain>();
-    const auto owner = api_.Factory().NymID(body.at(2));
+    const auto owner = api_.Factory().NymIDFromHash(body.at(2).Bytes());
     const auto balance = std::make_pair(
         factory::Amount(body.at(3)), factory::Amount(body.at(4)));
     process_update_balance(owner, chain, balance);

@@ -29,6 +29,7 @@
 #include "opentxs/core/ByteArray.hpp"
 #include "opentxs/core/PaymentCode.hpp"
 #include "opentxs/core/String.hpp"
+#include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/crypto/Parameters.hpp"
 #include "opentxs/crypto/Types.hpp"
@@ -252,23 +253,22 @@ auto Source::extract_key(
     return output;
 }
 
-auto Source::NymID() const noexcept -> OTNymID
+auto Source::NymID() const noexcept -> identifier::Nym
 {
-    auto nymID = factory_.NymID();
-
     switch (type_) {
         case identity::SourceType::PubKey: {
-            nymID->CalculateDigest(asData().Bytes());
 
-        } break;
+            return factory_.NymIDFromPreimage(asData().Bytes());
+        }
         case identity::SourceType::Bip47: {
-            nymID = payment_code_.ID();
-        } break;
+
+            return payment_code_.ID();
+        }
         default: {
+
+            return {};
         }
     }
-
-    return nymID;
 }
 
 auto Source::Serialize(proto::NymIDSource& source) const noexcept -> bool
@@ -431,7 +431,7 @@ auto Source::asString() const noexcept -> OTString
 auto Source::Description() const noexcept -> OTString
 {
     auto description = String::Factory();
-    auto keyID = factory_.Identifier();
+    auto keyID = identifier::Generic{};
 
     switch (type_) {
         case (identity::SourceType::PubKey): {

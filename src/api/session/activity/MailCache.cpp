@@ -23,6 +23,7 @@
 #include "internal/util/Mutex.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Network.hpp"
+#include "opentxs/api/session/Crypto.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Storage.hpp"
@@ -55,8 +56,8 @@ struct MailCache::Imp {
     struct Task {
         Outstanding counter_;
         const OTPasswordPrompt reason_;
-        const OTNymID nym_;
-        const OTIdentifier item_;
+        const identifier::Nym nym_;
+        const identifier::Generic item_;
         const otx::client::StorageBox box_;
         const SimpleCallback done_;
         std::promise<UnallocatedCString> promise_;
@@ -64,7 +65,7 @@ struct MailCache::Imp {
         Task(
             const api::Session& api,
             const identifier::Nym& nym,
-            const Identifier& id,
+            const identifier::Generic& id,
             const otx::client::StorageBox box,
             const PasswordPrompt& reason,
             SimpleCallback done,
@@ -97,15 +98,15 @@ struct MailCache::Imp {
 
     auto Mail(
         const identifier::Nym& nym,
-        const Identifier& id,
+        const identifier::Generic& id,
         const otx::client::StorageBox& box) const noexcept
         -> std::unique_ptr<Message>
     {
         auto output = std::unique_ptr<Message>{};
         auto raw = UnallocatedCString{};
         auto alias = UnallocatedCString{};
-        const bool loaded =
-            api_.Storage().Load(nym.str(), id.str(), box, raw, alias, true);
+        const bool loaded = api_.Storage().Load(
+            nym, id.asBase58(api_.Crypto()), box, raw, alias, true);
 
         if (false == loaded) {
             LogError()(OT_PRETTY_CLASS())("Failed to load message ")(id)
@@ -197,7 +198,7 @@ struct MailCache::Imp {
 
     auto CacheText(
         const identifier::Nym& nym,
-        const Identifier& id,
+        const identifier::Generic& id,
         const otx::client::StorageBox box,
         const UnallocatedCString& text) noexcept -> void
     {
@@ -209,7 +210,7 @@ struct MailCache::Imp {
     }
     auto Get(
         const identifier::Nym& nym,
-        const Identifier& id,
+        const identifier::Generic& id,
         const otx::client::StorageBox box,
         const PasswordPrompt& reason) noexcept
         -> std::shared_future<UnallocatedCString>
@@ -278,15 +279,15 @@ private:
     mutable std::mutex lock_;
     JobCounter jobs_;
     std::size_t cached_bytes_;
-    UnallocatedMap<OTIdentifier, Task> tasks_;
-    UnallocatedMap<OTIdentifier, std::shared_future<UnallocatedCString>>
+    UnallocatedMap<identifier::Generic, Task> tasks_;
+    UnallocatedMap<identifier::Generic, std::shared_future<UnallocatedCString>>
         results_;
-    std::queue<OTIdentifier> fifo_;
+    std::queue<identifier::Generic> fifo_;
 
     auto key(
         const identifier::Nym& nym,
-        const Identifier& id,
-        const otx::client::StorageBox box) const noexcept -> OTIdentifier
+        const identifier::Generic& id,
+        const otx::client::StorageBox box) const noexcept -> identifier::Generic
     {
         const auto preimage = [&] {
             auto out = space(nym.size() + id.size() + sizeof(box));
@@ -299,14 +300,12 @@ private:
 
             return out;
         }();
-        auto out = api_.Factory().Identifier();
-        out->CalculateDigest(reader(preimage));
 
-        return out;
+        return api_.Factory().IdentifierFromPreimage(reader(preimage));
     }
 
     // NOTE this should only be called from the thread pool
-    auto finish_task(const Identifier& key) noexcept -> void
+    auto finish_task(const identifier::Generic& key) noexcept -> void
     {
         static constexpr auto limit = 250_mib;
         static constexpr auto wait = 0s;
@@ -353,7 +352,7 @@ MailCache::MailCache(
 
 auto MailCache::CacheText(
     const identifier::Nym& nym,
-    const Identifier& id,
+    const identifier::Generic& id,
     const otx::client::StorageBox box,
     const UnallocatedCString& text) noexcept -> void
 {
@@ -362,7 +361,7 @@ auto MailCache::CacheText(
 
 auto MailCache::GetText(
     const identifier::Nym& nym,
-    const Identifier& id,
+    const identifier::Generic& id,
     const otx::client::StorageBox box,
     const PasswordPrompt& reason) noexcept
     -> std::shared_future<UnallocatedCString>
@@ -372,7 +371,7 @@ auto MailCache::GetText(
 
 auto MailCache::LoadMail(
     const identifier::Nym& nym,
-    const Identifier& id,
+    const identifier::Generic& id,
     const otx::client::StorageBox& box) const noexcept
     -> std::unique_ptr<Message>
 {

@@ -48,7 +48,11 @@ class Secp256k1;
 class Seed;
 }  // namespace crypto
 
-class Identifier;
+namespace identifier
+{
+class Generic;
+}  // namespace identifier
+
 class PasswordPrompt;
 class Secret;
 // }  // namespace v1
@@ -120,8 +124,10 @@ public:
         const UnallocatedCString& seedID,
         Bip32Index& index,
         const PasswordPrompt& reason) const -> OTSecret = 0;
-    virtual auto GetSeed(const Identifier& id, const PasswordPrompt& reason)
-        const noexcept -> opentxs::crypto::Seed = 0;
+    virtual auto GetSeed(
+        const identifier::Generic& id,
+        const PasswordPrompt& reason) const noexcept
+        -> opentxs::crypto::Seed = 0;
     virtual auto ImportRaw(const Secret& entropy, const PasswordPrompt& reason)
         const -> UnallocatedCString = 0;
     virtual auto ImportSeed(
@@ -147,9 +153,10 @@ public:
         const PasswordPrompt& reason) const -> UnallocatedCString = 0;
     virtual auto SeedDescription(UnallocatedCString seedID) const noexcept
         -> UnallocatedCString = 0;
-    virtual auto SetDefault(const Identifier& id) const noexcept -> bool = 0;
+    virtual auto SetDefault(const identifier::Generic& id) const noexcept
+        -> bool = 0;
     virtual auto SetSeedComment(
-        const Identifier& id,
+        const identifier::Generic& id,
         const std::string_view comment) const noexcept -> bool = 0;
     virtual auto ValidateWord(
         const opentxs::crypto::SeedStyle type,

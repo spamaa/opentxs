@@ -45,6 +45,7 @@
 #include "opentxs/api/session/Crypto.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
+#include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/core/String.hpp"
@@ -106,7 +107,7 @@ Pair::Pair(const Flag& running, const api::session::Client& client)
     })
     , running_(running)
     , client_(client)
-    , state_(decision_lock_, client_)
+    , state_(decision_lock_)
     , startup_promise_()
     , startup_(startup_promise_.get_future())
     , nym_callback_(zmq::ListenCallback::Factory(
@@ -135,11 +136,8 @@ Pair::Pair(const Flag& running, const api::session::Client& client)
         client_.Endpoints().PeerRequestUpdate().data());
 }
 
-Pair::State::State(
-    std::mutex& lock,
-    const api::session::Client& client) noexcept
+Pair::State::State(std::mutex& lock) noexcept
     : lock_(lock)
-    , client_(client)
     , state_()
     , issuers_()
 {
@@ -156,11 +154,12 @@ void Pair::State::Add(
     issuers_.emplace(issuerNymID);  // copy, then move
     state_.emplace(
         std::piecewise_construct,
-        std::forward_as_tuple(OTNymID{localNymID}, OTNymID{issuerNymID}),
+        std::forward_as_tuple(
+            identifier::Nym{localNymID}, identifier::Nym{issuerNymID}),
         std::forward_as_tuple(
             std::make_unique<std::mutex>(),
-            client_.Factory().ServerID(),
-            client_.Factory().NymID(),
+            identifier::Notary{},
+            identifier::Nym{},
             Status::Error,
             trusted,
             0,
@@ -176,7 +175,10 @@ void Pair::State::Add(
     const bool trusted) noexcept
 {
     Lock lock(lock_);
-    Add(lock, OTNymID{localNymID}, OTNymID{issuerNymID}, trusted);
+    Add(lock,
+        identifier::Nym{localNymID},
+        identifier::Nym{issuerNymID},
+        trusted);
 }
 
 auto Pair::State::CheckIssuer(const identifier::Nym& id) const noexcept -> bool
@@ -256,20 +258,23 @@ repeat:
 auto Pair::State::count_currencies(
     const UnallocatedVector<AccountDetails>& in) noexcept -> std::size_t
 {
-    auto unique = UnallocatedSet<OTUnitID>{};
+    auto unique = UnallocatedSet<identifier::UnitDefinition>{};
     std::transform(
         std::begin(in),
         std::end(in),
         std::inserter(unique, unique.end()),
-        [](const auto& item) -> OTUnitID { return std::get<0>(item); });
+        [](const auto& item) -> identifier::UnitDefinition {
+            return std::get<0>(item);
+        });
 
     return unique.size();
 }
 
 auto Pair::State::count_currencies(
+    const api::Session& api,
     const identity::wot::claim::Section& in) noexcept -> std::size_t
 {
-    auto unique = UnallocatedSet<OTUnitID>{};
+    auto unique = UnallocatedSet<identifier::UnitDefinition>{};
 
     for (const auto& [type, pGroup] : in) {
         OT_ASSERT(pGroup);
@@ -280,7 +285,7 @@ auto Pair::State::count_currencies(
             OT_ASSERT(pClaim);
 
             const auto& claim = *pClaim;
-            unique.emplace(identifier::UnitDefinition::Factory(claim.Value()));
+            unique.emplace(api.Factory().UnitIDFromBase58(claim.Value()));
         }
     }
 
@@ -288,8 +293,9 @@ auto Pair::State::count_currencies(
 }
 
 auto Pair::State::get_account(
+    const api::session::Client& client,
     const identifier::UnitDefinition& unit,
-    const Identifier& account,
+    const identifier::Generic& account,
     UnallocatedVector<AccountDetails>& details) noexcept -> AccountDetails&
 {
     OT_ASSERT(false == unit.empty());
@@ -297,8 +303,10 @@ auto Pair::State::get_account(
 
     for (auto& row : details) {
         const auto& [unitID, accountID, bailment] = row;
-        const auto match = (unit.str() == unitID->str()) &&
-                           (account.str() == accountID->str());
+        const auto match = (unit.asBase58(client.Crypto()) ==
+                            unitID.asBase58(client.Crypto())) &&
+                           (account.asBase58(client.Crypto()) ==
+                            accountID.asBase58(client.Crypto()));
 
         if (match) { return row; }
     }
@@ -317,10 +325,10 @@ auto Pair::State::GetDetails(
 
 auto Pair::State::IssuerList(
     const identifier::Nym& localNymID,
-    const bool onlyTrusted) const noexcept -> UnallocatedSet<OTNymID>
+    const bool onlyTrusted) const noexcept -> UnallocatedSet<identifier::Nym>
 {
     Lock lock(lock_);
-    UnallocatedSet<OTNymID> output{};
+    UnallocatedSet<identifier::Nym> output{};
 
     for (auto& [key, value] : state_) {
         auto& pMutex = std::get<0>(value);
@@ -367,7 +375,7 @@ auto Pair::AddIssuer(
         return false;
     }
 
-    if (!client_.Wallet().IsLocalNym(localNymID.str())) {
+    if (!client_.Wallet().IsLocalNym(localNymID.asBase58(client_.Crypto()))) {
         LogError()(OT_PRETTY_CLASS())("Invalid local nym.").Flush();
 
         return false;
@@ -416,7 +424,7 @@ void Pair::callback_nym(const zmq::Message& in) noexcept
 
     OT_ASSERT(1 < body.size());
 
-    const auto nymID = client_.Factory().NymID(body.at(1));
+    const auto nymID = client_.Factory().NymIDFromHash(body.at(1).Bytes());
     auto trigger{state_.CheckIssuer(nymID)};
 
     {
@@ -444,8 +452,7 @@ void Pair::callback_peer_reply(const zmq::Message& in) noexcept
 
     OT_ASSERT(2 <= body.size());
 
-    const auto nymID =
-        client_.Factory().NymID(UnallocatedCString{body.at(0).Bytes()});
+    const auto nymID = client_.Factory().NymIDFromBase58(body.at(0).Bytes());
     const auto reply = proto::Factory<proto::PeerReply>(body.at(1));
     auto trigger{false};
 
@@ -489,8 +496,7 @@ void Pair::callback_peer_request(const zmq::Message& in) noexcept
 
     OT_ASSERT(2 <= body.size());
 
-    const auto nymID =
-        client_.Factory().NymID(UnallocatedCString{body.at(0).Bytes()});
+    const auto nymID = client_.Factory().NymIDFromBase58(body.at(0).Bytes());
     const auto request = proto::Factory<proto::PeerRequest>(body.at(1));
     auto trigger{false};
 
@@ -528,13 +534,13 @@ void Pair::check_accounts(
             ": Issuer does not advertise any contracts.")
             .Flush();
     } else {
-        offered = State::count_currencies(*contractSection);
+        offered = State::count_currencies(client_, *contractSection);
         LogDetail()(OT_PRETTY_CLASS())("Issuer advertises ")(
             offered)(" contract")((1 == offered) ? "." : "s.")
             .Flush();
     }
 
-    auto uniqueRegistered = UnallocatedSet<OTUnitID>{};
+    auto uniqueRegistered = UnallocatedSet<identifier::UnitDefinition>{};
 
     if (false == haveAccounts) { return; }
 
@@ -551,9 +557,9 @@ void Pair::check_accounts(
             const auto& notUsed [[maybe_unused]] = id;
             const auto& claim = *pClaim;
             const auto unitID =
-                identifier::UnitDefinition::Factory(claim.Value());
+                client_.Factory().UnitIDFromBase58(claim.Value());
 
-            if (unitID->empty()) {
+            if (unitID.empty()) {
                 LogDetail()(OT_PRETTY_CLASS())("Invalid unit definition")
                     .Flush();
 
@@ -590,8 +596,8 @@ void Pair::check_accounts(
             }
 
             for (const auto& accountID : accountList) {
-                auto& details =
-                    State::get_account(unitID, accountID, accountDetails);
+                auto& details = State::get_account(
+                    client_, unitID, accountID, accountDetails);
                 uniqueRegistered.emplace(unitID);
                 auto& bailmentCount = std::get<2>(details);
                 const auto instructions =
@@ -683,7 +689,7 @@ void Pair::check_rename(
                 auto proto = proto::PairEvent{};
                 proto.set_version(1);
                 proto.set_type(proto::PAIREVENT_RENAME);
-                proto.set_issuer(issuer.IssuerID().str());
+                proto.set_issuer(issuer.IssuerID().asBase58(client_.Crypto()));
 
                 return proto;
             }());
@@ -759,12 +765,14 @@ auto Pair::get_connection(
     const identifier::Nym& issuerNymID,
     const identifier::Notary& serverID,
     const contract::peer::ConnectionInfoType type) const
-    -> std::pair<bool, OTIdentifier>
+    -> std::pair<bool, identifier::Generic>
 {
-    std::pair<bool, OTIdentifier> output{false, Identifier::Factory()};
+    auto output = std::pair<bool, identifier::Generic>{};
     auto& [success, requestID] = output;
 
-    auto setID = [&](const Identifier& in) -> void { output.second = in; };
+    auto setID = [&](const identifier::Generic& in) -> void {
+        output.second = in;
+    };
     auto [taskID, future] = client_.OTX().InitiateRequestConnection(
         localNymID, serverID, issuerNymID, type, setID);
 
@@ -805,9 +813,9 @@ auto Pair::initiate_bailment(
     const identifier::Notary& serverID,
     const identifier::Nym& issuerID,
     const identifier::UnitDefinition& unitID) const
-    -> std::pair<bool, OTIdentifier>
+    -> std::pair<bool, identifier::Generic>
 {
-    auto output = std::pair<bool, OTIdentifier>{false, Identifier::Factory()};
+    auto output = std::pair<bool, identifier::Generic>{};
     auto& success = std::get<0>(output);
 
     try {
@@ -818,7 +826,9 @@ auto Pair::initiate_bailment(
         return output;
     }
 
-    auto setID = [&](const Identifier& in) -> void { output.second = in; };
+    auto setID = [&](const identifier::Generic& in) -> void {
+        output.second = in;
+    };
     auto [taskID, future] = client_.OTX().InitiateBailment(
         nymID, serverID, issuerID, unitID, setID);
 
@@ -858,14 +868,17 @@ auto Pair::process_connection_info(
     const proto::PeerReply& reply) const -> bool
 {
     OT_ASSERT(CheckLock(lock, decision_lock_));
-    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()));
+    OT_ASSERT(
+        nymID == client_.Factory().IdentifierFromBase58(reply.initiator()));
     OT_ASSERT(
         contract::peer::PeerRequestType::ConnectionInfo ==
         translate(reply.type()));
 
-    const auto requestID = Identifier::Factory(reply.cookie());
-    const auto replyID = Identifier::Factory(reply.id());
-    const auto issuerNymID = identifier::Nym::Factory(reply.recipient());
+    const auto requestID =
+        client_.Factory().IdentifierFromBase58(reply.cookie());
+    const auto replyID = client_.Factory().IdentifierFromBase58(reply.id());
+    const auto issuerNymID =
+        client_.Factory().NymIDFromBase58(reply.recipient());
     auto editor =
         client_.Wallet().Internal().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
@@ -891,7 +904,7 @@ void Pair::process_peer_replies(const Lock& lock, const identifier::Nym& nymID)
     auto replies = client_.Wallet().PeerReplyIncoming(nymID);
 
     for (const auto& it : replies) {
-        const auto replyID = Identifier::Factory(it.first);
+        const auto replyID = client_.Factory().IdentifierFromBase58(it.first);
         auto reply = proto::PeerReply{};
         if (false == client_.Wallet().Internal().PeerReply(
                          nymID,
@@ -949,7 +962,7 @@ void Pair::process_peer_requests(const Lock& lock, const identifier::Nym& nymID)
     const auto requests = client_.Wallet().PeerRequestIncoming(nymID);
 
     for (const auto& it : requests) {
-        const auto requestID = Identifier::Factory(it.first);
+        const auto requestID = client_.Factory().IdentifierFromBase58(it.first);
         std::time_t time{};
         auto request = proto::PeerRequest{};
         if (false == client_.Wallet().Internal().PeerRequest(
@@ -996,14 +1009,17 @@ auto Pair::process_pending_bailment(
     const proto::PeerRequest& request) const -> bool
 {
     OT_ASSERT(CheckLock(lock, decision_lock_));
-    OT_ASSERT(nymID == Identifier::Factory(request.recipient()));
+    OT_ASSERT(
+        nymID == client_.Factory().IdentifierFromBase58(request.recipient()));
     OT_ASSERT(
         contract::peer::PeerRequestType::PendingBailment ==
         translate(request.type()));
 
-    const auto requestID = Identifier::Factory(request.id());
-    const auto issuerNymID = identifier::Nym::Factory(request.initiator());
-    const auto serverID = identifier::Notary::Factory(request.server());
+    const auto requestID = client_.Factory().IdentifierFromBase58(request.id());
+    const auto issuerNymID =
+        client_.Factory().NymIDFromBase58(request.initiator());
+    const auto serverID =
+        client_.Factory().NotaryIDFromBase58(request.server());
     auto editor =
         client_.Wallet().Internal().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
@@ -1017,9 +1033,10 @@ auto Pair::process_pending_bailment(
 
             return out;
         }());
-        const OTIdentifier originalRequest =
-            Identifier::Factory(request.pendingbailment().requestid());
-        if (!originalRequest->empty()) {
+        const identifier::Generic originalRequest =
+            client_.Factory().IdentifierFromBase58(
+                request.pendingbailment().requestid());
+        if (!originalRequest.empty()) {
             issuer.SetUsed(
                 contract::peer::PeerRequestType::Bailment,
                 originalRequest,
@@ -1046,7 +1063,7 @@ auto Pair::process_pending_bailment(
 
         if (otx::LastReplyStatus::MessageSuccess == status) {
             const auto message = std::get<1>(result);
-            auto replyID{Identifier::Factory()};
+            auto replyID = identifier::Generic{};
             message->GetIdentifier(replyID);
             issuer.AddReply(
                 contract::peer::PeerRequestType::PendingBailment,
@@ -1068,13 +1085,16 @@ auto Pair::process_request_bailment(
     const proto::PeerReply& reply) const -> bool
 {
     OT_ASSERT(CheckLock(lock, decision_lock_));
-    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()));
+    OT_ASSERT(
+        nymID == client_.Factory().IdentifierFromBase58(reply.initiator()));
     OT_ASSERT(
         contract::peer::PeerRequestType::Bailment == translate(reply.type()));
 
-    const auto requestID = Identifier::Factory(reply.cookie());
-    const auto replyID = Identifier::Factory(reply.id());
-    const auto issuerNymID = identifier::Nym::Factory(reply.recipient());
+    const auto requestID =
+        client_.Factory().IdentifierFromBase58(reply.cookie());
+    const auto replyID = client_.Factory().IdentifierFromBase58(reply.id());
+    const auto issuerNymID =
+        client_.Factory().NymIDFromBase58(reply.recipient());
     auto editor =
         client_.Wallet().Internal().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
@@ -1098,14 +1118,17 @@ auto Pair::process_request_outbailment(
     const proto::PeerReply& reply) const -> bool
 {
     OT_ASSERT(CheckLock(lock, decision_lock_));
-    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()));
+    OT_ASSERT(
+        nymID == client_.Factory().IdentifierFromBase58(reply.initiator()));
     OT_ASSERT(
         contract::peer::PeerRequestType::OutBailment ==
         translate(reply.type()));
 
-    const auto requestID = Identifier::Factory(reply.cookie());
-    const auto replyID = Identifier::Factory(reply.id());
-    const auto issuerNymID = identifier::Nym::Factory(reply.recipient());
+    const auto requestID =
+        client_.Factory().IdentifierFromBase58(reply.cookie());
+    const auto replyID = client_.Factory().IdentifierFromBase58(reply.id());
+    const auto issuerNymID =
+        client_.Factory().NymIDFromBase58(reply.recipient());
     auto editor =
         client_.Wallet().Internal().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
@@ -1129,14 +1152,17 @@ auto Pair::process_store_secret(
     const proto::PeerReply& reply) const -> bool
 {
     OT_ASSERT(CheckLock(lock, decision_lock_));
-    OT_ASSERT(nymID == Identifier::Factory(reply.initiator()));
+    OT_ASSERT(
+        nymID == client_.Factory().IdentifierFromBase58(reply.initiator()));
     OT_ASSERT(
         contract::peer::PeerRequestType::StoreSecret ==
         translate(reply.type()));
 
-    const auto requestID = Identifier::Factory(reply.cookie());
-    const auto replyID = Identifier::Factory(reply.id());
-    const auto issuerNymID = identifier::Nym::Factory(reply.recipient());
+    const auto requestID =
+        client_.Factory().IdentifierFromBase58(reply.cookie());
+    const auto replyID = client_.Factory().IdentifierFromBase58(reply.id());
+    const auto issuerNymID =
+        client_.Factory().NymIDFromBase58(reply.recipient());
     auto editor =
         client_.Wallet().Internal().mutable_Issuer(nymID, issuerNymID);
     auto& issuer = editor.get();
@@ -1151,7 +1177,7 @@ auto Pair::process_store_secret(
                 auto event = proto::PairEvent{};
                 event.set_version(1);
                 event.set_type(proto::PAIREVENT_STORESECRET);
-                event.set_issuer(issuerNymID->str());
+                event.set_issuer(issuerNymID.asBase58(client_.Crypto()));
 
                 return event;
             }());
@@ -1238,9 +1264,9 @@ auto Pair::register_account(
     const identifier::Nym& nymID,
     const identifier::Notary& serverID,
     const identifier::UnitDefinition& unitID) const
-    -> std::pair<bool, OTIdentifier>
+    -> std::pair<bool, identifier::Generic>
 {
-    std::pair<bool, OTIdentifier> output{false, Identifier::Factory()};
+    auto output = std::pair<bool, identifier::Generic>{};
     auto& [success, accountID] = output;
 
     try {
@@ -1265,7 +1291,8 @@ auto Pair::register_account(
         OT_ASSERT(pReply);
 
         const auto& reply = *pReply;
-        accountID->SetString(reply.m_strAcctID);
+        accountID =
+            client_.Factory().IdentifierFromBase58(reply.m_strAcctID->Bytes());
     }
 
     return output;
@@ -1328,7 +1355,7 @@ void Pair::state_machine(const IssuerID& id) const
     const auto& issuerClaims = issuerNym->Claims();
     serverID = issuerClaims.PreferredOTServer();
 
-    if (serverID->empty()) {
+    if (serverID.empty()) {
         LogError()(OT_PRETTY_CLASS())(
             ": Issuer nym does not advertise a server.")
             .Flush();
@@ -1394,7 +1421,7 @@ void Pair::state_machine(const IssuerID& id) const
                 ": Local nym is registered on issuer's notary.")
                 .Flush();
 
-            if (serverNymID->empty()) {
+            if (serverNymID.empty()) {
                 try {
                     serverNymID =
                         client_.Wallet().Server(serverID)->Nym()->ID();
@@ -1435,10 +1462,10 @@ void Pair::state_machine(const IssuerID& id) const
 auto Pair::store_secret(
     const identifier::Nym& localNymID,
     const identifier::Nym& issuerNymID,
-    const identifier::Notary& serverID) const -> std::pair<bool, OTIdentifier>
+    const identifier::Notary& serverID) const
+    -> std::pair<bool, identifier::Generic>
 {
-    auto output =
-        std::pair<bool, OTIdentifier>{false, client_.Factory().Identifier()};
+    auto output = std::pair<bool, identifier::Generic>{};
 
     if (false == api::crypto::HaveHDKeys()) { return output; }
 
@@ -1446,7 +1473,9 @@ auto Pair::store_secret(
         "Backing up BIP-39 data to paired node");
     auto& [success, requestID] = output;
 
-    auto setID = [&](const Identifier& in) -> void { output.second = in; };
+    auto setID = [&](const identifier::Generic& in) -> void {
+        output.second = in;
+    };
     const auto seedID = client_.Crypto().Seed().DefaultSeed().first;
     auto [taskID, future] = client_.OTX().InitiateStoreSecret(
         localNymID,

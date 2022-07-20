@@ -33,6 +33,11 @@ namespace block
 class Outpoint;
 }  // namespace block
 }  // namespace blockchain
+
+namespace identifier
+{
+class Generic;
+}  // namespace identifier
 // }  // namespace v1
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
@@ -40,7 +45,7 @@ class Outpoint;
 namespace opentxs::blockchain::block
 {
 using Subchain = blockchain::crypto::Subchain;
-using SubchainID = std::pair<Subchain, OTIdentifier>;
+using SubchainID = std::pair<Subchain, identifier::Generic>;
 using ElementID = std::pair<Bip32Index, SubchainID>;
 using Pattern = std::pair<ElementID, Vector<std::byte>>;
 using Patterns = Vector<Pattern>;
@@ -50,7 +55,7 @@ using InputMatches = UnallocatedVector<InputMatch>;
 using OutputMatches = UnallocatedVector<Match>;
 using Matches = std::pair<InputMatches, OutputMatches>;
 using KeyID = blockchain::crypto::Key;
-using ContactID = OTIdentifier;
+using ContactID = identifier::Generic;
 using KeyData = UnallocatedMap<KeyID, std::pair<ContactID, ContactID>>;
 
 struct ParsedPatterns {

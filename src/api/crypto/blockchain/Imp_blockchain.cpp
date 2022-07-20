@@ -109,14 +109,15 @@ BlockchainImp::BlockchainImp(
 
 auto BlockchainImp::ActivityDescription(
     const identifier::Nym& nym,
-    const Identifier& thread,
+    const identifier::Generic& thread,
     const UnallocatedCString& itemID) const noexcept -> UnallocatedCString
 {
     auto data = proto::StorageThread{};
 
-    if (false == api_.Storage().Load(nym.str(), thread.str(), data)) {
-        LogError()(OT_PRETTY_CLASS())("thread ")(thread.str())(
-            " does not exist for nym ")(nym.str())
+    if (false ==
+        api_.Storage().Load(nym, thread.asBase58(api_.Crypto()), data)) {
+        LogError()(OT_PRETTY_CLASS())("thread ")(
+            thread)(" does not exist for nym ")(nym)
             .Flush();
 
         return {};
@@ -295,7 +296,7 @@ auto BlockchainImp::KeyEndpoint() const noexcept -> std::string_view
 auto BlockchainImp::KeyGenerated(
     const opentxs::blockchain::Type chain,
     const identifier::Nym& account,
-    const Identifier& subaccount,
+    const identifier::Generic& subaccount,
     const opentxs::blockchain::crypto::SubaccountType type,
     const opentxs::blockchain::crypto::Subchain subchain) const noexcept -> void
 {
@@ -372,7 +373,7 @@ auto BlockchainImp::LookupContacts(const Data& pubkeyHash) const noexcept
 }
 
 auto BlockchainImp::notify_new_account(
-    const Identifier& id,
+    const identifier::Generic& id,
     const identifier::Nym& owner,
     opentxs::blockchain::Type chain,
     opentxs::blockchain::crypto::SubaccountType type) const noexcept -> void
@@ -494,7 +495,7 @@ auto BlockchainImp::ReportScan(
     const opentxs::blockchain::Type chain,
     const identifier::Nym& owner,
     const opentxs::blockchain::crypto::SubaccountType type,
-    const Identifier& id,
+    const identifier::Generic& id,
     const Blockchain::Subchain subchain,
     const opentxs::blockchain::block::Position& progress) const noexcept -> void
 {

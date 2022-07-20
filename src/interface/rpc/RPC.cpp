@@ -147,7 +147,7 @@ constexpr auto TASKCOMPLETE_VERSION = 2;
         return output;                                                         \
     }                                                                          \
                                                                                \
-    const auto ownerID = identifier::Nym::Factory(command.owner())
+    const auto ownerID = ot_.Factory().NymIDFromBase58(command.owner())
 
 #define INIT() auto output = init(command)
 
@@ -251,10 +251,10 @@ auto RPC::accept_pending_payments(const proto::RPCCommand& command) const
     CHECK_INPUT(acceptpendingpayment, proto::RPCRESPONSE_INVALID);
 
     for (auto acceptpendingpayment : command.acceptpendingpayment()) {
-        const auto destinationaccountID = client.Factory().Identifier(
+        const auto destinationaccountID = client.Factory().IdentifierFromBase58(
             acceptpendingpayment.destinationaccount());
-        const auto workflowID =
-            client.Factory().Identifier(acceptpendingpayment.workflow());
+        const auto workflowID = client.Factory().IdentifierFromBase58(
+            acceptpendingpayment.workflow());
         const auto nymID = client.Storage().AccountOwner(destinationaccountID);
 
         try {
@@ -268,7 +268,7 @@ auto RPC::accept_pending_payments(const proto::RPCCommand& command) const
 
                     throw std::runtime_error{
                         UnallocatedCString{"Invalid workflow"} +
-                        workflowID->str()};
+                        workflowID.asBase58(ot_.Crypto())};
                 }
 
                 return out;
@@ -355,7 +355,7 @@ auto RPC::add_claim(const proto::RPCCommand& command) const
     CHECK_INPUT(claim, proto::RPCRESPONSE_INVALID);
 
     auto nymdata = session.Wallet().mutable_Nym(
-        identifier::Nym::Factory(command.owner()), reason);
+        ot_.Factory().NymIDFromBase58(command.owner()), reason);
 
     for (const auto& addclaim : command.claim()) {
         const auto& contactitem = addclaim.item();
@@ -389,13 +389,13 @@ auto RPC::add_contact(const proto::RPCCommand& command) const
     for (const auto& addContact : command.addcontact()) {
         const auto contact = client.Contacts().NewContact(
             addContact.label(),
-            identifier::Nym::Factory(addContact.nymid()),
+            ot_.Factory().NymIDFromBase58(addContact.nymid()),
             client.Factory().PaymentCode(addContact.paymentcode()));
 
         if (false == bool(contact)) {
             add_output_status(output, proto::RPCRESPONSE_ADD_CONTACT_FAILED);
         } else {
-            output.add_identifier(contact->ID().str());
+            output.add_identifier(contact->ID().asBase58(ot_.Crypto()));
             add_output_status(output, proto::RPCRESPONSE_SUCCESS);
         }
     }
@@ -474,8 +474,8 @@ auto RPC::create_account(const proto::RPCCommand& command) const
     INIT_CLIENT_ONLY();
     CHECK_OWNER();
 
-    const auto notaryID = identifier::Notary::Factory(command.notary());
-    const auto unitID = identifier::UnitDefinition::Factory(command.unit());
+    const auto notaryID = ot_.Factory().NotaryIDFromBase58(command.notary());
+    const auto unitID = ot_.Factory().UnitIDFromBase58(command.unit());
     UnallocatedCString label{};
 
     if (0 < command.identifier_size()) { label = command.identifier(0); }
@@ -511,9 +511,10 @@ auto RPC::create_compatible_account(const proto::RPCCommand& command) const
     CHECK_OWNER();
     CHECK_INPUT(identifier, proto::RPCRESPONSE_INVALID);
 
-    const auto workflowID = Identifier::Factory(command.identifier(0));
-    auto notaryID = identifier::Notary::Factory();
-    auto unitID = identifier::UnitDefinition::Factory();
+    const auto workflowID =
+        ot_.Factory().IdentifierFromBase58(command.identifier(0));
+    auto notaryID = identifier::Notary{};
+    auto unitID = identifier::UnitDefinition{};
 
     try {
         const auto workflow = [&] {
@@ -540,8 +541,8 @@ auto RPC::create_compatible_account(const proto::RPCCommand& command) const
                     return output;
                 }
 
-                notaryID->SetString(cheque->GetNotaryID().str());
-                unitID->SetString(cheque->GetInstrumentDefinitionID().str());
+                notaryID = cheque->GetNotaryID();
+                unitID = cheque->GetInstrumentDefinitionID();
             } break;
             default: {
                 add_output_status(output, proto::RPCRESPONSE_INVALID);
@@ -586,8 +587,8 @@ auto RPC::create_issuer_account(const proto::RPCCommand& command) const
     CHECK_OWNER();
 
     UnallocatedCString label{};
-    auto notaryID = identifier::Notary::Factory(command.notary());
-    auto unitID = identifier::UnitDefinition::Factory(command.unit());
+    auto notaryID = ot_.Factory().NotaryIDFromBase58(command.notary());
+    auto unitID = ot_.Factory().UnitIDFromBase58(command.unit());
 
     if (0 < command.identifier_size()) { label = command.identifier(0); }
 
@@ -678,7 +679,7 @@ auto RPC::create_nym(const proto::RPCCommand& command) const
         }
     }
 
-    output.add_identifier(nym.ID().str());
+    output.add_identifier(nym.ID().asBase58(ot_.Crypto()));
     add_output_status(output, proto::RPCRESPONSE_SUCCESS);
 
     return output;
@@ -701,7 +702,7 @@ auto RPC::create_unit_definition(const proto::RPCCommand& command) const
             factory::Amount(createunit.redemptionincrement()),
             reason);
 
-        output.add_identifier(unitdefinition->ID()->str());
+        output.add_identifier(unitdefinition->ID().asBase58(ot_.Crypto()));
         add_output_status(output, proto::RPCRESPONSE_SUCCESS);
     } catch (...) {
         add_output_status(
@@ -720,10 +721,11 @@ auto RPC::delete_claim(const proto::RPCCommand& command) const
 
     auto nymdata = session.Wallet().mutable_Nym(
 
-        identifier::Nym::Factory(command.owner()), reason);
+        ot_.Factory().NymIDFromBase58(command.owner()), reason);
 
     for (const auto& id : command.identifier()) {
-        auto deleted = nymdata.DeleteClaim(Identifier::Factory(id), reason);
+        auto deleted =
+            nymdata.DeleteClaim(ot_.Factory().IdentifierFromBase58(id), reason);
 
         if (deleted) {
             add_output_status(output, proto::RPCRESPONSE_SUCCESS);
@@ -827,9 +829,11 @@ auto RPC::evaluate_transaction_reply(
     const Message& reply) const noexcept -> bool
 {
     auto success{true};
-    const auto notaryID = api.Factory().ServerID(reply.m_strNotaryID);
-    const auto nymID = api.Factory().NymID(reply.m_strNymID);
-    const auto accountID = api.Factory().Identifier(reply.m_strAcctID);
+    const auto notaryID =
+        api.Factory().NotaryIDFromBase58(reply.m_strNotaryID->Bytes());
+    const auto nymID = api.Factory().NymIDFromBase58(reply.m_strNymID->Bytes());
+    const auto accountID =
+        api.Factory().IdentifierFromBase58(reply.m_strAcctID->Bytes());
     const bool transaction =
         reply.m_strCommand->Compare("notarizeTransactionResponse") ||
         reply.m_strCommand->Compare("processInboxResponse") ||
@@ -911,8 +915,9 @@ auto RPC::get_compatible_accounts(const proto::RPCCommand& command) const
     CHECK_OWNER();
     CHECK_INPUT(identifier, proto::RPCRESPONSE_INVALID);
 
-    const auto workflowID = Identifier::Factory(command.identifier(0));
-    auto unitID = identifier::UnitDefinition::Factory();
+    const auto workflowID =
+        ot_.Factory().IdentifierFromBase58(command.identifier(0));
+    auto unitID = identifier::UnitDefinition{};
 
     try {
         const auto workflow = [&] {
@@ -940,7 +945,7 @@ auto RPC::get_compatible_accounts(const proto::RPCCommand& command) const
                     return output;
                 }
 
-                unitID->Assign(cheque->GetInstrumentDefinitionID());
+                unitID.Assign(cheque->GetInstrumentDefinitionID());
             } break;
             default: {
                 add_output_status(output, proto::RPCRESPONSE_CHEQUE_NOT_FOUND);
@@ -956,7 +961,7 @@ auto RPC::get_compatible_accounts(const proto::RPCCommand& command) const
 
     const auto owneraccounts = client.Storage().AccountsByOwner(ownerID);
     const auto unitaccounts = client.Storage().AccountsByContract(unitID);
-    UnallocatedVector<OTIdentifier> compatible{};
+    UnallocatedVector<identifier::Generic> compatible{};
     std::set_intersection(
         owneraccounts.begin(),
         owneraccounts.end(),
@@ -965,7 +970,7 @@ auto RPC::get_compatible_accounts(const proto::RPCCommand& command) const
         std::back_inserter(compatible));
 
     for (const auto& accountid : compatible) {
-        output.add_identifier(accountid->str());
+        output.add_identifier(accountid.asBase58(ot_.Crypto()));
     }
 
     if (0 == output.identifier_size()) {
@@ -988,7 +993,7 @@ auto RPC::get_nyms(const proto::RPCCommand& command) const -> proto::RPCResponse
     CHECK_INPUT(identifier, proto::RPCRESPONSE_INVALID);
 
     for (const auto& id : command.identifier()) {
-        auto pNym = session.Wallet().Nym(identifier::Nym::Factory(id));
+        auto pNym = session.Wallet().Nym(ot_.Factory().NymIDFromBase58(id));
 
         if (pNym) {
             auto publicNym = proto::Nym{};
@@ -1021,7 +1026,7 @@ auto RPC::get_pending_payments(const proto::RPCCommand& command) const
         ownerID,
         otx::client::PaymentWorkflowType::IncomingInvoice,
         otx::client::PaymentWorkflowState::Conveyed);
-    UnallocatedSet<OTIdentifier> workflows;
+    UnallocatedSet<identifier::Generic> workflows;
     std::set_union(
         checkWorkflows.begin(),
         checkWorkflows.end(),
@@ -1061,7 +1066,7 @@ auto RPC::get_pending_payments(const proto::RPCCommand& command) const
             accountEvent.set_type(accountEventType);
             const auto contactID =
                 client.Contacts().ContactID(cheque->GetSenderNymID());
-            accountEvent.set_contact(contactID->str());
+            accountEvent.set_contact(contactID.asBase58(ot_.Crypto()));
             accountEvent.set_workflow(paymentWorkflow.id());
             cheque->GetAmount().Serialize(
                 writer(accountEvent.mutable_pendingamount()));
@@ -1165,7 +1170,7 @@ auto RPC::get_server_contracts(const proto::RPCCommand& command) const
     for (const auto& id : command.identifier()) {
         try {
             const auto contract =
-                session.Wallet().Server(identifier::Notary::Factory(id));
+                session.Wallet().Server(ot_.Factory().NotaryIDFromBase58(id));
             auto serialized = proto::ServerContract{};
             if (false == contract->Serialize(serialized, true)) {
                 add_output_status(output, proto::RPCRESPONSE_NONE);
@@ -1229,7 +1234,7 @@ auto RPC::get_unit_definitions(const proto::RPCCommand& command) const
     for (const auto& id : command.identifier()) {
         try {
             const auto contract = session.Wallet().UnitDefinition(
-                identifier::UnitDefinition::Factory(id));
+                ot_.Factory().UnitIDFromBase58(id));
 
             if (contract->Version() > 1 && command.version() < 3) {
                 add_output_status(output, proto::RPCRESPONSE_INVALID);
@@ -1262,10 +1267,12 @@ auto RPC::get_workflow(const proto::RPCCommand& command) const
             const auto workflow = [&] {
                 auto out = proto::PaymentWorkflow{};
 
-                if (false == client.Workflow().LoadWorkflow(
-                                 identifier::Nym::Factory(getworkflow.nymid()),
-                                 Identifier::Factory(getworkflow.workflowid()),
-                                 out)) {
+                if (false ==
+                    client.Workflow().LoadWorkflow(
+                        ot_.Factory().NymIDFromBase58(getworkflow.nymid()),
+                        ot_.Factory().IdentifierFromBase58(
+                            getworkflow.workflowid()),
+                        out)) {
                     throw std::runtime_error{""};
                 }
 
@@ -1390,8 +1397,9 @@ auto RPC::invalid_command(const proto::RPCCommand& command)
     return output;
 }
 
-auto RPC::is_blockchain_account(const request::Base& base, const Identifier& id)
-    const noexcept -> bool
+auto RPC::is_blockchain_account(
+    const request::Base& base,
+    const identifier::Generic& id) const noexcept -> bool
 {
     try {
         const auto& api = client_session(base);
@@ -1574,13 +1582,14 @@ auto RPC::move_funds(const proto::RPCCommand& command) const
     INIT_CLIENT_ONLY();
 
     const auto& movefunds = command.movefunds();
-    const auto sourceaccount = Identifier::Factory(movefunds.sourceaccount());
+    const auto sourceaccount =
+        ot_.Factory().IdentifierFromBase58(movefunds.sourceaccount());
     auto sender = client.Storage().AccountOwner(sourceaccount);
 
     switch (movefunds.type()) {
         case proto::RPCPAYMENTTYPE_TRANSFER: {
-            const auto targetaccount =
-                Identifier::Factory(movefunds.destinationaccount());
+            const auto targetaccount = ot_.Factory().IdentifierFromBase58(
+                movefunds.destinationaccount());
             const auto notary = client.Storage().AccountServer(sourceaccount);
 
             INIT_OTX(
@@ -1835,9 +1844,8 @@ auto RPC::queue_task(
         std::piecewise_construct,
         std::forward_as_tuple(taskID),
         std::forward_as_tuple(std::move(future), std::move(finish), nymID));
-    auto taskIDCompat = Identifier::Factory();
-    taskIDCompat->CalculateDigest(taskID);
-    add_output_task(output, taskIDCompat->str());
+    const auto taskIDCompat = ot_.Factory().IdentifierFromPreimage(taskID);
+    add_output_task(output, taskIDCompat.asBase58(ot_.Crypto()));
     add_output_status(output, proto::RPCRESPONSE_QUEUED);
 }
 
@@ -1856,14 +1864,9 @@ auto RPC::queue_task(
             std::forward_as_tuple(std::move(future), std::move(finish), nymID));
     }
 
-    const auto hashedID = [&] {
-        auto out = api.Factory().Identifier();
-        out->CalculateDigest(taskID);
+    const auto hashedID = ot_.Factory().IdentifierFromPreimage(taskID);
 
-        return out;
-    }();
-
-    return hashedID->str();
+    return hashedID.asBase58(ot_.Crypto());
 }
 
 auto RPC::register_nym(const proto::RPCCommand& command) const
@@ -1872,7 +1875,7 @@ auto RPC::register_nym(const proto::RPCCommand& command) const
     INIT_CLIENT_ONLY();
     CHECK_OWNER();
 
-    const auto notaryID = identifier::Notary::Factory(command.notary());
+    const auto notaryID = ot_.Factory().NotaryIDFromBase58(command.notary());
     auto registered = client.InternalClient().OTAPI().IsNym_RegisteredAtServer(
         ownerID, notaryID);
 
@@ -1913,7 +1916,8 @@ auto RPC::rename_account(const proto::RPCCommand& command) const
     CHECK_INPUT(modifyaccount, proto::RPCRESPONSE_INVALID);
 
     for (const auto& rename : command.modifyaccount()) {
-        const auto accountID = Identifier::Factory(rename.accountid());
+        const auto accountID =
+            ot_.Factory().IdentifierFromBase58(rename.accountid());
         auto account =
             client.Wallet().Internal().mutable_Account(accountID, reason);
 
@@ -2030,7 +2034,7 @@ void RPC::task_handler(const zmq::Message& in)
 
     if (queued_tasks_.end() != it) {
         auto& [future, finish, nymID] = it->second;
-        message.set_id(nymID->str());
+        message.set_id(nymID.asBase58(ot_.Crypto()));
 
         if (finish) { finish(future.get(), task); }
     } else {
@@ -2047,9 +2051,9 @@ void RPC::task_handler(const zmq::Message& in)
     message.set_type(proto::RPCPUSH_TASK);
     task.set_version(TASKCOMPLETE_VERSION);
     const auto taskIDStr = String::Factory(taskID);
-    auto taskIDCompat = Identifier::Factory();
-    taskIDCompat->CalculateDigest(taskIDStr->Bytes());
-    task.set_id(taskIDCompat->str());
+    const auto taskIDCompat =
+        ot_.Factory().IdentifierFromPreimage(taskIDStr->Bytes());
+    task.set_id(taskIDCompat.asBase58(ot_.Crypto()));
     task.set_result(success);
     auto output = zmq::Message{};
     output.Internal().AddFrame(message);

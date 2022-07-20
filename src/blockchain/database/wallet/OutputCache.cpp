@@ -30,7 +30,6 @@
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
 #include "internal/util/TSV.hpp"
-#include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/bitcoin/block/Output.hpp"
 #include "opentxs/blockchain/bitcoin/block/Script.hpp"
@@ -43,7 +42,6 @@
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/Time.hpp"  // IWYU pragma: keep
 #include "util/LMDB.hpp"
 
@@ -608,8 +606,8 @@ auto OutputCache::populate() noexcept -> void
     const auto accounts = [&](const auto key, const auto value) {
         auto& map = accounts_;
         auto id = [&] {
-            auto out = api_.Factory().Identifier();
-            out->Assign(key);
+            auto out = identifier::Generic{};
+            out.Assign(key);
 
             return out;
         }();
@@ -628,8 +626,8 @@ auto OutputCache::populate() noexcept -> void
     const auto nyms = [&](const auto key, const auto value) {
         auto& map = nyms_;
         auto id = [&] {
-            auto out = api_.Factory().NymID();
-            out->Assign(key);
+            auto out = identifier::Nym{};
+            out.Assign(key);
 
             return out;
         }();
@@ -662,8 +660,8 @@ auto OutputCache::populate() noexcept -> void
     const auto subchains = [&](const auto key, const auto value) {
         auto& map = subchains_;
         auto id = [&] {
-            auto out = api_.Factory().Identifier();
-            out->Assign(key);
+            auto out = identifier::Generic{};
+            out.Assign(key);
 
             return out;
         }();
@@ -807,7 +805,7 @@ auto OutputCache::Print() const noexcept -> void
     log(OT_PRETTY_CLASS())("Outputs by nym:\n");
 
     for (const auto& [id, outputs] : nyms_) {
-        log("  * ")(id->str())("\n");
+        log("  * ")(id)("\n");
 
         for (const auto& outpoint : outputs) {
             log("    * ")(outpoint.str())("\n");
@@ -818,7 +816,7 @@ auto OutputCache::Print() const noexcept -> void
     log(OT_PRETTY_CLASS())("Outputs by subaccount:\n");
 
     for (const auto& [id, outputs] : accounts_) {
-        log("  * ")(id->str())("\n");
+        log("  * ")(id)("\n");
 
         for (const auto& outpoint : outputs) {
             log("    * ")(outpoint.str())("\n");
@@ -829,7 +827,7 @@ auto OutputCache::Print() const noexcept -> void
     log(OT_PRETTY_CLASS())("Outputs by subchain:\n");
 
     for (const auto& [id, outputs] : subchains_) {
-        log("  * ")(id->str())("\n");
+        log("  * ")(id)("\n");
 
         for (const auto& outpoint : outputs) {
             log("    * ")(outpoint.str())("\n");

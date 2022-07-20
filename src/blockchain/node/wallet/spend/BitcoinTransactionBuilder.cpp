@@ -352,8 +352,8 @@ struct BitcoinTransactionBuilder::Imp {
 
             if (output.has_contact()) {
                 const auto contactID = [&] {
-                    auto out = api_.Factory().Identifier();
-                    out->Assign(
+                    auto out = identifier::Generic{};
+                    out.Assign(
                         output.contact().data(), output.contact().size());
 
                     return out;
@@ -458,21 +458,21 @@ struct BitcoinTransactionBuilder::Imp {
 
     Imp(const api::Session& api,
         database::Wallet& db,
-        const Identifier& id,
+        const identifier::Generic& id,
         const Proposal& proposal,
         const Type chain,
         const Amount feeRate) noexcept
         : api_(api)
         , sender_([&] {
             const auto id = [&] {
-                auto out = api_.Factory().NymID();
+                auto out = identifier::Nym{};
                 const auto& sender = proposal.initiator();
-                out->Assign(sender.data(), sender.size());
+                out.Assign(sender.data(), sender.size());
 
                 return out;
             }();
 
-            OT_ASSERT(false == id->empty());
+            OT_ASSERT(false == id.empty());
 
             return api_.Wallet().Nym(id);
         }())
@@ -526,7 +526,7 @@ private:
 
     const api::Session& api_;
     const Nym_p sender_;
-    const OTIdentifier self_contact_;
+    const identifier::Generic self_contact_;
     const Type chain_;
     const Amount fee_rate_;
     const be::little_int32_buf_t version_;
@@ -1286,7 +1286,7 @@ private:
 BitcoinTransactionBuilder::BitcoinTransactionBuilder(
     const api::Session& api,
     database::Wallet& db,
-    const Identifier& id,
+    const identifier::Generic& id,
     const Proposal& proposal,
     const Type chain,
     const Amount feeRate) noexcept

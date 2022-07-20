@@ -50,7 +50,7 @@ Item::Item(const api::Session& api)
     : OTTransactionType(api)
     , m_ascNote(Armored::Factory())
     , m_ascAttachment(Armored::Factory())
-    , m_AcctToID(api_.Factory().Identifier())
+    , m_AcctToID()
     , m_lAmount(0)
     , m_listItems()
     , m_Type(itemType::error_state)
@@ -75,7 +75,7 @@ Item::Item(
           theOwner.GetOriginType())
     , m_ascNote(Armored::Factory())
     , m_ascAttachment(Armored::Factory())
-    , m_AcctToID(api_.Factory().Identifier())
+    , m_AcctToID()
     , m_lAmount(0)
     , m_listItems()
     , m_Type(itemType::error_state)
@@ -100,7 +100,7 @@ Item::Item(
           theOwner.GetOriginType())
     , m_ascNote(Armored::Factory())
     , m_ascAttachment(Armored::Factory())
-    , m_AcctToID(api_.Factory().Identifier())
+    , m_AcctToID()
     , m_lAmount(0)
     , m_listItems()
     , m_Type(itemType::error_state)
@@ -116,7 +116,7 @@ Item::Item(
     const identifier::Nym& theNymID,
     const OTTransaction& theOwner,
     itemType theType,
-    const Identifier& pDestinationAcctID)
+    const identifier::Generic& pDestinationAcctID)
     : OTTransactionType(
           api,
           theNymID,
@@ -126,7 +126,7 @@ Item::Item(
           theOwner.GetOriginType())
     , m_ascNote(Armored::Factory())
     , m_ascAttachment(Armored::Factory())
-    , m_AcctToID(api_.Factory().Identifier())
+    , m_AcctToID()
     , m_lAmount(0)
     , m_listItems()
     , m_Type(itemType::error_state)
@@ -1209,7 +1209,7 @@ void Item::Release_Item()
 {
     ReleaseItems();
 
-    m_AcctToID->clear();
+    m_AcctToID.clear();
     m_lAmount = 0;
     m_lNewOutboxTransNum = 0;
     m_lClosingTransactionNo = 0;
@@ -1437,10 +1437,13 @@ auto Item::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
             // UnallocatedSet<std::int64_t>.)
         }
 
-        const auto ACCOUNT_ID = api_.Factory().Identifier(strAcctFromID);
-        const auto NOTARY_ID = api_.Factory().ServerID(strNotaryID);
-        const auto DESTINATION_ACCOUNT = api_.Factory().Identifier(strAcctToID);
-        auto NYM_ID = api_.Factory().NymID(strNymID);
+        const auto ACCOUNT_ID =
+            api_.Factory().IdentifierFromBase58(strAcctFromID->Bytes());
+        const auto NOTARY_ID =
+            api_.Factory().NotaryIDFromBase58(strNotaryID->Bytes());
+        const auto DESTINATION_ACCOUNT =
+            api_.Factory().IdentifierFromBase58(strAcctToID->Bytes());
+        auto NYM_ID = api_.Factory().NymIDFromBase58(strNymID->Bytes());
 
         SetPurportedAccountID(ACCOUNT_ID);  // OTTransactionType::m_AcctID  the
                                             // PURPORTED Account ID
@@ -1562,9 +1565,12 @@ auto Item::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
             strNotaryID = String::Factory(xml->getAttributeValue("notaryID"));
             strNymID = String::Factory(xml->getAttributeValue("nymID"));
 
-            const auto ACCOUNT_ID = api_.Factory().Identifier(strAccountID);
-            const auto NOTARY_ID = api_.Factory().ServerID(strNotaryID);
-            const auto NYM_ID = api_.Factory().NymID(strNymID);
+            const auto ACCOUNT_ID =
+                api_.Factory().IdentifierFromBase58(strAccountID->Bytes());
+            const auto NOTARY_ID =
+                api_.Factory().NotaryIDFromBase58(strNotaryID->Bytes());
+            const auto NYM_ID =
+                api_.Factory().NymIDFromBase58(strNymID->Bytes());
 
             pItem->SetPurportedAccountID(
                 ACCOUNT_ID);  // OTTransactionType::m_AcctID

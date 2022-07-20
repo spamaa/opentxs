@@ -48,10 +48,12 @@ namespace opentxs
 template <typename Child, typename API = api::session::Client>
 class Worker
 {
+public:
+    const API& api_;
+
 protected:
     using Endpoints = UnallocatedVector<UnallocatedCString>;
 
-    const API& api_;
     const std::chrono::milliseconds rate_limit_;
     std::atomic<bool> running_;
     std::promise<void> shutdown_promise_;

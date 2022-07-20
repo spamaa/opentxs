@@ -19,9 +19,9 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Storage.hpp"
 #include "opentxs/blockchain/Types.hpp"
+#include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Iterator.hpp"
-#include "opentxs/util/Pimpl.hpp"
 
 namespace opentxs::factory
 {
@@ -88,7 +88,7 @@ auto Wallet::AddHDNode(
     const proto::HDPath& path,
     const crypto::HDProtocol standard,
     const PasswordPrompt& reason,
-    Identifier& id) noexcept -> bool
+    identifier::Generic& id) noexcept -> bool
 {
     Lock lock(lock_);
 
@@ -147,17 +147,18 @@ void Wallet::init() noexcept
     Lock lock(lock_);
     const auto nyms = api_.Storage().LocalNyms();
 
-    for (const auto& id : nyms) {
-        const auto nymID = api_.Factory().NymID(id);
+    for (const auto& nymID : nyms) {
         const auto hdAccounts = [&] {
             auto out = Accounts{};
             const auto list = api_.Storage().BlockchainAccountList(
-                id, BlockchainToUnit(chain_));
+                nymID, BlockchainToUnit(chain_));
             std::transform(
                 list.begin(),
                 list.end(),
                 std::inserter(out, out.end()),
-                [&](const auto& in) { return api_.Factory().Identifier(in); });
+                [&](const auto& in) {
+                    return api_.Factory().IdentifierFromBase58(in);
+                });
 
             return out;
         }();

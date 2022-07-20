@@ -39,7 +39,8 @@ namespace zmq = opentxs::network::zeromq;
 namespace opentxs::api::session::ui
 {
 struct UpdateManager::Imp {
-    auto ActivateUICallback(const Identifier& id) const noexcept -> void
+    auto ActivateUICallback(const identifier::Generic& id) const noexcept
+        -> void
     {
         pipeline_.Push([&] {
             auto out = opentxs::network::zeromq::Message{};
@@ -49,7 +50,7 @@ struct UpdateManager::Imp {
             return out;
         }());
     }
-    auto ClearUICallbacks(const Identifier& id) const noexcept -> void
+    auto ClearUICallbacks(const identifier::Generic& id) const noexcept -> void
     {
         if (id.empty()) {
             LogError()(OT_PRETTY_CLASS())("Invalid widget id").Flush();
@@ -63,8 +64,9 @@ struct UpdateManager::Imp {
         auto lock = Lock{lock_};
         map_.erase(id);
     }
-    auto RegisterUICallback(const Identifier& id, const SimpleCallback& cb)
-        const noexcept -> void
+    auto RegisterUICallback(
+        const identifier::Generic& id,
+        const SimpleCallback& cb) const noexcept -> void
     {
         if (id.empty()) {
             LogError()(OT_PRETTY_CLASS())("Invalid widget id").Flush();
@@ -101,7 +103,9 @@ struct UpdateManager::Imp {
 private:
     const api::session::Client& api_;
     mutable std::mutex lock_;
-    mutable UnallocatedMap<OTIdentifier, UnallocatedVector<SimpleCallback>>
+    mutable UnallocatedMap<
+        identifier::Generic,
+        UnallocatedVector<SimpleCallback>>
         map_;
     OTZMQPublishSocket publisher_;
     opentxs::network::zeromq::Pipeline pipeline_;
@@ -116,7 +120,7 @@ private:
 
         OT_ASSERT(0_uz < idFrame.size());
 
-        const auto id = api_.Factory().Identifier(idFrame);
+        const auto id = api_.Factory().IdentifierFromHash(idFrame.Bytes());
         auto lock = Lock{lock_};
         auto it = map_.find(id);
 
@@ -145,20 +149,20 @@ UpdateManager::UpdateManager(const api::session::Client& api) noexcept
     // WARNING: do not access api_.Wallet() during construction
 }
 
-auto UpdateManager::ActivateUICallback(const Identifier& widget) const noexcept
-    -> void
+auto UpdateManager::ActivateUICallback(
+    const identifier::Generic& widget) const noexcept -> void
 {
     imp_->ActivateUICallback(widget);
 }
 
-auto UpdateManager::ClearUICallbacks(const Identifier& widget) const noexcept
-    -> void
+auto UpdateManager::ClearUICallbacks(
+    const identifier::Generic& widget) const noexcept -> void
 {
     imp_->ClearUICallbacks(widget);
 }
 
 auto UpdateManager::RegisterUICallback(
-    const Identifier& widget,
+    const identifier::Generic& widget,
     const SimpleCallback& cb) const noexcept -> void
 {
     imp_->RegisterUICallback(widget, cb);

@@ -43,6 +43,7 @@
 #include "opentxs/blockchain/crypto/SubaccountType.hpp"
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/core/PaymentCode.hpp"
+#include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -54,7 +55,6 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Iterator.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/WorkType.hpp"
 
 namespace opentxs::blockchain::node::wallet
@@ -107,7 +107,7 @@ Account::Imp::Imp(
               return CString{alloc}
                   .append(print(chain))
                   .append(" account for "sv)
-                  .append(account.NymID().str());
+                  .append(account.NymID().asBase58(api.Crypto()));
           }(),
           0ms,
           batch,
@@ -205,7 +205,7 @@ auto Account::Imp::ChangeState(const State state, StateSequence reorg) noexcept
     return output;
 }
 
-auto Account::Imp::check_hd(const Identifier& id) noexcept -> void
+auto Account::Imp::check_hd(const identifier::Generic& id) noexcept -> void
 {
     check_hd(account_.GetHD().at(id));
 }
@@ -216,7 +216,8 @@ auto Account::Imp::check_hd(const crypto::HD& subaccount) noexcept -> void
     get(subaccount, crypto::Subchain::External, external_);
 }
 
-auto Account::Imp::check_notification(const Identifier& id) noexcept -> void
+auto Account::Imp::check_notification(const identifier::Generic& id) noexcept
+    -> void
 {
     check_notification(account_.GetNotification().at(id));
 }
@@ -255,7 +256,7 @@ auto Account::Imp::check_notification(
     if (added) { subchain.Init(ptr); }
 }
 
-auto Account::Imp::check_pc(const Identifier& id) noexcept -> void
+auto Account::Imp::check_pc(const identifier::Generic& id) noexcept -> void
 {
     check_pc(account_.GetPaymentCode().at(id));
 }
@@ -377,11 +378,11 @@ auto Account::Imp::process_key(Message&& in) noexcept -> void
 
     if (chain != chain_) { return; }
 
-    const auto owner = api_.Factory().NymID(body.at(2));
+    const auto owner = api_.Factory().NymIDFromHash(body.at(2).Bytes());
 
     if (owner != account_.NymID()) { return; }
 
-    const auto id = api_.Factory().Identifier(body.at(3));
+    const auto id = api_.Factory().IdentifierFromHash(body.at(3).Bytes());
     const auto type = body.at(5).as<crypto::SubaccountType>();
     process_subaccount(id, type);
 }
@@ -410,17 +411,17 @@ auto Account::Imp::process_subaccount(Message&& in) noexcept -> void
 
     if (chain != chain_) { return; }
 
-    const auto owner = api_.Factory().NymID(body.at(2));
+    const auto owner = api_.Factory().NymIDFromHash(body.at(2).Bytes());
 
     if (owner != account_.NymID()) { return; }
 
     const auto type = body.at(3).as<crypto::SubaccountType>();
-    const auto id = api_.Factory().Identifier(body.at(4));
+    const auto id = api_.Factory().IdentifierFromHash(body.at(4).Bytes());
     process_subaccount(id, type);
 }
 
 auto Account::Imp::process_subaccount(
-    const Identifier& id,
+    const identifier::Generic& id,
     const crypto::SubaccountType type) noexcept -> void
 {
     switch (type) {

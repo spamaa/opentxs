@@ -12,7 +12,6 @@
 #include <boost/smart_ptr/make_shared.hpp>
 #include <atomic>
 #include <chrono>
-#include <cstddef>
 #include <mutex>
 #include <stdexcept>
 #include <string_view>
@@ -55,7 +54,6 @@
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Pimpl.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "util/LMDB.hpp"
 #include "util/Work.hpp"
@@ -266,9 +264,9 @@ auto Accounts::Imp::process_nym(Message&& in) noexcept -> bool
 
     OT_ASSERT(1 < body.size());
 
-    const auto id = api_.Factory().NymID(body.at(1));
+    const auto id = api_.Factory().NymIDFromHash(body.at(1).Bytes());
 
-    if (0 == id->size()) { return false; }
+    if (0 == id.size()) { return false; }
 
     return process_nym(id);
 }
