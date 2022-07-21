@@ -90,7 +90,7 @@ TEST_F(Regtest_fixture_hd, account_activity_initial)
         {},
     };
 
-    EXPECT_TRUE(wait_for_counter(account_activity_));
+    wait_for_counter(account_activity_, false);
     EXPECT_TRUE(check_account_activity(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_qt(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_rpc(alice_, id, expected));
@@ -129,7 +129,7 @@ TEST_F(Regtest_fixture_hd, generate)
     auto future1 = listener_.get_future(SendHD(), Subchain::External, end);
     auto future2 = listener_.get_future(SendHD(), Subchain::Internal, end);
     account_list_.expected_ += 0;
-    account_activity_.expected_ += (count + 1);
+    account_activity_.expected_ += (2u * count) + 1u;
 
     EXPECT_EQ(start, 0);
     EXPECT_EQ(end, 1);
@@ -209,7 +209,7 @@ TEST_F(Regtest_fixture_hd, account_activity_immature)
         },
     };
 
-    EXPECT_TRUE(wait_for_counter(account_activity_));
+    wait_for_counter(account_activity_, false);
     EXPECT_TRUE(check_account_activity(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_qt(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_rpc(alice_, id, expected));
@@ -248,7 +248,7 @@ TEST_F(Regtest_fixture_hd, mature)
     auto future1 = listener_.get_future(SendHD(), Subchain::External, end);
     auto future2 = listener_.get_future(SendHD(), Subchain::Internal, end);
     account_list_.expected_ += 1;
-    account_activity_.expected_ += ((2u * count) + 1);
+    account_activity_.expected_ += (2u * count) + 1u;
 
     EXPECT_EQ(start, 1);
     EXPECT_EQ(end, 12);
@@ -335,7 +335,7 @@ TEST_F(Regtest_fixture_hd, account_activity_mature)
         },
     };
 
-    EXPECT_TRUE(wait_for_counter(account_activity_));
+    wait_for_counter(account_activity_, false);
     EXPECT_TRUE(check_account_activity(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_qt(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_rpc(alice_, id, expected));
@@ -422,7 +422,7 @@ TEST_F(Regtest_fixture_hd, account_activity_reorg)
         },
     };
 
-    EXPECT_TRUE(wait_for_counter(account_activity_));
+    wait_for_counter(account_activity_, false);
     EXPECT_TRUE(check_account_activity(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_qt(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_rpc(alice_, id, expected));
@@ -461,7 +461,7 @@ TEST_F(Regtest_fixture_hd, advance_after_reorg)
     auto future1 = listener_.get_future(SendHD(), Subchain::External, end);
     auto future2 = listener_.get_future(SendHD(), Subchain::Internal, end);
     account_list_.expected_ += 0;
-    account_activity_.expected_ += (2u * count);
+    account_activity_.expected_ += (2u * count) + 1u;
 
     EXPECT_EQ(start, 13);
     EXPECT_EQ(end, 18);
@@ -510,7 +510,7 @@ TEST_F(Regtest_fixture_hd, account_activity_final)
         },
     };
 
-    EXPECT_TRUE(wait_for_counter(account_activity_));
+    wait_for_counter(account_activity_, false);
     EXPECT_TRUE(check_account_activity(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_qt(alice_, id, expected));
     EXPECT_TRUE(check_account_activity_rpc(alice_, id, expected));
