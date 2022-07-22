@@ -30,6 +30,7 @@
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/block/Block.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
+#include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -52,7 +53,7 @@ const std::chrono::seconds Cache::download_timeout_{60};
 
 Cache::Cache(
     const api::Session& api,
-    const internal::Manager& node,
+    const node::Manager& node,
     const internal::Config& config,
     database::Block& db,
     const blockchain::Type chain,
@@ -490,7 +491,7 @@ auto Cache::StateMachine() noexcept -> bool
         }
     }
 
-    if (0 < blockList.size()) { node_.RequestBlocks(blockList); }
+    if (0 < blockList.size()) { node_.Internal().RequestBlocks(blockList); }
 
     return 0 < pending_.size();
 }

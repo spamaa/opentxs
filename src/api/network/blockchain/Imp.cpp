@@ -44,7 +44,7 @@
 #include "opentxs/util/WorkType.hpp"
 #include "util/Work.hpp"
 
-namespace opentxs::api::network
+namespace opentxs::api::network::implementation
 {
 BlockchainImp::BlockchainImp(
     const api::Session& api,
@@ -585,7 +585,9 @@ auto BlockchainImp::start(
                     api_, type, config, seednode, endpoint));
             LogConsole()(print(type))(" client is running").Flush();
             publish_chain_state(type, true);
-            auto& node = *(it->second);
+            auto& pNode = it->second;
+            auto& node = *pNode;
+            node.Internal().Start(pNode);
 
             if (startWallet) { node.Internal().StartWallet(); }
 
@@ -670,4 +672,4 @@ auto BlockchainImp::UpdatePeer(
 }
 
 BlockchainImp::~BlockchainImp() { batch_.ClearCallbacks(); }
-}  // namespace opentxs::api::network
+}  // namespace opentxs::api::network::implementation
