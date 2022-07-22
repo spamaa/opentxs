@@ -8,7 +8,9 @@
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
 #include <chrono>
+#include <filesystem>
 #include <functional>
+#include <string_view>
 
 #include "opentxs/api/Periodic.hpp"
 #include "opentxs/util/Bytes.hpp"
@@ -77,22 +79,22 @@ class OPENTXS_EXPORT opentxs::api::Context : virtual public Periodic
 public:
     using ShutdownCallback = std::function<void()>;
 
-    /** NOTE You must call PrepareSignalHandling() prior to initializating the
+    /** NOTE You must call PrepareSignalHandling() prior to initializing the
      * context if you intend to use signal handling */
     static auto PrepareSignalHandling() noexcept -> void;
-    static auto SuggestFolder(const UnallocatedCString& app) noexcept
-        -> UnallocatedCString;
+    static auto SuggestFolder(std::string_view appName) noexcept
+        -> std::filesystem::path;
 
     virtual auto Asio() const noexcept -> const network::Asio& = 0;
     /** Throws std::out_of_range if the specified session does not exist. */
     virtual auto ClientSession(const int instance) const noexcept(false)
         -> const api::session::Client& = 0;
     virtual auto ClientSessionCount() const noexcept -> std::size_t = 0;
-    virtual auto Config(const UnallocatedCString& path) const noexcept
+    virtual auto Config(const std::filesystem::path& path) const noexcept
         -> const api::Settings& = 0;
     virtual auto Crypto() const noexcept -> const api::Crypto& = 0;
     virtual auto Factory() const noexcept -> const api::Factory& = 0;
-    /** WARNING You must call PrepareSignalHandling() prior to initializating
+    /** WARNING You must call PrepareSignalHandling() prior to initializing
      * the context if you intend to use this function */
     virtual auto HandleSignals(
         ShutdownCallback* callback = nullptr) const noexcept -> void = 0;
@@ -102,7 +104,7 @@ public:
     virtual auto NotarySession(const int instance) const noexcept(false)
         -> const session::Notary& = 0;
     virtual auto NotarySessionCount() const noexcept -> std::size_t = 0;
-    virtual auto ProfileId() const noexcept -> UnallocatedCString = 0;
+    virtual auto ProfileId() const noexcept -> std::string_view = 0;
     OPENTXS_NO_EXPORT virtual auto QtRootObject() const noexcept
         -> QObject* = 0;
     virtual auto RPC(const rpc::request::Base& command) const noexcept
@@ -122,8 +124,8 @@ public:
     virtual auto StartClientSession(
         const Options& args,
         const int instance,
-        const UnallocatedCString& recoverWords,
-        const UnallocatedCString& recoverPassphrase) const
+        std::string_view recoverWords,
+        std::string_view recoverPassphrase) const
         -> const api::session::Client& = 0;
     /** Start up a new server session
      *
