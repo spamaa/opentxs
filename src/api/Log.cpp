@@ -33,7 +33,6 @@ auto Log(const zmq::Context& zmq, std::string_view endpoint) noexcept
     -> std::unique_ptr<api::internal::Log>
 {
     using ReturnType = api::imp::Log;
-    internal::Log::Start();
 
     return std::make_unique<ReturnType>(zmq, UnallocatedCString{endpoint});
 }
@@ -57,6 +56,8 @@ Log::Log(const zmq::Context& zmq, const UnallocatedCString endpoint)
 
         if (false == rc) { std::abort(); }
     }
+
+    opentxs::internal::Log::Start();
 }
 
 auto Log::callback(zmq::Message&& in) noexcept -> void
@@ -80,4 +81,6 @@ auto Log::callback(zmq::Message&& in) noexcept -> void
         std::abort();
     }
 }
+
+Log::~Log() { opentxs::internal::Log::Shutdown(); }
 }  // namespace opentxs::api::imp

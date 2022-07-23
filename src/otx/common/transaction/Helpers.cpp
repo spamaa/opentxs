@@ -162,12 +162,11 @@ auto LoadAbbreviatedRecord(
 
     if (!strTransNum->Exists() || !strInRefTo->Exists() ||
         !strInRefDisplay->Exists() || !strDateSigned->Exists()) {
-        LogConsole()(__func__)(
-            "Failure: missing "
-            "strTransNum (")(strTransNum)(") or strInRefTo (")(
-            strInRefTo)(") or strInRefDisplay (")(
-            strInRefDisplay)(") or strDateSigned(")(
-            strDateSigned)(") while loading abbreviated receipt.")
+        LogConsole()(__func__)("Failure: missing "
+                               "strTransNum (")(strTransNum.get())(
+            ") or strInRefTo (")(strInRefTo.get())(") or strInRefDisplay (")(
+            strInRefDisplay.get())(") or strDateSigned(")(strDateSigned.get())(
+            ") while loading abbreviated receipt.")
             .Flush();
         return (-1);
     }
@@ -195,17 +194,18 @@ auto LoadAbbreviatedRecord(
         if (transactionType::error_state == theType) {
             LogError()(__func__)(
                 "Failure: Error_state was the found type (based on "
-                "string ")(strAbbrevType)("), when loading abbreviated receipt "
-                                          "for trans num: ")(
-                lTransactionNum)(" (In Reference To: ")(lInRefTo)(").")
+                "string ")(strAbbrevType.get())(
+                "), when loading abbreviated receipt "
+                "for trans num: ")(lTransactionNum)(" (In Reference To: ")(
+                lInRefTo)(").")
                 .Flush();
             return (-1);
         }
     } else {
         LogConsole()(__func__)("Failure: unknown "
-                               "transaction type (")(
-            strAbbrevType)(") when "
-                           "loading abbreviated receipt for trans num: ")(
+                               "transaction type (")(strAbbrevType.get())(
+            ") when "
+            "loading abbreviated receipt for trans num: ")(
             lTransactionNum)(" (In Reference To: ")(lInRefTo)(").")
             .Flush();
         return (-1);
@@ -348,8 +348,8 @@ auto VerifyBoxReceiptExists(
 
     LogDetail()(__func__)(
         bExists ? "(Already have this one)"
-                : "(Need to download this one) : ")(strFolder1name)('/')(
-        strFolder2name)('/')(strFolder3name)('/')(strFilename)
+                : "(Need to download this one) : ")(strFolder1name.get())('/')(
+        strFolder2name.get())('/')(strFolder3name.get())('/')(strFilename.get())
         .Flush();
 
     return bExists;
@@ -413,8 +413,8 @@ auto LoadBoxReceipt(
             strFolder3name->Get(),
             strFilename->Get())) {
         LogDetail()(__func__)("Box receipt does not exist: ")(
-            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
-            strFilename)
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())
             .Flush();
         return nullptr;
     }
@@ -429,8 +429,9 @@ auto LoadBoxReceipt(
         strFolder3name->Get(),
         strFilename->Get()));
     if (strFileContents.length() < 2) {
-        LogError()(__func__)("Error reading file: ")(strFolder1name)('/')(
-            strFolder2name)('/')(strFolder3name)('/')(strFilename)
+        LogError()(__func__)("Error reading file: ")(strFolder1name.get())('/')(
+            strFolder2name.get())('/')(strFolder3name.get())('/')(
+            strFilename.get())
             .Flush();
         return nullptr;
     }
@@ -440,8 +441,8 @@ auto LoadBoxReceipt(
     if (!strRawFile->Exists()) {
         LogError()(__func__)(
             "Error reading file (resulting output string is empty): ")(
-            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
-            strFilename)
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())
             .Flush();
         return nullptr;
     }
@@ -454,8 +455,8 @@ auto LoadBoxReceipt(
     if (false == bool(pTransType)) {
         LogError()(__func__)(
             "Error instantiating transaction type based on strRawFile: ")(
-            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
-            strFilename)
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())
             .Flush();
         return nullptr;
     }
@@ -464,10 +465,10 @@ auto LoadBoxReceipt(
         dynamic_cast<OTTransaction*>(pTransType.release())};
 
     if (false == bool(pBoxReceipt)) {
-        LogError()(__func__)(
-            "Error dynamic_cast from transaction type to "
-            "transaction, based on strRawFile: ")(strFolder1name)('/')(
-            strFolder2name)('/')(strFolder3name)('/')(strFilename)
+        LogError()(__func__)("Error dynamic_cast from transaction type to "
+                             "transaction, based on strRawFile: ")(
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())
             .Flush();
         return nullptr;
     }
@@ -482,15 +483,15 @@ auto LoadBoxReceipt(
 
     if (!bSuccess) {
         LogError()(__func__)("Failed verifying Box Receipt: ")(
-            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
-            strFilename)
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())
             .Flush();
 
         return nullptr;
     } else {
         LogVerbose()(__func__)("Successfully loaded Box Receipt in: ")(
-            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
-            strFilename)
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())
             .Flush();
     }
 

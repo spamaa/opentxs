@@ -923,7 +923,7 @@ auto Server::attempt_delivery(
 
             if (reply->m_bSuccess) {
                 LogVerbose()(OT_PRETTY_CLASS())("Success delivering ")(
-                    message.m_strCommand)
+                    message.m_strCommand.get())
                     .Flush();
 
                 return output;
@@ -944,7 +944,8 @@ auto Server::attempt_delivery(
                 return output;
             } else {
                 LogVerbose()(OT_PRETTY_CLASS())(
-                    "Success resyncing request number ")(message.m_strCommand)
+                    "Success resyncing request number ")(
+                    message.m_strCommand.get())
                     .Flush();
             }
 
@@ -953,7 +954,7 @@ auto Server::attempt_delivery(
 
             if (false == updated) {
                 LogError()(OT_PRETTY_CLASS())("Unable to update ")(
-                    message.m_strCommand)(" with new request number")
+                    message.m_strCommand.get())(" with new request number")
                     .Flush();
                 status = client::SendResult::TIMEOUT;
                 reply.reset();
@@ -962,7 +963,8 @@ auto Server::attempt_delivery(
                 return output;
             } else {
                 LogVerbose()(OT_PRETTY_CLASS())(
-                    "Success updating request number on ")(message.m_strCommand)
+                    "Success updating request number on ")(
+                    message.m_strCommand.get())
                     .Flush();
             }
 
@@ -975,7 +977,7 @@ auto Server::attempt_delivery(
 
             if (client::SendResult::VALID_REPLY == status) {
                 LogVerbose()(OT_PRETTY_CLASS())("Success delivering ")(
-                    message.m_strCommand)(" (second attempt)")
+                    message.m_strCommand.get())(" (second attempt)")
                     .Flush();
                 process_reply(contextLock, client, {}, *reply, reason);
 
@@ -984,18 +986,19 @@ auto Server::attempt_delivery(
         } break;
         case client::SendResult::TIMEOUT: {
             LogError()(OT_PRETTY_CLASS())("Timeout delivering ")(
-                message.m_strCommand)
+                message.m_strCommand.get())
                 .Flush();
             ++failure_counter_;
         } break;
         case client::SendResult::INVALID_REPLY: {
             LogError()(OT_PRETTY_CLASS())("Invalid reply to ")(
-                message.m_strCommand)
+                message.m_strCommand.get())
                 .Flush();
             ++failure_counter_;
         } break;
         case client::SendResult::Error: {
-            LogError()(OT_PRETTY_CLASS())("Malformed ")(message.m_strCommand)
+            LogError()(OT_PRETTY_CLASS())("Malformed ")(
+                message.m_strCommand.get())
                 .Flush();
             ++failure_counter_;
         } break;
@@ -1264,7 +1267,8 @@ auto Server::extract_payment_instrument_from_notice(
         }
         if (!pMsg->LoadContractFromString(strMsg)) {
             LogConsole()(OT_PRETTY_CLASS())(
-                "Failed trying to load OTMessage from string: ")(strMsg)(".")
+                "Failed trying to load OTMessage from string: ")(strMsg.get())(
+                ".")
                 .Flush();
             return nullptr;
         }
@@ -1289,12 +1293,12 @@ auto Server::extract_payment_instrument_from_notice(
                 LogConsole()(OT_PRETTY_CLASS())(
                     "Failed trying to decrypt the financial instrument "
                     "that was supposedly attached as a payload to this "
-                    "payment message: ")(strMsg)(".")
+                    "payment message: ")(strMsg.get())(".")
                     .Flush();
             } else if (!strEnvelopeContents->Exists()) {
                 LogConsole()(OT_PRETTY_CLASS())(
                     "Failed: after decryption, cleartext is empty. "
-                    "From: ")(strMsg)(".")
+                    "From: ")(strMsg.get())(".")
                     .Flush();
             } else {
                 // strEnvelopeContents contains a PURSE or CHEQUE
@@ -1305,7 +1309,7 @@ auto Server::extract_payment_instrument_from_notice(
                 if (false == bool(pPayment) || !pPayment->IsValid()) {
                     LogConsole()(OT_PRETTY_CLASS())(
                         "Failed: after decryption, payment is invalid. "
-                        "Contents: ")(strEnvelopeContents)(".")
+                        "Contents: ")(strEnvelopeContents.get())(".")
                         .Flush();
                 } else  // success.
                 {
@@ -1316,7 +1320,7 @@ auto Server::extract_payment_instrument_from_notice(
         } catch (...) {
             LogConsole()(OT_PRETTY_CLASS())(
                 "Failed trying to set ASCII-armored data for "
-                "envelope: ")(strMsg)(".")
+                "envelope: ")(strMsg.get())(".")
                 .Flush();
         }
     } else if (transactionType::notice == pTransaction->GetType()) {
@@ -1325,7 +1329,8 @@ auto Server::extract_payment_instrument_from_notice(
 
         if (false == bool(pPayment) || !pPayment->IsValid()) {
             LogConsole()(OT_PRETTY_CLASS())(
-                "Failed: the notice is invalid. Contents: ")(strNotice)(".")
+                "Failed: the notice is invalid. Contents: ")(strNotice.get())(
+                ".")
                 .Flush();
         } else  // success.
         {
@@ -2950,7 +2955,7 @@ void Server::process_accept_cron_receipt_reply(
         if (false == bool(pList)) {
             LogVerbose()(OT_PRETTY_CLASS())("Creating storage list of trade ")(
                 "receipts for "
-                "Nym: ")(strNymID)
+                "Nym: ")(strNymID.get())
                 .Flush();
             pList.reset(dynamic_cast<OTDB::TradeListNym*>(
                 OTDB::CreateObject(OTDB::STORED_OBJ_TRADE_LIST_NYM)));
@@ -3036,7 +3041,7 @@ void Server::process_accept_cron_receipt_reply(
                          strNymID->Get())) {
             LogError()(OT_PRETTY_CLASS())(
                 "Failed storing list of trades for nym. Notary ID: ")(
-                server_id_)(". Nym ID: ")(strNymID)(".")
+                server_id_)(". Nym ID: ")(strNymID.get())(".")
                 .Flush();
         }
     }
@@ -3090,9 +3095,9 @@ void Server::process_accept_item_receipt_reply(
         serializedOriginal, server_id_, inboxTransaction.GetReferenceToNum());
 
     if (false == bool(pOriginalItem)) {
-        LogError()(OT_PRETTY_CLASS())(
-            "Unable to load original item from string while "
-            "accepting item receipt: ")(serializedOriginal)(".")
+        LogError()(OT_PRETTY_CLASS())("Unable to load original item from "
+                                      "string while accepting item receipt: ")(
+            serializedOriginal.get())(".")
             .Flush();
 
         return;
@@ -3172,7 +3177,7 @@ void Server::process_accept_item_receipt_reply(
         } break;
         default: {
             LogError()(OT_PRETTY_CLASS())("Unexpected original item type: ")(
-                originalType)
+                originalType.get())
                 .Flush();
         }
     }
@@ -3191,7 +3196,7 @@ void Server::process_accept_pending_reply(
     if (itemType::acceptPending != acceptItemReceipt.GetType()) {
         auto type = String::Factory();
         acceptItemReceipt.GetTypeString(type);
-        LogError()(OT_PRETTY_CLASS())("Invalid type: ")(type).Flush();
+        LogError()(OT_PRETTY_CLASS())("Invalid type: ")(type.get()).Flush();
 
         return;
     }
@@ -3570,7 +3575,7 @@ auto Server::process_check_nym_response(
 
     if ((false == reply.m_bBool) || (reply.m_ascPayload->empty())) {
         LogVerbose()(OT_PRETTY_CLASS())("Server ")(
-            server_id_)(" does not have nym ")(reply.m_strNymID2)
+            server_id_)(" does not have nym ")(reply.m_strNymID2.get())
             .Flush();
 
         return true;
@@ -4574,8 +4579,9 @@ auto Server::process_process_box_response(
     } else {
         // This should never happen...
         filename = api::Legacy::GetFilenameError(receiptID->Get());
-        LogError()(OT_PRETTY_CLASS())("Error saving transaction "
-                                      "receipt: ")(notaryID)('/')(filename)(".")
+        LogError()(OT_PRETTY_CLASS())(
+            "Error saving transaction "
+            "receipt: ")(notaryID.get())('/')(filename)(".")
             .Flush();
         OTDB::StorePlainString(
             api_,
@@ -4671,8 +4677,8 @@ auto Server::process_process_inbox_response(
             default: {
                 LogError()(OT_PRETTY_CLASS())(
                     "Unexpected reply item type "
-                    "(")(replyItemType)(") in "
-                                        "processInboxResponse")
+                    "(")(replyItemType.get())(") in "
+                                              "processInboxResponse")
                     .Flush();
 
                 continue;
@@ -4682,15 +4688,15 @@ auto Server::process_process_inbox_response(
         if (Item::acknowledgement != replyItem.GetStatus()) {
             LogError()(OT_PRETTY_CLASS())(
                 "processInboxResponse reply "
-                "item ")(replyItemType)(": status == FAILED.")
+                "item ")(replyItemType.get())(": status == FAILED.")
                 .Flush();
 
             continue;
         }
 
         LogDetail()(OT_PRETTY_CLASS())("processInboxResponse reply item ")(
-            replyItemType)(": status == "
-                           "SUCCESS")
+            replyItemType.get())(": status == "
+                                 "SUCCESS")
             .Flush();
 
         auto serializedOriginalItem = String::Factory();
@@ -4889,12 +4895,13 @@ auto Server::process_request_admin_response(
     const auto& serverID = reply.m_strNotaryID;
 
     if (reply.m_bBool) {
-        LogDetail()(OT_PRETTY_CLASS())("Became admin on server ")(serverID)
+        LogDetail()(OT_PRETTY_CLASS())("Became admin on server ")(
+            serverID.get())
             .Flush();
         admin_success_->On();
     } else {
-        LogError()(OT_PRETTY_CLASS())("Server ")(
-            serverID)(" rejected admin request")
+        LogError()(OT_PRETTY_CLASS())("Server ")(serverID.get())(
+            " rejected admin request")
             .Flush();
     }
 
@@ -4937,7 +4944,7 @@ auto Server::process_reply(
         api_.Factory().IdentifierFromBase58(reply.m_strAcctID->Bytes());
     const auto& serverNym = *remote_nym_;
 
-    LogVerbose()(OT_PRETTY_CLASS())("Received ")(reply.m_strCommand)("(")(
+    LogVerbose()(OT_PRETTY_CLASS())("Received ")(reply.m_strCommand.get())("(")(
         reply.m_bSuccess ? "success" : "failure")(")")
         .Flush();
 
@@ -4961,7 +4968,7 @@ auto Server::process_reply(
         for (const auto& number : managed) { number.SetSuccess(true); }
     } else {
         LogVerbose()(OT_PRETTY_CLASS())("Message status: failed for ")(
-            reply.m_strCommand)
+            reply.m_strCommand.get())
             .Flush();
 
         return false;
@@ -5131,7 +5138,8 @@ void Server::process_response_transaction(
     if (false == armored->WriteArmoredString(encoded, "TRANSACTION")) {
         LogError()(OT_PRETTY_CLASS())("Error saving transaction receipt "
                                       "(failed writing armored string): ")(
-            api_.Internal().Legacy().Receipt())('/')(server_id_)('/')(receiptID)
+            api_.Internal().Legacy().Receipt())('/')(server_id_)('/')(
+            receiptID.get())
             .Flush();
 
         return;
@@ -5330,7 +5338,7 @@ void Server::process_response_transaction_cheque_deposit(
 
     if (false == cheque.LoadContractFromString(serializedCheque)) {
         LogError()(OT_PRETTY_CLASS())("ERROR loading cheque from string: ")(
-            serializedCheque)(".")
+            serializedCheque.get())(".")
             .Flush();
 
         return;
@@ -5913,7 +5921,7 @@ void Server::process_response_transaction_cron(
                             LogError()(OT_PRETTY_CLASS())(
                                 "For Record Box... "
                                 "Failed trying to SaveBoxReceipt. "
-                                "Contents: ")(strNewTransaction)(".")
+                                "Contents: ")(strNewTransaction.get())(".")
                                 .Flush();
                         }
                     }
@@ -6176,7 +6184,7 @@ void Server::process_response_transaction_withdrawal(
                 LogVerbose()(OT_PRETTY_CLASS())(
                     "Received voucher from server:  ")
                     .Flush();
-                LogVerbose()(OT_PRETTY_CLASS())(strVoucher).Flush();
+                LogVerbose()(OT_PRETTY_CLASS())(strVoucher.get()).Flush();
             }
         }
         // CASH WITHDRAWAL
@@ -6351,16 +6359,12 @@ auto Server::process_unregister_account_response(
         }
 
         LogConsole()(OT_PRETTY_CLASS())("Successfully DELETED Asset Acct ")(
-            reply.m_strAcctID)(" from "
-                               "Server:"
-                               " ")(server_id_)(".")
+            reply.m_strAcctID.get())(" from Server: ")(server_id_)(".")
             .Flush();
     } else {
-        LogError()(OT_PRETTY_CLASS())(
-            "The server just for some reason tried to trick me into "
-            "erasing my account ")(reply.m_strAcctID)(
-            " on "
-            "Server ")(server_id_)(".")
+        LogError()(OT_PRETTY_CLASS())("The server just for some reason tried "
+                                      "to trick me into erasing my account ")(
+            reply.m_strAcctID.get())(" on Server ")(server_id_)(".")
             .Flush();
     }
 
@@ -6388,17 +6392,15 @@ auto Server::process_unregister_nym_response(
         originalMessage->m_strCommand->Compare("unregisterNym")) {
         Reset();
         LogConsole()(OT_PRETTY_CLASS())(
-            "Successfully DELETED Nym from Server: removed "
-            "request "
-            "number, plus all issued and transaction numbers for "
-            "Nym ")(reply.m_strNymID)(" for Server ")(server_id_)(".")
+            "Successfully DELETED Nym from Server: removed request number, "
+            "plus all issued and transaction numbers for Nym ")(
+            reply.m_strNymID.get())(" for Server ")(server_id_)(".")
             .Flush();
     } else {
         LogError()(OT_PRETTY_CLASS())(
-            "The server just for some reason tried to trick me "
-            "into "
-            "erasing my issued and transaction numbers for "
-            "Nym ")(reply.m_strNymID)(", Server ")(server_id_)(".")
+            "The server just for some reason tried to trick me into erasing my "
+            "issued and transaction numbers for Nym ")(reply.m_strNymID.get())(
+            ", Server ")(server_id_)(".")
             .Flush();
     }
 
@@ -6436,8 +6438,8 @@ void Server::process_unseen_reply(
 
     if (false == message->LoadContractFromString(serializedReply)) {
         LogError()(OT_PRETTY_CLASS())(
-            "Failed loading original server "
-            "reply message from replyNotice: ")(serializedReply)
+            "Failed loading original server reply message from replyNotice: ")(
+            serializedReply.get())
             .Flush();
 
         return;
@@ -6570,8 +6572,8 @@ auto Server::remove_nymbox_item(
         }
         default: {
             LogError()(OT_PRETTY_CLASS())(
-                "Unexpected replyItem type while processing "
-                "Nymbox: ")(replyType)
+                "Unexpected replyItem type while processing Nymbox: ")(
+                replyType.get())
                 .Flush();
 
             return false;
@@ -6580,15 +6582,14 @@ auto Server::remove_nymbox_item(
 
     if (Item::acknowledgement != replyItem.GetStatus()) {
         LogDetail()(OT_PRETTY_CLASS())("processNymboxResponse reply item ")(
-            replyType)(": status == "
-                       "FAILED")
+            replyType.get())(": status == FAILED")
             .Flush();
 
         return true;
     }
 
     LogDetail()(OT_PRETTY_CLASS())("processNymboxResponse reply item ")(
-        replyType)(": status == SUCCESS")
+        replyType.get())(": status == SUCCESS")
         .Flush();
     auto serialized = String::Factory();
     replyItem.GetReferenceString(serialized);
@@ -6631,7 +6632,7 @@ auto Server::remove_nymbox_item(
         default: {
             LogError()(OT_PRETTY_CLASS())(
                 "Unexpected replyItem::type while processing "
-                "Nymbox: ")(replyType)
+                "Nymbox: ")(replyType.get())
                 .Flush();
 
             return false;
@@ -6702,7 +6703,7 @@ auto Server::remove_nymbox_item(
             if (false == bool(pCronItem) || false == bool(pOriginalCronItem)) {
                 LogError()(OT_PRETTY_CLASS())(
                     "Error loading original CronItem from Nymbox receipt, "
-                    "from string: ")(strOriginalCronItem)(".")
+                    "from string: ")(strOriginalCronItem.get())(".")
                     .Flush();
 
                 return false;
@@ -7024,7 +7025,7 @@ auto Server::remove_nymbox_item(
                             LogError()(OT_PRETTY_CLASS())(
                                 "For Record Box... Failed trying to "
                                 "SaveBoxReceipt. "
-                                "Contents: ")(strNewTransaction)(".")
+                                "Contents: ")(strNewTransaction.get())(".")
                                 .Flush();
                         }
                     } else {
@@ -7075,7 +7076,7 @@ auto Server::remove_nymbox_item(
         default: {
             LogError()(OT_PRETTY_CLASS())(
                 "Unexpected replyItem:type while processing "
-                "Nymbox: ")(replyType)(".")
+                "Nymbox: ")(replyType.get())(".")
                 .Flush();
 
             return false;

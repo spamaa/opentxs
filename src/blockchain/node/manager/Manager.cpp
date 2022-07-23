@@ -573,6 +573,35 @@ auto Base::FeeRate() const noexcept -> Amount
     return out;
 }
 
+auto Base::FilterOracleInternal() const noexcept
+    -> const node::internal::FilterOracle&
+{
+    OT_ASSERT(filter_p_);
+
+    return *filter_p_;
+}
+
+auto Base::FilterOracleInternal() noexcept -> node::internal::FilterOracle&
+{
+    OT_ASSERT(filter_p_);
+
+    return *filter_p_;
+}
+
+auto Base::GetBalance() const noexcept -> Balance
+{
+    OT_ASSERT(database_p_);
+
+    return database_p_->GetBalance();
+}
+
+auto Base::GetBalance(const identifier::Nym& owner) const noexcept -> Balance
+{
+    OT_ASSERT(database_p_);
+
+    return database_p_->GetBalance(owner);
+}
+
 auto Base::GetConfirmations(const UnallocatedCString& txid) const noexcept
     -> ChainHeight
 {
@@ -604,6 +633,13 @@ auto Base::GetVerifiedPeerCount() const noexcept -> std::size_t
     if (false == running_.load()) { return 0; }
 
     return peer_.GetVerifiedPeerCount();
+}
+
+auto Base::HeaderOracle() const noexcept -> const node::HeaderOracle&
+{
+    OT_ASSERT(header_p_);
+
+    return *header_p_;
 }
 
 auto Base::init() noexcept -> void
