@@ -1224,7 +1224,8 @@ auto OTTransaction::HarvestClosingNumbers(
                     if (!bLoadContractFromString) {
                         LogError()(OT_PRETTY_CLASS())(
                             "ERROR: "
-                            "Failed loading trade from string: ")(strTrade)(".")
+                            "Failed loading trade from string: ")(
+                            strTrade.get())(".")
                             .Flush();
                     } else  // theTrade is ready to go....
                     {
@@ -1340,7 +1341,7 @@ auto OTTransaction::HarvestClosingNumbers(
                         LogError()(OT_PRETTY_CLASS())(
                             "ERROR : "
                             "Failed loading payment plan from string: ")(
-                            strPaymentPlan)(".")
+                            strPaymentPlan.get())(".")
                             .Flush();
                     } else  // thePlan is ready to go....
                     {
@@ -2108,9 +2109,9 @@ auto OTTransaction::VerifyBalanceReceipt(
             default: {
                 auto strItemType = String::Factory();
                 pSubItem->GetTypeString(strItemType);
-                LogDebug()(OT_PRETTY_CLASS())("Ignoring ")(
-                    strItemType)(" item in balance statement while verifying "
-                                 "it against inbox.")
+                LogDebug()(OT_PRETTY_CLASS())("Ignoring ")(strItemType.get())(
+                    " item in balance statement while verifying it against "
+                    "inbox.")
                     .Flush();
             }
                 continue;
@@ -2992,8 +2993,8 @@ auto OTTransaction::DeleteBoxReceipt(Ledger& theLedger) -> bool
             strFilename->Get())) {
         LogVerbose()(OT_PRETTY_CLASS())(
             "Box receipt already doesn't exist, thus no need to delete: ")(
-            "At location: ")(strFolder1name)('/')(strFolder2name)('/')(
-            strFolder3name)('/')(strFilename)
+            "At location: ")(strFolder1name.get())('/')(strFolder2name.get())(
+            '/')(strFolder3name.get())('/')(strFilename.get())
             .Flush();
         return false;
     }
@@ -3008,8 +3009,9 @@ auto OTTransaction::DeleteBoxReceipt(Ledger& theLedger) -> bool
             ascTemp->WriteArmoredString(strFinal, m_strContractType->Get())) {
             LogError()(OT_PRETTY_CLASS())(
                 "Error deleting (writing over) box receipt (failed "
-                "writing armored string): ")(strFolder1name)('/')(
-                strFolder2name)('/')(strFolder3name)('/')(strFilename)(".")
+                "writing armored string): ")(strFolder1name.get())('/')(
+                strFolder2name.get())('/')(strFolder3name.get())('/')(
+                strFilename.get())(".")
                 .Flush();
             return false;
         }
@@ -3057,8 +3059,9 @@ auto OTTransaction::DeleteBoxReceipt(Ledger& theLedger) -> bool
         strFilename->Get());
     if (!bDeleted) {
         LogError()(OT_PRETTY_CLASS())("Error deleting (writing over) file: ")(
-            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
-            strFilename)(". Contents: ")(m_strRawFile)(".")
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())(". Contents: ")(
+            m_strRawFile.get())(".")
             .Flush();
     }
 
@@ -3105,8 +3108,8 @@ auto OTTransaction::SaveBoxReceipt(std::int64_t lLedgerType) -> bool
             strFilename->Get())) {
         LogConsole()(OT_PRETTY_CLASS())(
             "Warning -- Box receipt already exists! (Overwriting)"
-            "At location: ")(strFolder1name)('/')(strFolder2name)('/')(
-            strFolder3name)('/')(strFilename)(".")
+            "At location: ")(strFolder1name.get())('/')(strFolder2name.get())(
+            '/')(strFolder3name.get())('/')(strFilename.get())(".")
             .Flush();
         //        return false;
     }
@@ -3120,8 +3123,8 @@ auto OTTransaction::SaveBoxReceipt(std::int64_t lLedgerType) -> bool
         ascTemp->WriteArmoredString(strFinal, m_strContractType->Get())) {
         LogError()(OT_PRETTY_CLASS())(
             "Error saving box receipt (failed writing armored string): ")(
-            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
-            strFilename)(".")
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())(".")
             .Flush();
         return false;
     }
@@ -3137,8 +3140,9 @@ auto OTTransaction::SaveBoxReceipt(std::int64_t lLedgerType) -> bool
 
     if (!bSaved) {
         LogError()(OT_PRETTY_CLASS())("Error writing file: ")(
-            strFolder1name)('/')(strFolder2name)('/')(strFolder3name)('/')(
-            strFilename)(". Contents: ")(m_strRawFile)(".")
+            strFolder1name.get())('/')(strFolder2name.get())('/')(
+            strFolder3name.get())('/')(strFilename.get())(". Contents: ")(
+            m_strRawFile.get())(".")
             .Flush();
     }
 
@@ -4008,8 +4012,8 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
         if (strType->Exists()) {
             m_Type = OTTransaction::GetTypeFromString(strType);
         } else {
-            LogConsole()(OT_PRETTY_CLASS())("Failure: unknown "
-                                            "transaction type: ")(strType)(".")
+            LogConsole()(OT_PRETTY_CLASS())(
+                "Failure: unknown transaction type: ")(strType.get())(".")
                 .Flush();
             return (-1);
         }
@@ -4038,8 +4042,8 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
         if (!strAcctID->Exists() || !strNotaryID->Exists() ||
             !strNymID->Exists()) {
             LogConsole()(OT_PRETTY_CLASS())("Failure: missing strAcctID (")(
-                strAcctID)(") or strNotaryID (")(
-                strNotaryID)(") or strNymID (")(strNymID)(").")
+                strAcctID.get())(") or strNotaryID (")(strNotaryID.get())(
+                ") or strNymID (")(strNymID.get())(").")
                 .Flush();
             return (-1);
         }
@@ -4055,8 +4059,8 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
 
         if (!strTransNum->Exists() || !strInRefTo->Exists()) {
             LogConsole()(OT_PRETTY_CLASS())("Failure: missing "
-                                            "strTransNum (")(
-                strTransNum)(") or strInRefTo (")(strInRefTo)(").")
+                                            "strTransNum (")(strTransNum.get())(
+                ") or strInRefTo (")(strInRefTo.get())(").")
                 .Flush();
             return (-1);
         }
@@ -4147,7 +4151,7 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
         SetReferenceToNum(strInRefTo->ToLong());
         LogTrace()(OT_PRETTY_CLASS())("Loaded transaction ")(
             GetTransactionNum())(", in reference to: ")(GetReferenceToNum())(
-            " type: ")(strType)
+            " type: ")(strType.get())
             .Flush();
 
         SetInboxHash(api_.Factory().IdentifierFromBase58(inboxHash));
@@ -4216,7 +4220,8 @@ auto OTTransaction::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                 return (-1);
             } else if (!pItem->VerifyContractID()) {
                 LogError()(OT_PRETTY_CLASS())(
-                    "ERROR: Failed verifying transaction Item: ")(strData)(".")
+                    "ERROR: Failed verifying transaction Item: ")(
+                    strData.get())(".")
                     .Flush();
                 return (-1);
             } else {
@@ -5610,7 +5615,7 @@ auto OTTransaction::GetReceiptAmount(const PasswordPrompt& reason) -> Amount
                 auto strCheque = String::Factory(*theCheque);
 
                 LogError()(OT_PRETTY_CLASS())(
-                    "ERROR loading cheque from string: ")(strCheque)(".")
+                    "ERROR loading cheque from string: ")(strCheque.get())(".")
                     .Flush();
             } else {
                 lAdjustment =
@@ -6337,7 +6342,7 @@ auto OTTransaction::GetSenderNymIDForDisplay(identifier::Nym& theReturnID)
 
                 LogError()(OT_PRETTY_CLASS())(
                     "ERROR loading cheque or voucher from string: ")(
-                    strCheque)(".")
+                    strCheque.get())(".")
                     .Flush();
             } else {
                 if (transactionType::chequeReceipt == GetType()) {
@@ -6606,7 +6611,7 @@ auto OTTransaction::GetRecipientNymIDForDisplay(identifier::Nym& theReturnID)
 
                 LogError()(OT_PRETTY_CLASS())(
                     "ERROR loading cheque or voucher from string: ")(
-                    strCheque)(".")
+                    strCheque.get())(".")
                     .Flush();
             } else if (theCheque->HasRecipient()) {
                 theReturnID.Assign(theCheque->GetRecipientNymID());
@@ -6744,7 +6749,7 @@ auto OTTransaction::GetSenderAcctIDForDisplay(identifier::Generic& theReturnID)
 
                 LogError()(OT_PRETTY_CLASS())(
                     "ERROR loading cheque from string in transactionType: "
-                    ". ")(strCheque)(".")
+                    ". ")(strCheque.get())(".")
                     .Flush();
             } else {
                 if (transactionType::chequeReceipt == GetType()) {
@@ -7022,7 +7027,7 @@ auto OTTransaction::GetMemo(String& strMemo) -> bool
                       theCheque->LoadContractFromString(strCheque))) {
                     LogError()(OT_PRETTY_CLASS())(
                         "Error loading cheque or voucher from string: ")(
-                        strCheque)(".")
+                        strCheque.get())(".")
                         .Flush();
                     return false;
                 }
