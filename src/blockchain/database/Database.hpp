@@ -102,11 +102,11 @@ namespace node
 {
 namespace internal
 {
-class Manager;
 struct SpendPolicy;
 }  // namespace internal
 
 class HeaderOracle;
+class Manager;
 class UpdateTransaction;
 }  // namespace node
 
@@ -566,7 +566,7 @@ public:
 
     Database(
         const api::Session& api,
-        const node::internal::Manager& network,
+        const node::Manager& network,
         const database::common::Database& common,
         const blockchain::Type chain,
         const blockchain::cfilter::Type filter) noexcept;

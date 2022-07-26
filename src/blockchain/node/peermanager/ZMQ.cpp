@@ -44,10 +44,9 @@
 #include "opentxs/util/WorkType.hpp"
 #include "util/Work.hpp"
 
-namespace opentxs::blockchain::node::implementation
+namespace opentxs::blockchain::node::peermanager
 {
-class ZMQIncomingConnectionManager final
-    : public PeerManager::IncomingConnectionManager
+class ZMQIncomingConnectionManager final : public IncomingConnectionManager
 {
 public:
     using Task = opentxs::network::blockchain::PeerJob;
@@ -87,7 +86,7 @@ public:
 
     ZMQIncomingConnectionManager(
         const api::Session& api,
-        PeerManager::Peers& parent) noexcept
+        Peers& parent) noexcept
         : IncomingConnectionManager(parent)
         , api_(api)
         , lock_()
@@ -305,11 +304,10 @@ private:
     }
 };
 
-auto PeerManager::IncomingConnectionManager::ZMQ(
+auto IncomingConnectionManager::ZMQ(
     const api::Session& api,
-    PeerManager::Peers& parent) noexcept
-    -> std::unique_ptr<IncomingConnectionManager>
+    Peers& parent) noexcept -> std::unique_ptr<IncomingConnectionManager>
 {
     return std::make_unique<ZMQIncomingConnectionManager>(api, parent);
 }
-}  // namespace opentxs::blockchain::node::implementation
+}  // namespace opentxs::blockchain::node::peermanager

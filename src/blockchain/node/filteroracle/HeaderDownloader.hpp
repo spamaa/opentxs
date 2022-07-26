@@ -56,12 +56,8 @@ class Cfilter;
 
 namespace node
 {
-namespace internal
-{
-class Manager;
-}  // namespace internal
-
 class HeaderOracle;
+class Manager;
 }  // namespace node
 }  // namespace blockchain
 
@@ -96,8 +92,8 @@ public:
     HeaderDownloader(
         const api::Session& api,
         database::Cfilter& db,
-        const HeaderOracle& header,
-        const internal::Manager& node,
+        const node::HeaderOracle& header,
+        const node::Manager& node,
         FilterOracle::FilterDownloader& filter,
         const blockchain::Type chain,
         const cfilter::Type type,
@@ -111,8 +107,8 @@ private:
     friend HeaderWorker;
 
     database::Cfilter& db_;
-    const HeaderOracle& header_;
-    const internal::Manager& node_;
+    const node::HeaderOracle& header_;
+    const node::Manager& node_;
     FilterOracle::FilterDownloader& filter_;
     const blockchain::Type chain_;
     const cfilter::Type type_;

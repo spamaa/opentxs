@@ -20,8 +20,6 @@
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
 #include "internal/blockchain/node/HeaderOracle.hpp"
-#include "internal/blockchain/node/Manager.hpp"
-#include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/wallet/Account.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/Types.hpp"
@@ -41,7 +39,9 @@
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
+#include "opentxs/blockchain/node/FilterOracle.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
+#include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
@@ -89,7 +89,7 @@ namespace opentxs::blockchain::node::wallet
 {
 Accounts::Imp::Imp(
     const api::Session& api,
-    const node::internal::Manager& node,
+    const node::Manager& node,
     database::Wallet& db,
     const node::internal::Mempool& mempool,
     const network::zeromq::BatchID batch,
@@ -127,7 +127,7 @@ Accounts::Imp::Imp(
     , db_(db)
     , mempool_(mempool)
     , chain_(chain)
-    , filter_type_(node_.FilterOracleInternal().DefaultType())
+    , filter_type_(node_.FilterOracle().DefaultType())
     , to_children_endpoint_(std::move(shutdown))
     , to_children_(pipeline_.Internal().ExtraSocket(0))
     , state_(State::normal)
@@ -139,7 +139,7 @@ Accounts::Imp::Imp(
 
 Accounts::Imp::Imp(
     const api::Session& api,
-    const node::internal::Manager& node,
+    const node::Manager& node,
     database::Wallet& db,
     const node::internal::Mempool& mempool,
     const network::zeromq::BatchID batch,
@@ -460,7 +460,7 @@ namespace opentxs::blockchain::node::wallet
 {
 Accounts::Accounts(
     const api::Session& api,
-    const node::internal::Manager& node,
+    const node::Manager& node,
     database::Wallet& db,
     const node::internal::Mempool& mempool,
     const Type chain) noexcept

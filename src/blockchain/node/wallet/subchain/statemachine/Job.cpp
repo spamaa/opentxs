@@ -18,8 +18,6 @@
 
 #include "blockchain/node/wallet/subchain/SubchainStateData.hpp"
 #include "internal/api/network/Asio.hpp"
-#include "internal/blockchain/node/Manager.hpp"
-#include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
@@ -32,6 +30,8 @@
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
+#include "opentxs/blockchain/node/FilterOracle.hpp"
+#include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
@@ -265,7 +265,7 @@ auto Job::process_filter(Message&& in) noexcept -> void
 
     const auto type = body.at(2).as<cfilter::Type>();
 
-    if (type != parent_.node_.FilterOracleInternal().DefaultType()) { return; }
+    if (type != parent_.node_.FilterOracle().DefaultType()) { return; }
 
     auto position =
         block::Position{body.at(3).as<block::Height>(), body.at(4).Bytes()};

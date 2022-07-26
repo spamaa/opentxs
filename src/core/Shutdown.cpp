@@ -24,6 +24,7 @@ ShutdownSender::ShutdownSender(
     const network::zeromq::Context& zmq,
     const UnallocatedCString endpoint) noexcept
     : endpoint_(endpoint)
+    , activated_(false)
     , socket_(zmq.PublishSocket())
 {
     auto init = socket_->SetTimeouts(1s, 10s, 0s);
@@ -37,6 +38,7 @@ ShutdownSender::ShutdownSender(
 
 auto ShutdownSender::Activate() const noexcept -> void
 {
+    activated_ = true;
     socket_->Send([&] {
         auto work = network::zeromq::tagged_message(WorkType::Shutdown);
         work.AddFrame("shutdown");

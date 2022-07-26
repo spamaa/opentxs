@@ -26,10 +26,9 @@
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
 
-namespace opentxs::blockchain::node::implementation
+namespace opentxs::blockchain::node::peermanager
 {
-class TCPIncomingConnectionManager final
-    : public PeerManager::IncomingConnectionManager
+class TCPIncomingConnectionManager final : public IncomingConnectionManager
 {
 public:
     auto Disconnect(const int id) const noexcept -> void final
@@ -116,7 +115,7 @@ public:
 
     TCPIncomingConnectionManager(
         const api::Session& api,
-        PeerManager::Peers& parent) noexcept
+        Peers& parent) noexcept
         : IncomingConnectionManager(parent)
         , api_(api)
         , lock_()
@@ -169,11 +168,10 @@ private:
     }
 };
 
-auto PeerManager::IncomingConnectionManager::TCP(
+auto IncomingConnectionManager::TCP(
     const api::Session& api,
-    PeerManager::Peers& parent) noexcept
-    -> std::unique_ptr<IncomingConnectionManager>
+    Peers& parent) noexcept -> std::unique_ptr<IncomingConnectionManager>
 {
     return std::make_unique<TCPIncomingConnectionManager>(api, parent);
 }
-}  // namespace opentxs::blockchain::node::implementation
+}  // namespace opentxs::blockchain::node::peermanager

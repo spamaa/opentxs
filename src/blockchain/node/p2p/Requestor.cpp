@@ -26,6 +26,7 @@
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
@@ -537,13 +538,16 @@ auto Requestor::Imp::transition_state_run() noexcept -> void
 
     const auto interval = std::chrono::duration_cast<std::chrono::nanoseconds>(
         Clock::now() - begin_sync_);
-    const auto seconds =
-        std::chrono::duration_cast<std::chrono::seconds>(interval).count();
-    const auto kb = processed_bytes_ / 1024u;
-    const auto mb = kb / 1024u;
-    LogConsole()(print(chain_))(" sync complete. Processed ")(mb)(" MiB in ")(
-        interval)(" (")(kb / seconds)(" KiB/sec)")
-        .Flush();
+    const auto ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(interval).count();
+    const auto kb = processed_bytes_ / 1024_uz;
+    const auto mb = kb / 1024_uz;
+    const auto& log = LogConsole();
+    log(print(chain_))(" sync complete. Processed ")(mb)(" MiB in ")(interval);
+
+    if (0 < ms) { log(" (")(1000 * kb / ms)(" KiB/sec)"); }
+
+    log.Flush();
     state_ = State::run;
     reset_heartbeat_timer(heartbeat_timeout_);
 }

@@ -43,8 +43,13 @@ public:
         const proto::BlockchainTransactionProposal& tx,
         std::promise<SendOutcome>&& promise) const noexcept -> void = 0;
     virtual auto FeeEstimate() const noexcept -> std::optional<Amount> = 0;
+    auto Internal() const noexcept -> const internal::Wallet& final
+    {
+        return *this;
+    }
 
     virtual auto Init() noexcept -> void = 0;
+    auto Internal() noexcept -> internal::Wallet& final { return *this; }
     virtual auto Shutdown() noexcept -> std::shared_future<void> = 0;
 
     ~Wallet() override = default;

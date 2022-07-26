@@ -22,7 +22,6 @@
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
 #include "internal/blockchain/node/Manager.hpp"
-#include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Job.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
@@ -36,6 +35,8 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/bitcoin/block/Output.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/block/Types.hpp"
+#include "opentxs/blockchain/node/FilterOracle.hpp"
+#include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
@@ -101,7 +102,7 @@ auto Scan::Imp::do_startup() noexcept -> void
 {
     disable_automatic_processing_ = true;
     const auto& node = parent_.node_;
-    const auto& filters = node.FilterOracleInternal();
+    const auto& filters = node.FilterOracle();
     last_scanned_ = parent_.db_.SubchainLastScanned(parent_.db_key_);
     filter_tip_ = filters.FilterTip(parent_.filter_type_);
 
@@ -206,7 +207,7 @@ auto Scan::Imp::work() noexcept -> bool
     }
 
     if (false == enabled_) {
-        enabled_ = parent_.node_.IsWalletScanEnabled();
+        enabled_ = parent_.node_.Internal().IsWalletScanEnabled();
 
         if (false == enabled_) {
             log_(OT_PRETTY_CLASS())(parent_.name_)(
