@@ -92,6 +92,7 @@ class BlockOracle;
 class FilterOracle;
 class HeaderOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 
 namespace p2p
@@ -194,7 +195,7 @@ public:
         database::Peer& database,
         const Type chain,
         std::string_view seednode,
-        std::string_view shutdown) noexcept;
+        const node::Endpoints& endpoints) noexcept;
     PeerManager() = delete;
     PeerManager(const PeerManager&) = delete;
     PeerManager(PeerManager&&) = delete;

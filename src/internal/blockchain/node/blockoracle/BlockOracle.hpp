@@ -18,6 +18,11 @@ namespace opentxs  // NOLINT
 {
 // inline namespace v1
 // {
+namespace api
+{
+class Session;
+}  // namespace api
+
 namespace blockchain
 {
 namespace node
@@ -26,6 +31,8 @@ namespace internal
 {
 class BlockBatch;
 }  // namespace internal
+
+class Manager;
 }  // namespace node
 }  // namespace blockchain
 // }  // namespace v1
@@ -37,13 +44,13 @@ namespace opentxs::blockchain::node::internal
 class BlockOracle final : public node::BlockOracle
 {
 public:
-    class Imp;
+    class Actor;
+    class Shared;
 
     auto DownloadQueue() const noexcept -> std::size_t final;
     auto Endpoint() const noexcept -> std::string_view;
     auto GetBlockBatch() const noexcept -> BlockBatch;
     auto GetBlockJob() const noexcept -> BlockBatch;
-    auto Heartbeat() const noexcept -> void;
     auto Internal() const noexcept -> const BlockOracle& final { return *this; }
     auto LoadBitcoin(const block::Hash& block) const noexcept
         -> BitcoinBlockResult final;
@@ -56,10 +63,12 @@ public:
 
     auto Init() noexcept -> void;
     auto Internal() noexcept -> BlockOracle& final { return *this; }
+    auto Start(
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node) noexcept -> void;
     auto Shutdown() noexcept -> void;
 
-    BlockOracle(boost::shared_ptr<Imp>&& imp) noexcept;
-    BlockOracle() = delete;
+    BlockOracle() noexcept;
     BlockOracle(const BlockOracle&) = delete;
     BlockOracle(BlockOracle&& rhs) noexcept;
     auto operator=(const BlockOracle&) -> BlockOracle& = delete;
@@ -70,6 +79,7 @@ public:
 private:
     // TODO switch to std::shared_ptr once the android ndk ships a version of
     // libc++ with unfucked pmr / allocate_shared support
-    boost::shared_ptr<Imp> imp_;
+    boost::shared_ptr<Shared> shared_;
+    boost::shared_ptr<Actor> actor_;
 };
 }  // namespace opentxs::blockchain::node::internal

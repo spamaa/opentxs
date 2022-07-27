@@ -98,6 +98,7 @@ class BlockOracle;
 class FilterOracle;
 class HeaderOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 
 class GCS;
@@ -192,7 +193,7 @@ public:
         database::Cfilter& database,
         const blockchain::Type chain,
         const blockchain::cfilter::Type filter,
-        const UnallocatedCString& shutdown) noexcept;
+        const node::Endpoints& endpoints) noexcept;
     FilterOracle() = delete;
     FilterOracle(const FilterOracle&) = delete;
     FilterOracle(FilterOracle&&) = delete;
@@ -202,7 +203,6 @@ public:
     ~FilterOracle() final;
 
 private:
-    friend Worker<FilterOracle, api::Session>;
     friend internal::FilterOracle;
 
     using FilterHeaderHex = UnallocatedCString;
@@ -222,10 +222,12 @@ private:
     const cfilter::Type default_type_;
     mutable std::recursive_mutex lock_;
     OTZMQPublishSocket new_filters_;
+    OTZMQPublishSocket reindex_blocks_;
     const filteroracle::NotifyCallback cb_;
     mutable std::unique_ptr<FilterDownloader> filter_downloader_;
     mutable std::unique_ptr<HeaderDownloader> header_downloader_;
     mutable std::unique_ptr<filteroracle::BlockIndexer> block_indexer_;
+    const bool have_block_indexer_;
     mutable Time last_sync_progress_;
     mutable UnallocatedMap<cfilter::Type, block::Position> last_broadcast_;
     mutable JobCounter outstanding_jobs_;

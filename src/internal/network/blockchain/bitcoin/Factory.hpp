@@ -27,6 +27,7 @@ namespace blockchain
 namespace node
 {
 class Manager;
+struct Endpoints;
 }  // namespace node
 
 namespace p2p
@@ -48,7 +49,7 @@ auto BlockchainPeerBitcoin(
     std::shared_ptr<const opentxs::blockchain::node::Manager> network,
     int peerID,
     std::unique_ptr<blockchain::p2p::internal::Address> address,
-    std::string_view fromNode,
+    const blockchain::node::Endpoints& endpoints,
     std::string_view fromParent)
     -> boost::shared_ptr<network::blockchain::internal::Peer::Imp>;
 }  // namespace opentxs::factory

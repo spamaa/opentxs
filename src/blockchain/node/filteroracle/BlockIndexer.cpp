@@ -15,13 +15,13 @@
 #include <exception>
 #include <future>
 #include <memory>
-#include <mutex>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 
 #include "internal/api/session/Endpoints.hpp"
 #include "internal/blockchain/database/Cfilter.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/filteroracle/Types.hpp"
@@ -49,7 +49,6 @@
 #include "opentxs/blockchain/node/Types.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
-#include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
@@ -60,7 +59,6 @@
 #include "opentxs/util/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "util/ScopeGuard.hpp"
-#include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::filteroracle
 {
@@ -100,7 +98,7 @@ BlockIndexer::Imp::Imp(
     NotifyCallback&& notify,
     blockchain::Type chain,
     cfilter::Type type,
-    std::string_view parentEndpoint,
+    const node::Endpoints& endpoints,
     const network::zeromq::BatchID batch,
     allocator_type alloc) noexcept
     : Actor(
@@ -116,7 +114,10 @@ BlockIndexer::Imp::Imp(
           batch,
           alloc,
           {
-              {CString{parentEndpoint, alloc}, Direction::Connect},
+              {CString{endpoints.shutdown_publish_, alloc}, Direction::Connect},
+              {CString{endpoints.filter_oracle_reindex_publish_, alloc},
+               Direction::Connect},
+              {CString{api.Endpoints().Shutdown(), alloc}, Direction::Connect},
               {CString{
                    api.Endpoints().Internal().BlockchainBlockUpdated(chain),
                    alloc},
@@ -377,11 +378,6 @@ auto BlockIndexer::Imp::process_reorg(block::Position&& commonParent) noexcept
     if (current_position_ > commonParent) { reset(std::move(commonParent)); }
 }
 
-auto BlockIndexer::Imp::Reindex() noexcept -> void
-{
-    pipeline_.Push(MakeWork(Work::reindex));
-}
-
 auto BlockIndexer::Imp::reset(block::Position&& to) noexcept -> void
 {
     const auto before = current_position_;
@@ -390,21 +386,12 @@ auto BlockIndexer::Imp::reset(block::Position&& to) noexcept -> void
     find_best_position(std::move(to));
 }
 
-auto BlockIndexer::Imp::Shutdown() noexcept -> void
-{
-    // WARNING this function must never be called from with this class's
-    // Actor::worker function or else a deadlock will occur. Shutdown must only
-    // be called by a different Actor.
-    auto lock = std::unique_lock<std::timed_mutex>{reorg_lock_};
-    transition_state_shutdown();
-}
-
 auto BlockIndexer::Imp::state_normal(const Work work, Message&& msg) noexcept
     -> void
 {
     switch (work) {
         case Work::shutdown: {
-            shutdown_actor();
+            transition_state_shutdown();
         } break;
         case Work::header: {
             // NOTE no action necessary
@@ -488,7 +475,7 @@ BlockIndexer::BlockIndexer(
     NotifyCallback&& notify,
     blockchain::Type chain,
     cfilter::Type type,
-    std::string_view parentEndpoint) noexcept
+    const node::Endpoints& endpoints) noexcept
     : imp_([&] {
         const auto& zmq = api.Network().ZeroMQ().Internal();
         const auto batchID = zmq.PreallocateBatch();
@@ -505,16 +492,14 @@ BlockIndexer::BlockIndexer(
             std::move(notify),
             chain,
             type,
-            parentEndpoint,
+            endpoints,
             batchID);
     }())
 {
     OT_ASSERT(imp_);
 }
 
-auto BlockIndexer::Reindex() noexcept -> void { imp_->Reindex(); }
-
 auto BlockIndexer::Start() noexcept -> void { imp_->Init(imp_); }
 
-BlockIndexer::~BlockIndexer() { imp_->Shutdown(); }
+BlockIndexer::~BlockIndexer() = default;
 }  // namespace opentxs::blockchain::node::filteroracle

@@ -262,7 +262,7 @@ auto Cache::ReceiveBlock(const std::string_view in) noexcept -> void
 auto Cache::ReceiveBlock(
     std::shared_ptr<const bitcoin::block::Block> in) noexcept -> void
 {
-    if (false == bool(in)) {
+    if (false == in.operator bool()) {
         LogError()(OT_PRETTY_CLASS())("Invalid block").Flush();
 
         return;
@@ -276,24 +276,28 @@ auto Cache::ReceiveBlock(
         OT_ASSERT(saved);
     }
 
-    const auto& id = block.ID();
+    auto id = block::Hash{block.ID()};
+    auto future = [&]() -> BitcoinBlockResult {
+        if (auto pending = pending_.find(id); pending_.end() == pending) {
+            auto promise = Promise{};
+            promise.set_value(std::move(in));
+
+            return promise.get_future();
+        } else {
+            auto& [time, promise, future, queued] = pending->second;
+            promise.set_value(std::move(in));
+            auto out{future};
+            pending_.erase(pending);
+
+            return out;
+        }
+    }();
+
     receive_block(id);
-    auto pending = pending_.find(id);
-
-    if (pending_.end() == pending) {
-        LogVerbose()(OT_PRETTY_CLASS())("Received block not in request list")
-            .Flush();
-
-        return;
-    }
-
-    auto& [time, promise, future, queued] = pending->second;
-    promise.set_value(std::move(in));
     publish(id);
-    LogVerbose()(OT_PRETTY_CLASS())("Cached block ")(id.asHex()).Flush();
-    mem_.push(block::Hash{id}, std::move(future));
-    pending_.erase(pending);
     publish_download_queue();
+    LogVerbose()(OT_PRETTY_CLASS())("Cached block ").asHex(id).Flush();
+    mem_.push(std::move(id), std::move(future));
 }
 
 auto Cache::receive_block(const block::Hash& id) noexcept -> void

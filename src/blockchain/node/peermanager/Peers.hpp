@@ -60,6 +60,7 @@ class IncomingConnectionManager;
 }  // namespace peermanager
 
 class Manager;
+struct Endpoints;
 }  // namespace node
 
 namespace p2p
@@ -145,7 +146,7 @@ public:
         const node::Manager& node,
         database::Peer& database,
         const node::internal::PeerManager& parent,
-        const std::string_view shutdown,
+        const node::Endpoints& endpoints,
         const Type chain,
         const std::string_view seednode) noexcept;
 
@@ -177,7 +178,7 @@ private:
     database::Peer& database_;
     const node::internal::PeerManager& parent_;
     const network::zeromq::socket::Publish& connected_peers_;
-    const UnallocatedCString shutdown_endpoint_;
+    const node::Endpoints& endpoints_;
     const bool invalid_peer_;
     const ByteArray localhost_peer_;
     const ByteArray default_peer_;

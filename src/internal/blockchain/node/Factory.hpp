@@ -35,7 +35,6 @@ namespace blockchain
 {
 namespace database
 {
-class Block;
 class Cfilter;
 class Header;
 class Peer;
@@ -57,6 +56,7 @@ class FilterOracle;
 class HeaderOracle;
 class Manager;
 class Wallet;
+struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
 // }  // namespace v1
@@ -74,7 +74,7 @@ auto BlockchainFilterOracle(
     blockchain::database::Cfilter& database,
     const blockchain::Type chain,
     const blockchain::cfilter::Type filter,
-    const UnallocatedCString& shutdown) noexcept
+    const blockchain::node::Endpoints& endpoints) noexcept
     -> std::unique_ptr<blockchain::node::FilterOracle>;
 auto BlockchainNetworkBitcoin(
     const api::Session& api,
@@ -94,7 +94,7 @@ auto BlockchainPeerManager(
     blockchain::database::Peer& database,
     const blockchain::Type type,
     std::string_view seednode,
-    std::string_view shutdown) noexcept
+    const blockchain::node::Endpoints& endpoints) noexcept
     -> std::unique_ptr<blockchain::node::internal::PeerManager>;
 auto BlockchainWallet(
     const api::Session& api,
@@ -102,17 +102,8 @@ auto BlockchainWallet(
     blockchain::database::Wallet& db,
     const blockchain::node::internal::Mempool& mempool,
     const blockchain::Type chain,
-    const std::string_view shutdown)
+    const blockchain::node::Endpoints& endpoints)
     -> std::unique_ptr<blockchain::node::Wallet>;
-auto BlockOracle(
-    const api::Session& api,
-    const blockchain::node::Manager& node,
-    const blockchain::node::internal::Config& config,
-    const blockchain::node::HeaderOracle& header,
-    blockchain::database::Block& db,
-    const blockchain::Type chain,
-    const UnallocatedCString& shutdown) noexcept
-    -> blockchain::node::internal::BlockOracle;
 auto HeaderOracle(
     const api::Session& api,
     blockchain::database::Header& database,

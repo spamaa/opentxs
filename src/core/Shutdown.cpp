@@ -22,7 +22,7 @@ namespace opentxs::internal
 {
 ShutdownSender::ShutdownSender(
     const network::zeromq::Context& zmq,
-    const UnallocatedCString endpoint) noexcept
+    std::string_view endpoint) noexcept
     : endpoint_(endpoint)
     , activated_(false)
     , socket_(zmq.PublishSocket())

@@ -72,7 +72,7 @@ Peers::Peers(
     const node::Manager& node,
     database::Peer& database,
     const internal::PeerManager& parent,
-    const std::string_view shutdown,
+    const node::Endpoints& endpoints,
     const Type chain,
     const std::string_view seednode) noexcept
     : chain_(chain)
@@ -82,7 +82,7 @@ Peers::Peers(
     , database_(database)
     , parent_(parent)
     , connected_peers_(api_.Network().Blockchain().Internal().PeerUpdate())
-    , shutdown_endpoint_(shutdown)
+    , endpoints_(endpoints)
     , invalid_peer_(false)
     , localhost_peer_(api_.Factory().DataFromHex("0x7f000001"))
     , default_peer_(set_default_peer(
@@ -608,7 +608,7 @@ auto Peers::peer_factory(
                 std::move(network),
                 id,
                 std::move(endpoint),
-                shutdown_endpoint_,
+                endpoints_,
                 inproc);
         }
         case blockchain::p2p::Protocol::opentxs:

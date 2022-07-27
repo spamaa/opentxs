@@ -6,9 +6,8 @@
 #pragma once
 
 #include <boost/smart_ptr/shared_ptr.hpp>
-#include <cstddef>
 
-#include "opentxs/blockchain/Types.hpp"
+#include "internal/network/zeromq/Types.hpp"
 #include "opentxs/util/Allocated.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
@@ -36,6 +35,7 @@ class BlockBatch;
 }  // namespace internal
 
 class HeaderOracle;
+class Manager;
 struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
@@ -48,21 +48,18 @@ namespace opentxs::blockchain::node::blockoracle
 class BlockFetcher final : public Allocated
 {
 public:
+    class Shared;
     class Imp;
 
-    auto get_allocator() const noexcept -> allocator_type final;
     auto GetJob(allocator_type alloc) const noexcept -> internal::BlockBatch;
+    auto get_allocator() const noexcept -> allocator_type final;
 
-    auto Shutdown() noexcept -> void;
-    auto Start() noexcept -> void;
+    auto Init() noexcept -> void;
 
     BlockFetcher(
-        const api::Session& api,
-        const Endpoints& endpoints,
-        const HeaderOracle& header,
-        database::Block& db,
-        blockchain::Type chain,
-        std::size_t peerTarget) noexcept;
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node) noexcept;
+    BlockFetcher() = delete;
     BlockFetcher(const BlockFetcher&) noexcept;
     BlockFetcher(BlockFetcher&&) noexcept;
     auto operator=(const BlockFetcher&) noexcept -> BlockFetcher&;
@@ -73,6 +70,17 @@ public:
 private:
     // TODO switch to std::shared_ptr once the android ndk ships a version of
     // libc++ with unfucked pmr / allocate_shared support
-    boost::shared_ptr<Imp> imp_;
+    boost::shared_ptr<Shared> shared_;
+    boost::shared_ptr<Imp> actor_;
+
+    BlockFetcher(
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batchID) noexcept;
+    BlockFetcher(
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batchID,
+        allocator_type alloc) noexcept;
 };
 }  // namespace opentxs::blockchain::node::blockoracle

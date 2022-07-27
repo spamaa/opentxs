@@ -68,7 +68,7 @@ template <typename CRTP, typename JobType>
 class Actor : virtual public Allocated
 {
 public:
-    using Message = network::zeromq::Message;
+    using Work = JobType;
 
     const CString name_;
 
@@ -78,9 +78,9 @@ public:
     }
 
 protected:
-    using Work = JobType;
     using Direction = network::zeromq::socket::Direction;
     using SocketType = network::zeromq::socket::Type;
+    using Message = network::zeromq::Message;
 
     const Log& log_;
     mutable std::timed_mutex reorg_lock_;

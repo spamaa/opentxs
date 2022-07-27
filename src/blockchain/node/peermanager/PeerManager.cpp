@@ -17,6 +17,7 @@
 #include "core/Worker.hpp"
 #include "internal/api/network/Blockchain.hpp"
 #include "internal/blockchain/bitcoin/block/Transaction.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Factory.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"  // IWYU pragma: keep
 #include "internal/util/LogMacros.hpp"
@@ -50,7 +51,7 @@ auto BlockchainPeerManager(
     blockchain::database::Peer& database,
     const blockchain::Type type,
     std::string_view seednode,
-    std::string_view shutdown) noexcept
+    const blockchain::node::Endpoints& endpoints) noexcept
     -> std::unique_ptr<blockchain::node::internal::PeerManager>
 {
     using ReturnType = blockchain::node::implementation::PeerManager;
@@ -66,7 +67,7 @@ auto BlockchainPeerManager(
         database,
         type,
         seednode,
-        shutdown);
+        endpoints);
 }
 }  // namespace opentxs::factory
 
@@ -83,20 +84,20 @@ PeerManager::PeerManager(
     database::Peer& database,
     const Type chain,
     std::string_view seednode,
-    std::string_view shutdown) noexcept
+    const node::Endpoints& endpoints) noexcept
     : internal::PeerManager()
     , Worker(api, 100ms)
     , node_(node)
     , database_(database)
     , chain_(chain)
     , jobs_(api)
-    , peers_(api, config, node_, database_, *this, shutdown, chain, seednode)
+    , peers_(api, config, node_, database_, *this, endpoints, chain, seednode)
     , verified_lock_()
     , verified_peers_()
     , init_promise_()
     , init_(init_promise_.get_future())
 {
-    init_executor({UnallocatedCString{shutdown}});
+    init_executor({endpoints.shutdown_publish_.c_str()});
 }
 
 auto PeerManager::AddIncomingPeer(const int id, std::uintptr_t endpoint)

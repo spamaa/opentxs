@@ -12,10 +12,12 @@
 #include <future>
 #include <memory>
 #include <mutex>
+#include <string_view>
 #include <utility>
 
 #include "core/Worker.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Factory.hpp"
 #include "internal/blockchain/node/wallet/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -40,13 +42,13 @@ auto BlockchainWallet(
     blockchain::database::Wallet& db,
     const blockchain::node::internal::Mempool& mempool,
     const blockchain::Type chain,
-    const std::string_view shutdown)
+    const blockchain::node::Endpoints& endpoints)
     -> std::unique_ptr<blockchain::node::Wallet>
 {
     using ReturnType = blockchain::node::implementation::Wallet;
 
     return std::make_unique<ReturnType>(
-        api, parent, db, mempool, chain, shutdown);
+        api, parent, db, mempool, chain, endpoints);
 }
 }  // namespace opentxs::factory
 
@@ -100,7 +102,7 @@ Wallet::Wallet(
     database::Wallet& db,
     const node::internal::Mempool& mempool,
     const Type chain,
-    const std::string_view shutdown) noexcept
+    const node::Endpoints& endpoints) noexcept
     : Worker(api, 10ms)
     , parent_(parent)
     , db_(db)
@@ -110,7 +112,7 @@ Wallet::Wallet(
     , proposals_(api, parent_, db_, chain_)
 {
     init_executor({
-        UnallocatedCString{shutdown},
+        UnallocatedCString{endpoints.shutdown_publish_.c_str()},
     });
 }
 

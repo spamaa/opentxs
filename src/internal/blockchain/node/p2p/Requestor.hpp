@@ -9,7 +9,6 @@
 
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <memory>
-#include <string_view>
 
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/util/Container.hpp"
@@ -33,6 +32,11 @@ namespace block
 class Transaction;
 }  // namespace block
 }  // namespace bitcoin
+
+namespace node
+{
+struct Endpoints;
+}  // namespace node
 }  // namespace blockchain
 // }  // namespace v1
 }  // namespace opentxs
@@ -43,10 +47,12 @@ namespace opentxs::blockchain::node::p2p
 class Requestor
 {
 public:
+    auto Start() noexcept -> void;
+
     Requestor(
-        const api::Session& api,
+        std::shared_ptr<const api::Session> api,
         const Type chain,
-        const std::string_view toParent) noexcept;
+        const Endpoints& endpoints) noexcept;
     Requestor() = delete;
     Requestor(const Requestor&) = delete;
     Requestor(Requestor&&) = delete;

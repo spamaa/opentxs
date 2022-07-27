@@ -33,6 +33,7 @@ namespace node
 {
 class FilterOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
 // }  // namespace v1
@@ -44,7 +45,6 @@ namespace opentxs::blockchain::node::filteroracle
 class BlockIndexer
 {
 public:
-    auto Reindex() noexcept -> void;
     auto Start() noexcept -> void;
 
     BlockIndexer(
@@ -55,7 +55,7 @@ public:
         NotifyCallback&& notify,
         blockchain::Type chain,
         cfilter::Type type,
-        std::string_view parentEndpoint) noexcept;
+        const node::Endpoints& endpoints) noexcept;
     BlockIndexer(const BlockIndexer&) = delete;
     BlockIndexer(BlockIndexer&&) = delete;
     auto operator=(const BlockIndexer&) -> BlockIndexer& = delete;

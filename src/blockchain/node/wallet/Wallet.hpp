@@ -84,6 +84,7 @@ class Mempool;
 
 class Manager;
 class Mempool;
+struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
 
@@ -180,7 +181,7 @@ public:
         database::Wallet& db,
         const node::internal::Mempool& mempool,
         const Type chain,
-        const std::string_view shutdown) noexcept;
+        const node::Endpoints& endpoints) noexcept;
     Wallet() = delete;
     Wallet(const Wallet&) = delete;
     Wallet(Wallet&&) = delete;

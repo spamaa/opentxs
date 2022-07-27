@@ -170,10 +170,7 @@ public:
         const noexcept -> bool final;
     auto AddPeer(const blockchain::p2p::Address& address) const noexcept
         -> bool final;
-    auto BlockOracle() const noexcept -> const node::BlockOracle& final
-    {
-        return block_;
-    }
+    auto BlockOracle() const noexcept -> const node::BlockOracle& final;
     auto BroadcastTransaction(
         const bitcoin::block::Transaction& tx,
         const bool pushtx) const noexcept -> bool final;
@@ -377,9 +374,8 @@ private:
 
     const Time start_;
     const UnallocatedCString sync_endpoint_;
-    const UnallocatedCString requestor_endpoint_;
     std::unique_ptr<base::SyncServer> sync_server_;
-    std::unique_ptr<p2p::Requestor> p2p_requestor_;
+    const bool have_p2p_requestor_;
     OTZMQListenCallback sync_cb_;
     OTZMQPairSocket sync_socket_;
     mutable std::atomic<block::Height> local_chain_height_;

@@ -82,6 +82,7 @@ class BlockOracle;
 class FilterOracle;
 class HeaderOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 
 namespace p2p
@@ -226,7 +227,7 @@ protected:
         std::chrono::milliseconds inactivityInterval,
         std::chrono::milliseconds peersInterval,
         std::size_t headerBytes,
-        std::string_view fromNode,
+        const opentxs::blockchain::node::Endpoints& endpoints,
         std::string_view fromParent,
         zeromq::BatchID batch,
         allocator_type alloc) noexcept;
@@ -331,6 +332,7 @@ private:
     auto process_getheaders(Message&& msg) noexcept -> void;
     auto process_header(Message&& msg) noexcept -> void;
     auto process_jobavailableblock(Message&& msg) noexcept -> void;
+    auto process_jobavailableblockbatch(Message&& msg) noexcept -> void;
     auto process_jobavailablecfheaders(Message&& msg) noexcept -> void;
     auto process_jobavailablecfilters(Message&& msg) noexcept -> void;
     auto process_jobtimeout(Message&& msg) noexcept -> void;
