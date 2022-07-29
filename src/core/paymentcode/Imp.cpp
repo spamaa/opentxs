@@ -185,9 +185,10 @@ auto PaymentCode::apply_mask(
     paymentcode::BinaryPreimage_3& pre) const noexcept -> void
 {
     static_assert(34 == sizeof(pre));
-
-    auto* i = std::next(pre.key_.begin());
-    auto* const end = pre.key_.end();
+    // NOLINTBEGIN(readability-qualified-auto)
+    auto i = std::next(pre.key_.begin());
+    auto const end = pre.key_.end();
+    // NOLINTEND(readability-qualified-auto)
 
     for (const auto& m : mask) {
         auto& byte = *i;

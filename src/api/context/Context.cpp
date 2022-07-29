@@ -110,7 +110,7 @@ Context::Context(Flag& running, const Options& args, PasswordCaller* password)
     : api::internal::Context()
     , Periodic(running)
     , args_(args)
-    , home_(args_.Home().c_str())
+    , home_(args_.Home().string().c_str())
     , null_callback_(opentxs::Factory::NullCallback())
     , default_external_password_callback_([&] {
         auto out = std::make_unique<PasswordCaller>();
@@ -188,7 +188,8 @@ auto Context::Config(const std::filesystem::path& path) const noexcept
         if (auto i = map.find(path); map.end() == i) {
             const auto [out, rc] = map.try_emplace(
                 path,
-                factory::Settings(*legacy_, String::Factory(path.c_str())));
+                factory::Settings(
+                    *legacy_, String::Factory(path.string().c_str())));
 
             OT_ASSERT(rc);
 
@@ -255,14 +256,15 @@ auto Context::Init_Asio() -> void
 
 auto Context::Init_Crypto() -> void
 {
-    crypto_ = factory::CryptoAPI(Config(legacy_->OpentxsConfigFilePath()));
+    crypto_ =
+        factory::CryptoAPI(Config(legacy_->OpentxsConfigFilePath().string()));
 
     OT_ASSERT(crypto_);
 }
 
 auto Context::Init_Profile() -> void
 {
-    const auto& config = Config(legacy_->OpentxsConfigFilePath());
+    const auto& config = Config(legacy_->OpentxsConfigFilePath().string());
     auto profile_id_exists{false};
     auto existing_profile_id{String::Factory()};
     config.Check_str(
@@ -298,7 +300,7 @@ auto Context::Init_Log() -> void
 {
     OT_ASSERT(legacy_);
 
-    const auto& config = Config(legacy_->OpentxsConfigFilePath());
+    const auto& config = Config(legacy_->OpentxsConfigFilePath().string());
     auto notUsed{false};
     auto level = std::int64_t{0};
     const auto value = args_.LogLevel();
@@ -431,7 +433,7 @@ auto Context::StartClientSession(const Options& args, const int instance) const
             *this,
             running_,
             args_ + args,
-            Config(legacy_->ClientConfigFilePath(next)),
+            Config(legacy_->ClientConfigFilePath(next).string()),
             *crypto_,
             *zmq_context_,
             legacy_->ClientDataFolder(next),
@@ -511,7 +513,7 @@ auto Context::StartNotarySession(const Options& args, const int instance) const
             running_,
             args_ + args,
             *crypto_,
-            Config(legacy_->ServerConfigFilePath(next)),
+            Config(legacy_->ServerConfigFilePath(next).string()),
             *zmq_context_,
             legacy_->ServerDataFolder(next),
             instance));

@@ -100,14 +100,14 @@ protected:
         const Flag& bucket);
 
 private:
-    using File =
-        boost::iostreams::stream<boost::iostreams::file_descriptor_sink>;
+    using DescriptorType = boost::iostreams::file_descriptor_sink;
+    using File = boost::iostreams::stream<DescriptorType>;
 
     class FileDescriptor
     {
     public:
         operator bool() const noexcept { return good(); }
-        operator int() const noexcept { return fd_; }
+        operator DescriptorType::handle_type() const noexcept { return fd_; }
 
         FileDescriptor(const fs::path& path) noexcept;
         FileDescriptor() = delete;
@@ -119,7 +119,7 @@ private:
         ~FileDescriptor();
 
     private:
-        int fd_;
+        DescriptorType::handle_type fd_;
 
         auto good() const noexcept -> bool;
     };
@@ -142,7 +142,7 @@ private:
         const bool bucket,
         std::promise<bool>* promise) const override;
     auto sync(File& file) const -> bool;
-    auto sync(int fd) const -> bool;
+    auto sync(DescriptorType::handle_type) const -> bool;
     auto write_file(
         const UnallocatedCString& directory,
         const UnallocatedCString& filename,

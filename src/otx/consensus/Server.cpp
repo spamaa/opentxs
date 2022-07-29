@@ -445,7 +445,11 @@ auto Server::accept_entire_nymbox(
                 }
 
                 OTCronItem::EraseActiveCronReceipt(
-                    api_, api_.DataFolder(), number, nymID, server_id_);
+                    api_,
+                    api_.DataFolder().string(),
+                    number,
+                    nymID,
+                    server_id_);
                 make_accept_item(
                     reason,
                     itemType::acceptFinalReceipt,
@@ -2168,7 +2172,7 @@ auto Server::load_account_inbox(const identifier::Generic& accountID) const
 
     bool output = OTDB::Exists(
         api_,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         api_.Internal().Legacy().Inbox(),
         server_id_.asBase58(api_.Crypto()).c_str(),
         accountID.asBase58(api_.Crypto()).c_str(),
@@ -2202,7 +2206,7 @@ auto Server::load_or_create_account_recordbox(
 
     bool output = OTDB::Exists(
         api_,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         api_.Internal().Legacy().RecordBox(),
         server_id_.asBase58(api_.Crypto()).c_str(),
         accountID.asBase58(api_.Crypto()).c_str(),
@@ -2251,7 +2255,7 @@ auto Server::load_or_create_payment_inbox(const PasswordPrompt& reason) const
 
     bool output = OTDB::Exists(
         api_,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         api_.Internal().Legacy().PaymentInbox(),
         server_id_.asBase58(api_.Crypto()).c_str(),
         nymID.asBase58(api_.Crypto()).c_str(),
@@ -2340,7 +2344,7 @@ void Server::need_box_items(
 
         const auto exists = VerifyBoxReceiptExists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             server_id_,
             nym_->ID(),
             nym_->ID(),
@@ -2936,7 +2940,7 @@ void Server::process_accept_cron_receipt_reply(
 
         if (OTDB::Exists(
                 api_,
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 api_.Internal().Legacy().Nym(),
                 "trades",  // todo stop
                            // hardcoding.
@@ -2945,7 +2949,7 @@ void Server::process_accept_cron_receipt_reply(
             pList.reset(dynamic_cast<OTDB::TradeListNym*>(OTDB::QueryObject(
                 api_,
                 OTDB::STORED_OBJ_TRADE_LIST_NYM,
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 api_.Internal().Legacy().Nym(),
                 "trades",  // todo stop
                 // hardcoding.
@@ -3034,7 +3038,7 @@ void Server::process_accept_cron_receipt_reply(
         if (false == OTDB::StoreObject(
                          api_,
                          *pList,
-                         api_.DataFolder(),
+                         api_.DataFolder().string(),
                          api_.Internal().Legacy().Nym(),
                          "trades",  // todo stop hardcoding.
                          server_id_.asBase58(api_.Crypto()).c_str(),
@@ -3072,7 +3076,7 @@ void Server::process_accept_final_receipt_reply(
 
     OTCronItem::EraseActiveCronReceipt(
         api_,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         inboxTransaction.GetReferenceToNum(),
         nym_->ID(),
         inboxTransaction.GetPurportedNotaryID());
@@ -3363,7 +3367,7 @@ auto Server::process_account_data(
 
             OTCronItem::EraseActiveCronReceipt(
                 api_,
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 transaction.GetReferenceToNum(),
                 nym_->ID(),
                 transaction.GetPurportedNotaryID());
@@ -3803,7 +3807,7 @@ auto Server::process_get_market_list_response(
     if (reply.m_lDepth == 0) {
         bool success = storage.EraseValueByKey(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().Market(),  // "markets"
             reply.m_strNotaryID->Get(),         // "markets/<notaryID>"
             data_file,
@@ -3859,7 +3863,7 @@ auto Server::process_get_market_list_response(
     bool success = storage.StoreObject(
         api_,
         *pMarketList,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         api_.Internal().Legacy().Market(),  // "markets"
         reply.m_strNotaryID->Get(),         // "markets/<notaryID>"
         data_file,
@@ -3894,7 +3898,7 @@ auto Server::process_get_market_offers_response(
     if (reply.m_lDepth == 0) {
         auto success = storage.EraseValueByKey(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().Market(),  // "markets"
             reply.m_strNotaryID->Get(),         // "markets/<notaryID>",
             "offers",                           // "markets/<notaryID>/offers"
@@ -3948,7 +3952,7 @@ auto Server::process_get_market_offers_response(
     bool success = storage.StoreObject(
         api_,
         *pOfferList,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         api_.Internal().Legacy().Market(),  // "markets"
         reply.m_strNotaryID->Get(),         // "markets/<notaryID>",
         "offers",                           // "markets/<notaryID>/offers"
@@ -3985,7 +3989,7 @@ auto Server::process_get_market_recent_trades_response(
     if (reply.m_lDepth == 0) {
         bool success = storage.EraseValueByKey(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().Market(),  // "markets"
             reply.m_strNotaryID->Get(),         // "markets/<notaryID>recent",
                                                 // //
@@ -4043,7 +4047,7 @@ auto Server::process_get_market_recent_trades_response(
     bool success = storage.StoreObject(
         api_,
         *pTradeList,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         api_.Internal().Legacy().Market(),  // "markets"
         reply.m_strNotaryID->Get(),         // "markets/<notaryID>"
         "recent",                           // "markets/<notaryID>/recent"
@@ -4105,7 +4109,7 @@ auto Server::process_get_nym_market_offers_response(
     if (reply.m_lDepth == 0) {
         bool success = storage.EraseValueByKey(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().Nym(),  // "nyms"
             reply.m_strNotaryID->Get(),      // "nyms/<notaryID>",
             "offers",                        // "nyms/<notaryID>/offers"
@@ -4158,7 +4162,7 @@ auto Server::process_get_nym_market_offers_response(
     bool success = storage.StoreObject(
         api_,
         *pOfferList,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         api_.Internal().Legacy().Nym(),  // "nyms"
         reply.m_strNotaryID->Get(),      // "nyms/<notaryID>",
         "offers",                        // "nyms/<notaryID>/offers",
@@ -4571,7 +4575,7 @@ auto Server::process_process_box_response(
         OTDB::StorePlainString(
             api_,
             encoded->Get(),
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().Receipt(),
             notaryID->Get(),
             filename,
@@ -4586,7 +4590,7 @@ auto Server::process_process_box_response(
         OTDB::StorePlainString(
             api_,
             encoded->Get(),
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().Receipt(),
             notaryID->Get(),
             filename,
@@ -5152,7 +5156,7 @@ void Server::process_response_transaction(
         OTDB::StorePlainString(
             api_,
             encoded->Get(),
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().Receipt(),
             server_id_.asBase58(api_.Crypto()),
             filename,
@@ -5162,7 +5166,7 @@ void Server::process_response_transaction(
         OTDB::StorePlainString(
             api_,
             encoded->Get(),
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().Receipt(),
             server_id_.asBase58(api_.Crypto()),
             filename,
@@ -5549,14 +5553,14 @@ void Server::process_response_transaction_cron(
     {
         const bool bExists1 = OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().PaymentInbox(),
             server_id_.asBase58(api_.Crypto()),
             nymID.asBase58(api_.Crypto()),
             "");
         const bool bExists2 = OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             api_.Internal().Legacy().RecordBox(),
             server_id_.asBase58(api_.Crypto()),
             nymID.asBase58(api_.Crypto()),
@@ -6771,14 +6775,14 @@ auto Server::remove_nymbox_item(
                 const auto notaryID = String::Factory(server_id_);
                 const bool exists1 = OTDB::Exists(
                     api_,
-                    api_.DataFolder(),
+                    api_.DataFolder().string(),
                     api_.Internal().Legacy().PaymentInbox(),
                     notaryID->Get(),
                     nymID.asBase58(api_.Crypto()),
                     "");
                 const bool exists2 = OTDB::Exists(
                     api_,
-                    api_.DataFolder(),
+                    api_.DataFolder().string(),
                     api_.Internal().Legacy().RecordBox(),
                     notaryID->Get(),
                     nymID.asBase58(api_.Crypto()),
@@ -7068,7 +7072,7 @@ auto Server::remove_nymbox_item(
 
             OTCronItem::EraseActiveCronReceipt(
                 api_,
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 serverTransaction->GetReferenceToNum(),
                 nymID,
                 serverTransaction->GetPurportedNotaryID());

@@ -97,7 +97,8 @@ auto NotarySession(
                     ": There was a problem creating the server. The server "
                     "contract will be deleted. Error: ")(e.what())
                     .Flush();
-                const UnallocatedCString datafolder = output->DataFolder();
+                const UnallocatedCString datafolder =
+                    output->DataFolder().string();
                 OTDB::EraseValueByKey(
                     *output,
                     datafolder,
@@ -404,7 +405,7 @@ auto Notary::last_generated_series(
             unitID + SERIES_DIVIDER + std::to_string(output);
         const auto exists = OTDB::Exists(
             *this,
-            data_folder_,
+            data_folder_.string(),
             parent_.Internal().Legacy().Mint(),
             serverID.c_str(),
             filename.c_str(),

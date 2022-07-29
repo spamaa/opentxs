@@ -189,7 +189,7 @@ void Multiplex::InitBackup()
 {
     if (config_.fs_backup_directory_.empty()) { return; }
 
-    init_fs_backup(config_.fs_backup_directory_);
+    init_fs_backup(config_.fs_backup_directory_.string());
 }
 
 void Multiplex::InitEncryptedBackup(
@@ -197,7 +197,7 @@ void Multiplex::InitEncryptedBackup(
 {
     if (config_.fs_encrypted_backup_directory_.empty()) { return; }
 
-    init_fs_backup(config_.fs_encrypted_backup_directory_);
+    init_fs_backup(config_.fs_encrypted_backup_directory_.string());
 }
 
 auto Multiplex::Load(

@@ -121,7 +121,7 @@ Client::Client(
           *activity_,
           *contacts_,
           parent_.Internal().Legacy(),
-          dataFolder,
+          dataFolder.string(),
           args_))
     , workflow_(factory::Workflow(*this, *activity_, *contacts_))
     , ot_api_(new OT_API(

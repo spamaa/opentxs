@@ -119,7 +119,8 @@ auto OTCronItem::LoadCronReceipt(
     auto filename = api::Legacy::GetFilenameCrn(lTransactionNum);
 
     const char* szFoldername = api.Internal().Legacy().Cron();
-    if (!OTDB::Exists(api, api.DataFolder(), szFoldername, filename, "", "")) {
+    if (!OTDB::Exists(
+            api, api.DataFolder().string(), szFoldername, filename, "", "")) {
         LogError()(OT_PRETTY_STATIC(OTCronItem))("File does not exist: ")(
             szFoldername)('/')(filename)(".")
             .Flush();
@@ -127,11 +128,16 @@ auto OTCronItem::LoadCronReceipt(
     }
 
     auto strFileContents = String::Factory(OTDB::QueryPlainString(
-        api, api.DataFolder(), szFoldername, filename, "", ""));  // <===
-                                                                  // LOADING
-                                                                  // FROM
-                                                                  // DATA
-                                                                  // STORE.
+        api,
+        api.DataFolder().string(),
+        szFoldername,
+        filename,
+        "",
+        ""));  // <===
+               // LOADING
+               // FROM
+               // DATA
+               // STORE.
 
     if (strFileContents->GetLength() < 2) {
         LogError()(OT_PRETTY_STATIC(OTCronItem))("Error reading file: ")(
@@ -163,7 +169,7 @@ auto OTCronItem::LoadActiveCronReceipt(
 
     if (!OTDB::Exists(
             api,
-            api.DataFolder(),
+            api.DataFolder().string(),
             szFoldername,
             strNotaryID->Get(),
             filename,
@@ -176,7 +182,7 @@ auto OTCronItem::LoadActiveCronReceipt(
 
     auto strFileContents = String::Factory(OTDB::QueryPlainString(
         api,
-        api.DataFolder(),
+        api.DataFolder().string(),
         szFoldername,
         strNotaryID->Get(),
         filename,
@@ -390,7 +396,7 @@ auto OTCronItem::SaveActiveCronReceipt(const identifier::Nym& theNymID)
 
     if (OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             szFoldername,
             strNotaryID->Get(),
             filename,
@@ -413,7 +419,7 @@ auto OTCronItem::SaveActiveCronReceipt(const identifier::Nym& theNymID)
 
         if (OTDB::Exists(
                 api_,
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 szFoldername,
                 strNotaryID->Get(),
                 list_filename,
@@ -422,7 +428,7 @@ auto OTCronItem::SaveActiveCronReceipt(const identifier::Nym& theNymID)
             //
             auto strNumlist = String::Factory(OTDB::QueryPlainString(
                 api_,
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 szFoldername,
                 strNotaryID->Get(),
                 list_filename,
@@ -465,7 +471,7 @@ auto OTCronItem::SaveActiveCronReceipt(const identifier::Nym& theNymID)
             bool bSaved = OTDB::StorePlainString(
                 api_,
                 strFinal->Get(),
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 szFoldername,
                 strNotaryID->Get(),
                 list_filename,
@@ -496,7 +502,7 @@ auto OTCronItem::SaveActiveCronReceipt(const identifier::Nym& theNymID)
     bool bSaved = OTDB::StorePlainString(
         api_,
         strFinal->Get(),
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         szFoldername,
         strNotaryID->Get(),
         filename,
@@ -530,7 +536,8 @@ auto OTCronItem::SaveCronReceipt() -> bool
         GetTransactionNum());  // cron/TRANSACTION_NUM.crn
     const char* szFoldername = api_.Internal().Legacy().Cron();  // cron
 
-    if (OTDB::Exists(api_, api_.DataFolder(), szFoldername, filename, "", "")) {
+    if (OTDB::Exists(
+            api_, api_.DataFolder().string(), szFoldername, filename, "", "")) {
         LogError()(OT_PRETTY_CLASS())(
             "Cron Record already exists for transaction ")(GetTransactionNum())(
             " ")(szFoldername)('/')(
@@ -554,7 +561,7 @@ auto OTCronItem::SaveCronReceipt() -> bool
     bool bSaved = OTDB::StorePlainString(
         api_,
         strFinal->Get(),
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         szFoldername,
         filename,
         "",

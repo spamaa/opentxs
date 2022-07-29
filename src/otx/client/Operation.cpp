@@ -1387,7 +1387,7 @@ auto Operation::construct_withdraw_cash() -> std::shared_ptr<Message>
     const auto& unitID = account.get().GetInstrumentDefinitionID();
     const bool exists = OTDB::Exists(
         api_,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         api_.Internal().Legacy().Mint(),
         serverID.asBase58(api_.Crypto()),
         unitID.asBase58(api_.Crypto()),
@@ -1943,7 +1943,7 @@ auto Operation::get_receipts(
 
         const auto exists = VerifyBoxReceiptExists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             server_id_,
             nym_id_,
             accountID,

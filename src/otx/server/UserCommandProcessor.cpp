@@ -665,7 +665,7 @@ auto UserCommandProcessor::cmd_delete_asset_account(ReplyMessage& reply) const
 
         if (contract->Type() == contract::UnitType::Security) {
             if (false == contract->EraseAccountRecord(
-                             server_.API().DataFolder(), accountID)) {
+                             server_.API().DataFolder().string(), accountID)) {
                 LogError()(OT_PRETTY_CLASS())(
                     "Unable to delete account record ")(contractID)(".")
                     .Flush();
@@ -1957,8 +1957,9 @@ auto UserCommandProcessor::cmd_register_account(ReplyMessage& reply) const
         if (contract->Type() == contract::UnitType::Security) {
             // The instrument definition keeps a list of all accounts for that
             // type. (For shares, not for currencies.)
-            if (false == contract->AddAccountRecord(
-                             server_.API().DataFolder(), account.get())) {
+            if (false ==
+                contract->AddAccountRecord(
+                    server_.API().DataFolder().string(), account.get())) {
                 LogError()(OT_PRETTY_CLASS())("Unable to add account record ")(
                     contractID)
                     .Flush();

@@ -3,8 +3,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-target_sources(opentxs-common PRIVATE "All.cpp")
-
 if(OPENTXS_DEBUG_BUILD)
   target_sources(opentxs-common PRIVATE "Debug.cpp")
 else()
@@ -12,10 +10,12 @@ else()
 endif()
 
 if(WIN32)
-  target_sources(opentxs-common PRIVATE "non-Apple.cpp" "Windows.cpp")
+  target_sources(opentxs-common PRIVATE "Windows.cpp")
 
   if(OPENTXS_DEBUG_BUILD)
     target_sources(opentxs-common PRIVATE "Windows_debug.cpp")
+  else()
+    target_sources(opentxs-common PRIVATE "Windows_release.cpp")
   endif()
 
   target_include_directories(
@@ -54,7 +54,7 @@ elseif(UNIX)
   else()
     # Use this file for functions which do not need different behavior on
     # Android.
-    target_sources(opentxs-common PRIVATE "non-Apple.cpp" "Unix.cpp")
+    target_sources(opentxs-common PRIVATE "Unix.cpp")
 
     if(OPENTXS_DEBUG_BUILD)
       target_sources(opentxs-common PRIVATE "Unix_debug.cpp")

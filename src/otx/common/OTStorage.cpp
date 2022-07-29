@@ -2711,7 +2711,7 @@ ot_exit_block:
     // set as constants. (no more changing).
     const auto strFolder = std::filesystem::path{strBufFolder};
     const auto strPath = std::filesystem::path{strBufPath};
-    strOutput = strPath;
+    strOutput = strPath.string();
 
     if (bMakePath) { api.Internal().Legacy().BuildFolderPath(strFolder); }
 

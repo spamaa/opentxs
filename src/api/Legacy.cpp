@@ -227,7 +227,7 @@ auto Legacy::AppendFolder(
 {
     try {
         out = remove_trailing_separator(base) /
-              remove_trailing_separator(file) += fs::path{seperator_};
+              remove_trailing_separator(file) += fs::path::preferred_separator;
 
         return true;
     } catch (...) {
@@ -333,7 +333,7 @@ auto Legacy::get_suffix(std::string_view application) noexcept -> fs::path
     if (use_dot()) { output += '.'; }
 
     output += application;
-    output += seperator_;
+    output += fs::path::preferred_separator;
 
     return std::move(output);
 }

@@ -2234,7 +2234,7 @@ void Notary::NotarizePayDividend(
                                     //
                                     const bool bForEachAcct =
                                         pSharesContract->VisitAccountRecords(
-                                            manager_.DataFolder(),
+                                            manager_.DataFolder().string(),
                                             actionPayDividend,
                                             reason_);  // <================
                                                        // pay all the

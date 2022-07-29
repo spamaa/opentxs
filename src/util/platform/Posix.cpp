@@ -9,6 +9,7 @@
 #include "api/context/Context.hpp"    // IWYU pragma: associated
 #include "core/String.hpp"            // IWYU pragma: associated
 #include "internal/util/Signals.hpp"  // IWYU pragma: associated
+#include "util/storage/drivers/filesystem/Common.hpp"  // IWYU pragma: associated
 
 extern "C" {
 #include <pwd.h>
@@ -252,3 +253,21 @@ auto Legacy::get_home_platform() noexcept -> UnallocatedCString
     return {};
 }
 }  // namespace opentxs::api::imp
+
+namespace opentxs::storage::driver::filesystem
+{
+Common::FileDescriptor::FileDescriptor(const fs::path& path) noexcept
+    : fd_(::open(path.c_str(), O_DIRECTORY | O_RDONLY))
+{
+}
+
+auto Common::FileDescriptor::good() const noexcept -> bool
+{
+    return (-1 != fd_);
+}
+
+Common::FileDescriptor::~FileDescriptor()
+{
+    if (good()) { ::close(fd_); }
+}
+}  // namespace opentxs::storage::driver::filesystem

@@ -897,8 +897,8 @@ auto OTMarket::LoadMarket() -> bool
     const char* szFoldername = api_.Internal().Legacy().Market();
     const char* szFilename = str_MARKET_ID->Get();
 
-    bool bSuccess =
-        OTDB::Exists(api_, api_.DataFolder(), szFoldername, szFilename, "", "");
+    bool bSuccess = OTDB::Exists(
+        api_, api_.DataFolder().string(), szFoldername, szFilename, "", "");
 
     if (bSuccess) {
         bSuccess = LoadContract(szFoldername, szFilename);  // todo ??
@@ -918,7 +918,7 @@ auto OTMarket::LoadMarket() -> bool
         m_pTradeList = dynamic_cast<OTDB::TradeListMarket*>(OTDB::QueryObject(
             api_,
             OTDB::STORED_OBJ_TRADE_LIST_MARKET,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             szFoldername,  // markets
             szSubFolder,   // markets/recent
             trade_files,
@@ -968,7 +968,7 @@ auto OTMarket::SaveMarket(const PasswordPrompt& reason) -> bool
         if (!OTDB::StoreObject(
                 api_,
                 *m_pTradeList,
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 szFoldername,  // markets
                 szSubFolder,   // markets/recent
                 filename,

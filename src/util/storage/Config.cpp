@@ -152,7 +152,7 @@ Config::Config(
             output = newPath;
         }
 
-        auto strPath = String::Factory(output.c_str());
+        auto strPath = String::Factory(output.string().c_str());
         config.CheckSet_str(
             String::Factory(STORAGE_CONFIG_KEY),
             String::Factory("path"),

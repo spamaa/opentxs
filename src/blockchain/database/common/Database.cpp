@@ -315,7 +315,7 @@ auto Database::AddOrUpdate(Address_p address) const noexcept -> bool
 auto Database::AllocateStorageFolder(
     const UnallocatedCString& dir) const noexcept -> UnallocatedCString
 {
-    return imp_.AllocateStorageFolder(dir);
+    return imp_.AllocateStorageFolder(dir).string();
 }
 
 auto Database::AssociateTransaction(

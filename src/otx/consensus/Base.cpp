@@ -441,7 +441,7 @@ auto Base::IssuedNumbers() const -> UnallocatedSet<TransactionNumber>
 
 auto Base::LegacyDataFolder() const -> UnallocatedCString
 {
-    return api_.DataFolder();
+    return api_.DataFolder().string();
 }
 
 auto Base::LocalNymboxHash() const -> identifier::Generic

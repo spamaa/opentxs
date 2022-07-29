@@ -43,7 +43,7 @@ auto Legacy::use_dot() noexcept -> bool { return false; }
 
 namespace opentxs::storage::driver::filesystem
 {
-auto Common::sync(int fd) const -> bool
+auto Common::sync(DescriptorType::handle_type fd) const -> bool
 {
     return 0 == ::fcntl(fd, F_FULLFSYNC);
 }

@@ -623,11 +623,11 @@ private:
 
         OT_ASSERT(set);
 
-        rc = ::mdb_env_open(env_, folder.c_str(), flags, 0664);
+        rc = ::mdb_env_open(env_, folder.string().c_str(), flags, 0664);
         set = 0 == rc;
         if (!set) {
-            LogConsole()("failed to open: ")(folder.c_str())(" flags: ")(
-                flags)(" reason: ")(::mdb_strerror(rc))
+            LogConsole()("failed to open: ")(folder.string().c_str())(
+                " flags: ")(flags)(" reason: ")(::mdb_strerror(rc))
                 .Flush();
             close_env();
         }
