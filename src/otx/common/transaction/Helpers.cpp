@@ -407,7 +407,7 @@ auto LoadBoxReceipt(
     //
     if (!OTDB::Exists(
             api,
-            api.DataFolder(),
+            api.DataFolder().string(),
             strFolder1name->Get(),
             strFolder2name->Get(),
             strFolder3name->Get(),
@@ -423,7 +423,7 @@ auto LoadBoxReceipt(
     //
     UnallocatedCString strFileContents(OTDB::QueryPlainString(
         api,
-        api.DataFolder(),
+        api.DataFolder().string(),
         strFolder1name->Get(),  // <=== LOADING FROM DATA STORE.
         strFolder2name->Get(),
         strFolder3name->Get(),

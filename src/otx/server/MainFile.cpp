@@ -143,7 +143,7 @@ auto MainFile::SaveMainFile() -> bool
     const bool bSaved = OTDB::StorePlainString(
         server_.API(),
         strFinal->Get(),
-        server_.API().DataFolder(),
+        server_.API().DataFolder().string(),
         ".",
         server_.WalletFilename().Get(),
         "",
@@ -165,7 +165,7 @@ auto MainFile::CreateMainFile(
     if (!OTDB::StorePlainString(
             server_.API(),
             strContract,
-            server_.API().DataFolder(),
+            server_.API().DataFolder().string(),
             server_.API().Internal().Legacy().Contract(),
             strNotaryID,
             "",
@@ -194,7 +194,7 @@ auto MainFile::CreateMainFile(
     if (!OTDB::StorePlainString(
             server_.API(),
             notary.c_str(),
-            server_.API().DataFolder(),
+            server_.API().DataFolder().string(),
             ".",
             "notaryServer.xml",
             "",
@@ -229,7 +229,7 @@ auto MainFile::LoadMainFile(bool bReadOnly) -> bool
 {
     if (!OTDB::Exists(
             server_.API(),
-            server_.API().DataFolder(),
+            server_.API().DataFolder().string(),
             ".",
             server_.WalletFilename().Get(),
             "",
@@ -241,7 +241,7 @@ auto MainFile::LoadMainFile(bool bReadOnly) -> bool
     }
     auto strFileContents = String::Factory(OTDB::QueryPlainString(
         server_.API(),
-        server_.API().DataFolder(),
+        server_.API().DataFolder().string(),
         ".",
         server_.WalletFilename().Get(),
         "",

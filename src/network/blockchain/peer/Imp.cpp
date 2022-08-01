@@ -390,7 +390,6 @@ auto Peer::Imp::do_shutdown() noexcept -> void
     do_disconnect();
     network_p_.reset();
     api_p_.reset();
-
 }
 
 auto Peer::Imp::do_startup() noexcept -> void

@@ -70,7 +70,8 @@ struct MappedFileStorage::Imp {
         const auto filename = std::filesystem::path{filename_prefix_} +=
             number + ".dat";
 
-        return prefix / filename;
+        return std::filesystem::path{prefix.string().c_str()} /
+               std::filesystem::path{filename.string().c_str()};
     }
     auto check_file(const FileCounter position) noexcept -> void
     {
@@ -85,7 +86,7 @@ struct MappedFileStorage::Imp {
         -> void
     {
         auto params = boost::iostreams::mapped_file_params{
-            calculate_file_name(prefix, file)};
+            calculate_file_name(prefix, file).string()};
         params.flags = boost::iostreams::mapped_file::readwrite;
         const auto& path = params.path;
         LogTrace()(OT_PRETTY_CLASS())("initializing file ")(path).Flush();

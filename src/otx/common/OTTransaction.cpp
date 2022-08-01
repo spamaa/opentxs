@@ -1729,7 +1729,7 @@ auto OTTransaction::VerifyBalanceReceipt(
 
     if (!OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             szFolder1name,
             szFolder2name,
             filename,
@@ -1742,7 +1742,12 @@ auto OTTransaction::VerifyBalanceReceipt(
     }
 
     const UnallocatedCString strFileContents(OTDB::QueryPlainString(
-        api_, api_.DataFolder(), szFolder1name, szFolder2name, filename, ""));
+        api_,
+        api_.DataFolder().string(),
+        szFolder1name,
+        szFolder2name,
+        filename,
+        ""));
 
     if (strFileContents.length() < 2) {
         LogError()(OT_PRETTY_CLASS())("Error reading "
@@ -2986,7 +2991,7 @@ auto OTTransaction::DeleteBoxReceipt(Ledger& theLedger) -> bool
     //
     if (!OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             strFolder1name->Get(),
             strFolder2name->Get(),
             strFolder3name->Get(),
@@ -3052,7 +3057,7 @@ auto OTTransaction::DeleteBoxReceipt(Ledger& theLedger) -> bool
     bool bDeleted = OTDB::StorePlainString(
         api_,
         strOutput->Get(),
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         strFolder1name->Get(),
         strFolder2name->Get(),
         strFolder3name->Get(),
@@ -3101,7 +3106,7 @@ auto OTTransaction::SaveBoxReceipt(std::int64_t lLedgerType) -> bool
     //
     if (OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             strFolder1name->Get(),
             strFolder2name->Get(),
             strFolder3name->Get(),
@@ -3132,7 +3137,7 @@ auto OTTransaction::SaveBoxReceipt(std::int64_t lLedgerType) -> bool
     bool bSaved = OTDB::StorePlainString(
         api_,
         strFinal->Get(),
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         strFolder1name->Get(),
         strFolder2name->Get(),
         strFolder3name->Get(),

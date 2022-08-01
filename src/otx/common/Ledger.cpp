@@ -492,7 +492,8 @@ auto Ledger::LoadGeneric(ledgerType theType, const String& pString) -> bool
     if (pString.Exists()) {  // Loading FROM A STRING.
         strRawFile->Set(pString.Get());
     } else {  // Loading FROM A FILE.
-        if (!OTDB::Exists(api_, api_.DataFolder(), path1, path2, path3, "")) {
+        if (!OTDB::Exists(
+                api_, api_.DataFolder().string(), path1, path2, path3, "")) {
             LogDebug()(OT_PRETTY_CLASS())("does not exist in OTLedger::Load")(
                 pszType)(": ")(path1)('/')(m_strFilename.get())
                 .Flush();
@@ -502,7 +503,7 @@ auto Ledger::LoadGeneric(ledgerType theType, const String& pString) -> bool
         // Try to load the ledger from local storage.
         UnallocatedCString strFileContents(OTDB::QueryPlainString(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             path1,
             path2,
             path3,
@@ -585,7 +586,7 @@ auto Ledger::SaveGeneric(ledgerType theType) -> bool
     bool bSaved = OTDB::StorePlainString(
         api_,
         strFinal->Get(),
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         path1,
         path2,
         path3,
@@ -718,7 +719,7 @@ auto Ledger::make_filename(const ledgerType theType) -> std::
     three = ledgerID->Get();
 
     if (false == m_strFilename->Exists()) {
-        m_strFilename->Set((fs::path{two} / fs::path{three}).c_str());
+        m_strFilename->Set((fs::path{two} / fs::path{three}).string().c_str());
     }
 
     if (2 > one.size()) { return output; }
@@ -849,6 +850,7 @@ auto Ledger::generate_ledger(
             m_strFilename->Set(api_.Internal()
                                    .Legacy()
                                    .LedgerFileName(theNotaryID, theAcctID)
+                                   .string()
                                    .c_str());
         } break;
         case ledgerType::inbox: {
@@ -856,6 +858,7 @@ auto Ledger::generate_ledger(
             m_strFilename->Set(api_.Internal()
                                    .Legacy()
                                    .LedgerFileName(theNotaryID, theAcctID)
+                                   .string()
                                    .c_str());
         } break;
         case ledgerType::outbox: {
@@ -864,6 +867,7 @@ auto Ledger::generate_ledger(
             m_strFilename->Set(api_.Internal()
                                    .Legacy()
                                    .LedgerFileName(theNotaryID, theAcctID)
+                                   .string()
                                    .c_str());
         } break;
         case ledgerType::paymentInbox: {
@@ -872,6 +876,7 @@ auto Ledger::generate_ledger(
             m_strFilename->Set(api_.Internal()
                                    .Legacy()
                                    .LedgerFileName(theNotaryID, theAcctID)
+                                   .string()
                                    .c_str());
         } break;
         case ledgerType::recordBox: {
@@ -880,6 +885,7 @@ auto Ledger::generate_ledger(
             m_strFilename->Set(api_.Internal()
                                    .Legacy()
                                    .LedgerFileName(theNotaryID, theAcctID)
+                                   .string()
                                    .c_str());
         } break;
         case ledgerType::expiredBox: {
@@ -888,6 +894,7 @@ auto Ledger::generate_ledger(
             m_strFilename->Set(api_.Internal()
                                    .Legacy()
                                    .LedgerFileName(theNotaryID, theAcctID)
+                                   .string()
                                    .c_str());
         } break;
         case ledgerType::message: {
@@ -932,7 +939,7 @@ auto Ledger::generate_ledger(
 
         if (OTDB::Exists(
                 api_,
-                api_.DataFolder(),
+                api_.DataFolder().string(),
                 szFolder1name,
                 szFolder2name,
                 szFilename,
@@ -2304,7 +2311,7 @@ auto Ledger::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                         const bool bBoxReceiptAlreadyExists =
                             VerifyBoxReceiptExists(
                                 api_,
-                                api_.DataFolder(),
+                                api_.DataFolder().string(),
                                 transaction->GetRealNotaryID(),
                                 transaction->GetNymID(),
                                 transaction->GetRealAccountID(),  // If Nymbox

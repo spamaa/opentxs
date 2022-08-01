@@ -94,10 +94,6 @@ public:
     ~Legacy() final = default;
 
 private:
-    static constexpr auto seperator_ = std::string_view{
-        &fs::path::preferred_separator,
-        sizeof(fs::path::preferred_separator)};
-
     static const char* account_;
     static const char* common_;
     static const char* contract_;

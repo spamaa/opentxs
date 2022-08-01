@@ -303,7 +303,7 @@ auto OT_API::LoadConfigFile() -> bool
     //
     // we need to get the loacation of where the pid file should be.
     // then we pass it to the OpenPid function.
-    auto strDataPath = String::Factory(api_.DataFolder().c_str());
+    auto strDataPath = String::Factory(api_.DataFolder().string().c_str());
 
     if (!api_.Internal().Legacy().ConfirmCreateFolder(strDataPath->Get())) {
         return false;
@@ -587,7 +587,7 @@ auto OT_API::SmartContract_AddParty(
 
     party = new OTParty(
         api_,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         str_party_name.c_str(),
         true /*bIsOwnerNym*/,
         szPartyNymID,
@@ -1124,7 +1124,7 @@ auto OT_API::SmartContract_ConfirmParty(
 
     auto* pNewParty = new OTParty(
         api_,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         party->GetPartyName(),
         *nym,  // party keeps an internal pointer to nym from here on.
         party->GetAuthorizingAgentName());  // Party name and agent name must

@@ -230,7 +230,7 @@ auto OTSignedFile::LoadFile() -> bool
 {
     if (OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             m_strFoldername->Get(),
             m_strFilename->Get(),
             "",

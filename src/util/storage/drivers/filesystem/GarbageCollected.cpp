@@ -42,7 +42,7 @@ GarbageCollected::GarbageCollected(
     const api::session::Storage& storage,
     const storage::Config& config,
     const Flag& bucket)
-    : ot_super(crypto, asio, storage, config, config.path_, bucket)
+    : ot_super(crypto, asio, storage, config, config.path_.string(), bucket)
 {
     Init_GarbageCollected();
 }
@@ -84,12 +84,15 @@ auto GarbageCollected::EmptyBucket(const bool bucket) const -> bool
     const auto random = crypto_.Encode().RandomFilename();
     const auto newName = folder_ / random;
 
-    if (0 != std::rename(oldDirectory.c_str(), newName.c_str())) {
+    if (0 !=
+        std::rename(oldDirectory.string().c_str(), newName.string().c_str())) {
         return false;
     }
 
     asio_.Internal().Post(
-        ThreadPool::General, [=] { purge(newName); }, "GarbageCollected");
+        ThreadPool::General,
+        [=] { purge(newName.string()); },
+        "GarbageCollected");
 
     return fs::create_directory(oldDirectory);
 }

@@ -59,7 +59,7 @@ auto Common::LoadFromBucket(
     if (false == fs::exists(filename, ec)) { return false; }
 
     if (ready_.get() && false == folder_.empty()) {
-        value = read_file(filename);
+        value = read_file(filename.string());
     }
 
     return false == value.empty();
@@ -69,7 +69,7 @@ auto Common::LoadRoot() const -> UnallocatedCString
 {
     if (ready_.get() && false == folder_.empty()) {
 
-        return read_file(root_filename());
+        return read_file(root_filename().string());
     }
 
     return "";
@@ -125,7 +125,8 @@ void Common::store(
     if (ready_.get() && false == folder_.empty()) {
         auto directory = fs::path{};
         const auto filename = calculate_path(key, bucket, directory);
-        promise->set_value(write_file(directory, filename, value));
+        promise->set_value(
+            write_file(directory.string(), filename.string(), value));
     } else {
         promise->set_value(false);
     }
@@ -135,7 +136,7 @@ auto Common::StoreRoot(const bool, const UnallocatedCString& hash) const -> bool
 {
     if (ready_.get() && false == folder_.empty()) {
 
-        return write_file(folder_, root_filename(), hash);
+        return write_file(folder_.string(), root_filename().string(), hash);
     }
 
     return false;
@@ -163,7 +164,7 @@ auto Common::write_file(
 {
     if (false == filename.empty()) {
         fs::path filePath(filename);
-        File file(filePath);
+        File file(filePath.string());
         const auto data = prepare_write(contents);
 
         if (file.good()) {

@@ -8,6 +8,7 @@
 #include "api/Legacy.hpp"           // IWYU pragma: associated
 #include "api/context/Context.hpp"  // IWYU pragma: associated
 #include "util/Thread.hpp"          // IWYU pragma: associated
+#include "util/storage/drivers/filesystem/Common.hpp"  // IWYU pragma: associated
 
 extern "C" {
 #include <sys/resource.h>
@@ -62,3 +63,11 @@ auto Legacy::get_suffix() noexcept -> fs::path { return get_suffix("ot"); }
 
 auto Legacy::prepend() noexcept -> UnallocatedCString { return {}; }
 }  // namespace opentxs::api::imp
+
+namespace opentxs::storage::driver::filesystem
+{
+auto Common::sync(DescriptorType::handle_type fd) const -> bool
+{
+    return 0 == ::fsync(fd);
+}
+}  // namespace opentxs::storage::driver::filesystem

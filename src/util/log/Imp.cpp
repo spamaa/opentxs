@@ -203,7 +203,7 @@ auto Log::Imp::Buffer(const std::filesystem::path& in) const noexcept -> void
 {
     if (false == active()) { return; }
 
-    buffer(in.c_str());
+    buffer(in.string().c_str());
 }
 
 auto Log::Imp::Buffer(const std::string_view in) const noexcept -> void

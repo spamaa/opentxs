@@ -36,7 +36,7 @@ public:
     ~AsyncConst() = default;
 
 private:
-    std::promise<const T> promise_;
-    std::shared_future<const T> future_;
+    std::promise<T> promise_;
+    std::shared_future<T> future_;
 };
 }  // namespace opentxs

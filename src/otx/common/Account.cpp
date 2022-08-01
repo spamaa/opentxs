@@ -618,7 +618,7 @@ auto Account::LoadExistingAccount(
     const identifier::Generic& accountId,
     const identifier::Notary& notaryID) -> Account*
 {
-    auto strDataFolder = api.DataFolder();
+    auto strDataFolder = api.DataFolder().string();
     auto strAccountPath = std::filesystem::path{};
 
     if (!api.Internal().Legacy().AppendFolder(
@@ -647,7 +647,7 @@ auto Account::LoadExistingAccount(
 
     if (!OTDB::Exists(
             api,
-            api.DataFolder(),
+            api.DataFolder().string(),
             account->m_strFoldername->Get(),
             account->m_strFilename->Get(),
             "",
@@ -740,7 +740,7 @@ auto Account::GenerateNewAccount(
     // exist.
     if (OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             m_strFoldername->Get(),
             m_strFilename->Get(),
             "",

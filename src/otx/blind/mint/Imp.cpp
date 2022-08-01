@@ -66,6 +66,7 @@ Mint::Mint(
     m_strFilename->Set(api_.Internal()
                            .Legacy()
                            .MintFileName(m_NotaryID, m_InstrumentDefinitionID)
+                           .string()
                            .c_str());
     InitMint();
 }
@@ -92,6 +93,7 @@ Mint::Mint(
     m_strFilename->Set(api_.Internal()
                            .Legacy()
                            .MintFileName(m_NotaryID, m_InstrumentDefinitionID)
+                           .string()
                            .c_str());
     InitMint();
 }
@@ -188,6 +190,7 @@ auto Mint::LoadMint(std::string_view extension) -> bool
             api_.Internal()
                 .Legacy()
                 .MintFileName(m_NotaryID, m_InstrumentDefinitionID, extension)
+                .string()
                 .c_str());
     }
 
@@ -195,11 +198,12 @@ auto Mint::LoadMint(std::string_view extension) -> bool
         fs::path{m_InstrumentDefinitionID.asBase58(api_.Crypto())} += extension;
     const char* szFolder1name = api_.Internal().Legacy().Mint();
     const char* szFolder2name = strNotaryID->Get();
-    const char* szFilename = strFilename.c_str();
+    const auto pathString = strFilename.string();
+    const char* szFilename = pathString.c_str();
 
     if (!OTDB::Exists(
             api_,
-            api_.DataFolder(),
+            api_.DataFolder().string(),
             szFolder1name,
             szFolder2name,
             szFilename,
@@ -212,7 +216,7 @@ auto Mint::LoadMint(std::string_view extension) -> bool
 
     UnallocatedCString strFileContents(OTDB::QueryPlainString(
         api_,
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         szFolder1name,
         szFolder2name,
         szFilename,
@@ -250,6 +254,7 @@ auto Mint::SaveMint(std::string_view extension) -> bool
             api_.Internal()
                 .Legacy()
                 .MintFileName(m_NotaryID, m_InstrumentDefinitionID, extension)
+                .string()
                 .c_str());
     }
 
@@ -257,7 +262,8 @@ auto Mint::SaveMint(std::string_view extension) -> bool
         fs::path{m_InstrumentDefinitionID.asBase58(api_.Crypto())} += extension;
     const char* szFolder1name = api_.Internal().Legacy().Mint();
     const char* szFolder2name = strNotaryID->Get();
-    const char* szFilename = strFilename.c_str();
+    const auto pathString = strFilename.string();
+    const char* szFilename = pathString.c_str();
     auto strRawFile = String::Factory();
 
     if (!SaveContractRaw(strRawFile)) {
@@ -282,7 +288,7 @@ auto Mint::SaveMint(std::string_view extension) -> bool
     bool bSaved = OTDB::StorePlainString(
         api_,
         strFinal->Get(),
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         szFolder1name,
         szFolder2name,
         szFilename,

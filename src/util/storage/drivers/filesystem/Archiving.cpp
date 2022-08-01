@@ -69,7 +69,7 @@ auto Archiving::calculate_path(
 
     if (4 < key.size()) {
         directory / key.substr(0, 4);
-        level2 = directory;
+        level2 = directory.string();
     }
 
     if (8 < key.size()) { directory / key.substr(4, 4); }

@@ -2435,7 +2435,7 @@ auto OTScriptable::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
 
                     auto* pParty = new OTParty(
                         api_,
-                        api_.DataFolder(),
+                        api_.DataFolder().string(),
                         strName->Exists() ? strName->Get() : "PARTY_ERROR_NAME",
                         strOwnerType->Compare("nym") ? true : false,
                         strOwnerID->Get(),

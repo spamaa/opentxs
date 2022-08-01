@@ -732,7 +732,7 @@ auto NymFile::SerializeNymFile(const char* szFoldername, const char* szFilename)
     bool bSaved = OTDB::StorePlainString(
         api_,
         strNym->Get(),
-        api_.DataFolder(),
+        api_.DataFolder().string(),
         szFoldername,
         szFilename,
         "",

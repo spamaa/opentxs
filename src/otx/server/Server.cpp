@@ -194,7 +194,12 @@ void Server::CreateMainFile(bool& mainFileExists)
 
     if (api::crypto::HaveHDKeys()) {
         const auto backup = OTDB::QueryPlainString(
-            manager_, manager_.DataFolder(), SEED_BACKUP_FILE, "", "", "");
+            manager_,
+            manager_.DataFolder().string(),
+            SEED_BACKUP_FILE,
+            "",
+            "",
+            "");
 
         if (false == backup.empty()) {
             LogError()(OT_PRETTY_CLASS())("Seed backup found. Restoring.")
@@ -357,14 +362,15 @@ void Server::CreateMainFile(bool& mainFileExists)
 
     const auto& wallet = manager_.Wallet();
     const auto contract = [&] {
-        const auto existing = String::Factory(OTDB::QueryPlainString(
-                                                  manager_,
-                                                  manager_.DataFolder(),
-                                                  SERVER_CONTRACT_FILE,
-                                                  "",
-                                                  "",
-                                                  "")
-                                                  .data());
+        const auto existing =
+            String::Factory(OTDB::QueryPlainString(
+                                manager_,
+                                manager_.DataFolder().string(),
+                                SERVER_CONTRACT_FILE,
+                                "",
+                                "",
+                                "")
+                                .data());
 
         if (existing->empty()) {
 
@@ -430,7 +436,7 @@ void Server::CreateMainFile(bool& mainFileExists)
     OTDB::StorePlainString(
         manager_,
         strBookended->Get(),
-        manager_.DataFolder(),
+        manager_.DataFolder().string(),
         SERVER_CONTRACT_FILE,
         "",
         "",
@@ -452,7 +458,13 @@ void Server::CreateMainFile(bool& mainFileExists)
     json += "\" }\n";
 
     OTDB::StorePlainString(
-        manager_, json, manager_.DataFolder(), SEED_BACKUP_FILE, "", "", "");
+        manager_,
+        json,
+        manager_.DataFolder().string(),
+        SEED_BACKUP_FILE,
+        "",
+        "",
+        "");
 
     mainFileExists = mainFile_.CreateMainFile(
         strBookended->Get(), strNotaryID, nymID.asBase58(API().Crypto()));
@@ -475,7 +487,7 @@ void Server::Init(bool readOnly)
     bool mainFileExists = WalletFilename().Exists()
                               ? OTDB::Exists(
                                     manager_,
-                                    manager_.DataFolder(),
+                                    manager_.DataFolder().string(),
                                     ".",
                                     WalletFilename().Get(),
                                     "",
@@ -502,7 +514,7 @@ void Server::Init(bool readOnly)
             .Flush();
         OTDB::EraseValueByKey(
             manager_,
-            manager_.DataFolder(),
+            manager_.DataFolder().string(),
             ".",
             WalletFilename().Get(),
             "",
