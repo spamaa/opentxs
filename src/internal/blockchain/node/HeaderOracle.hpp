@@ -7,11 +7,11 @@
 
 #if OT_BLOCKCHAIN
 
-#include <mutex>
-
+#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/util/Bytes.hpp"
+#include "opentxs/util/Container.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -62,11 +62,18 @@ public:
     using node::HeaderOracle::CalculateReorg;
     virtual auto CalculateReorg(const Lock& lock, const block::Position& tip)
         const noexcept(false) -> Positions = 0;
-    virtual auto GetMutex() const noexcept -> std::mutex& = 0;
+    virtual auto Execute(Vector<ReorgTask>&& jobs) const noexcept -> bool = 0;
     using node::HeaderOracle::GetPosition;
     virtual auto GetPosition(const Lock& lock, const block::Height height)
         const noexcept -> block::Position = 0;
 
+    virtual auto AddCheckpoint(
+        const block::Height position,
+        const block::Hash& requiredHash) noexcept -> bool = 0;
+    virtual auto AddHeader(std::unique_ptr<block::Header>) noexcept -> bool = 0;
+    virtual auto AddHeaders(Vector<std::unique_ptr<block::Header>>&) noexcept
+        -> bool = 0;
+    virtual auto DeleteCheckpoint() noexcept -> bool = 0;
     virtual auto GetDefaultCheckpoint() const noexcept -> CheckpointData = 0;
     virtual auto Init() noexcept -> void = 0;
     virtual auto LoadBitcoinHeader(const block::Hash& hash) const noexcept

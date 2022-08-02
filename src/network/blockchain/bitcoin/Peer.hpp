@@ -205,7 +205,6 @@ private:
         std::unique_ptr<HeaderType> header,
         zeromq::Frame&&) noexcept(false) -> void;
     auto process_broadcasttx(Message&& msg) noexcept -> void final;
-    auto process_getblock(Message&& msg) noexcept -> void final;
     auto process_protocol(Message&& message) noexcept -> void final;
     auto process_protocol_addr(
         std::unique_ptr<HeaderType> header,

@@ -7,17 +7,20 @@
 
 #pragma once
 
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <memory>
 #include <optional>
-
-#include "opentxs/blockchain/Types.hpp"
-#include "opentxs/util/Allocated.hpp"
-#include "opentxs/util/Container.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
 {
 // inline namespace v1
 // {
+namespace api
+{
+class Session;
+}  // namespace api
+
 namespace blockchain
 {
 namespace node
@@ -26,6 +29,8 @@ namespace wallet
 {
 class FeeOracle;
 }  // namespace wallet
+
+class Manager;
 }  // namespace node
 }  // namespace blockchain
 
@@ -34,25 +39,27 @@ class Amount;
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
-class opentxs::blockchain::node::wallet::FeeOracle final : public Allocated
+class opentxs::blockchain::node::wallet::FeeOracle
 {
 public:
-    class Imp;
+    class Actor;
+    class Shared;
 
     auto EstimatedFee() const noexcept -> std::optional<Amount>;
-    auto get_allocator() const noexcept -> allocator_type final;
 
-    auto Shutdown() noexcept -> void;
-
-    FeeOracle(Imp* imp) noexcept;
+    FeeOracle(
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node) noexcept;
     FeeOracle() = delete;
     FeeOracle(const FeeOracle&) = delete;
-    FeeOracle(FeeOracle&) = delete;
+    FeeOracle(FeeOracle&&) noexcept;
     auto operator=(const FeeOracle&) -> FeeOracle& = delete;
-    auto operator=(FeeOracle&) -> FeeOracle& = delete;
+    auto operator=(FeeOracle&&) -> FeeOracle& = delete;
 
-    ~FeeOracle() final;
+    ~FeeOracle();
 
 private:
-    Imp* imp_;
+    // TODO switch to std::shared_ptr once the android ndk ships a version of
+    // libc++ with unfucked pmr / allocate_shared support
+    boost::shared_ptr<Shared> shared_;
 };

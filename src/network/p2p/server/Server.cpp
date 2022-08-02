@@ -62,22 +62,19 @@ namespace opentxs::network::p2p
 Server::Imp::Imp(const api::Session& api, const zeromq::Context& zmq) noexcept
     : api_(api)
     , zmq_(zmq)
-    , handle_(zmq_.Internal().MakeBatch([&] {
-        auto out = Vector<zeromq::socket::Type>{};
-        out.emplace_back(zeromq::socket::Type::Router);
-        out.emplace_back(zeromq::socket::Type::Publish);
-        out.emplace_back(zeromq::socket::Type::Pair);
-        const auto chains = opentxs::blockchain::DefinedChains().size();
-        out.insert(out.end(), chains, zeromq::socket::Type::Pair);
+    , handle_(zmq_.Internal().MakeBatch(
+          [&] {
+              auto out = Vector<zeromq::socket::Type>{};
+              out.emplace_back(zeromq::socket::Type::Router);   // NOTE sync_
+              out.emplace_back(zeromq::socket::Type::Publish);  // NOTE update_
+              out.emplace_back(zeromq::socket::Type::Dealer);   // NOTE wallet_
+              const auto chains = opentxs::blockchain::DefinedChains().size();
+              out.insert(out.end(), chains, zeromq::socket::Type::Pair);
 
-        return out;
-    }()))
-    , batch_([&]() -> auto& {
-        auto& out = handle_.batch_;
-        out.thread_name_ = "P2PServer";
-
-        return out;
-    }())
+              return out;
+          }(),
+          "network::p2p::Server"))
+    , batch_(handle_.batch_)
     , external_callback_(
           batch_.listen_callbacks_.emplace_back(zeromq::ListenCallback::Factory(
               [this](auto&& msg) { process_external(std::move(msg)); })))
@@ -102,7 +99,8 @@ Server::Imp::Imp(const api::Session& api, const zeromq::Context& zmq) noexcept
 
         LogTrace()(OT_PRETTY_CLASS())("wallet socket connected to ")(endpoint)
             .Flush();
-        out.Send(MakeWork(Job::Register));
+        // TODO re-send this message if necessary
+        out.SendDeferred(MakeWork(Job::Register), __FILE__, __LINE__);
 
         return out;
     }())
@@ -149,7 +147,7 @@ Server::Imp::Imp(const api::Session& api, const zeromq::Context& zmq) noexcept
                   });
               out.emplace_back(
                   wallet_.ID(), &wallet_, [&socket = sync_](auto&& m) {
-                      socket.Send(std::move(m));
+                      socket.Send(std::move(m), __FILE__, __LINE__);
                   });
 
               for (auto& [chain, data] : map_) {
@@ -165,8 +163,7 @@ Server::Imp::Imp(const api::Session& api, const zeromq::Context& zmq) noexcept
               }
 
               return out;
-          }(),
-          batch_.thread_name_))
+          }()))
     , sync_endpoint_()
     , sync_public_endpoint_()
     , update_endpoint_()
@@ -198,7 +195,7 @@ auto Server::Imp::process_external(zeromq::Message&& incoming) noexcept -> void
             } break;
             case Type::publish_contract:
             case Type::contract_query: {
-                wallet_.Send(std::move(incoming));
+                wallet_.Send(std::move(incoming), __FILE__, __LINE__);
             } break;
             case Type::pushtx: {
                 process_pushtx(std::move(incoming), *base);
@@ -217,17 +214,18 @@ auto Server::Imp::process_external(zeromq::Message&& incoming) noexcept -> void
 
 auto Server::Imp::process_internal(zeromq::Message&& incoming) noexcept -> void
 {
+    const auto& log = LogTrace();
     const auto hSize = incoming.Header().size();
     const auto bSize = incoming.Body().size();
 
     if ((0u == hSize) && (0u == bSize)) { return; }
 
     if (0u < hSize) {
-        LogTrace()(OT_PRETTY_CLASS())("transmitting sync reply").Flush();
-        sync_.SendExternal(std::move(incoming));
+        log(OT_PRETTY_CLASS())("transmitting sync reply").Flush();
+        sync_.SendExternal(std::move(incoming), __FILE__, __LINE__);
     } else {
-        LogTrace()(OT_PRETTY_CLASS())("broadcasting push notification").Flush();
-        update_.SendExternal(std::move(incoming));
+        log(OT_PRETTY_CLASS())("broadcasting push notification").Flush();
+        update_.SendExternal(std::move(incoming), __FILE__, __LINE__);
     }
 }
 
@@ -259,14 +257,18 @@ auto Server::Imp::process_pushtx(
         success = false;
     }
 
-    sync_.SendExternal([&] {
-        auto out = opentxs::network::zeromq::reply_to_message(std::move(msg));
-        const auto reply = factory::BlockchainSyncPushTransactionReply(
-            chain, pushtx.ID(), success);
-        reply.Serialize(out);
+    sync_.SendExternal(
+        [&] {
+            auto out =
+                opentxs::network::zeromq::reply_to_message(std::move(msg));
+            const auto reply = factory::BlockchainSyncPushTransactionReply(
+                chain, pushtx.ID(), success);
+            reply.Serialize(out);
 
-        return out;
-    }());
+            return out;
+        }(),
+        __FILE__,
+        __LINE__);
 #endif  // OT_BLOCKCHAIN
 }
 
@@ -286,7 +288,9 @@ auto Server::Imp::process_sync(
             }();
             auto msg = zeromq::reply_to_message(incoming);
 
-            if (ack.Serialize(msg)) { sync_.SendExternal(std::move(msg)); }
+            if (ack.Serialize(msg)) {
+                sync_.SendExternal(std::move(msg), __FILE__, __LINE__);
+            }
         }
 
         namespace bcsync = opentxs::network::p2p;
@@ -302,7 +306,8 @@ auto Server::Imp::process_sync(
                         map_.at(state.Chain());
 
                     if (enabled) {
-                        socket.get().Send(zeromq::Message{incoming});
+                        socket.get().Send(
+                            zeromq::Message{incoming}, __FILE__, __LINE__);
                     }
                 } catch (...) {
                 }

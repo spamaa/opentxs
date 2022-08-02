@@ -12,6 +12,7 @@
 #include "internal/blockchain/block/Header.hpp"
 #include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Factory.hpp"
+#include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/util/LogMacros.hpp"
 
@@ -2597,10 +2598,10 @@ Test_HeaderOracle_base::Test_HeaderOracle_base(const b::Type type)
     : api_(ot::Context().StartClientSession(0))
     , type_(type)
     , network_(init_network(api_, type_))
-    , header_oracle_(const_cast<bc::HeaderOracle&>(network_->HeaderOracle()))
+    , header_oracle_(const_cast<bc::HeaderOracle&>(network_.HeaderOracle()))
     , test_blocks_()
 {
-    header_oracle_.DeleteCheckpoint();
+    header_oracle_.Internal().DeleteCheckpoint();
 }
 
 Test_HeaderOracle_btc::Test_HeaderOracle_btc()
@@ -2619,7 +2620,7 @@ auto Test_HeaderOracle_base::apply_blocks(
     for (const auto& [block, position, best] : vector) {
         auto header = get_test_block(block);
 
-        EXPECT_TRUE(header_oracle_.AddHeader(std::move(header)));
+        EXPECT_TRUE(header_oracle_.Internal().AddHeader(std::move(header)));
 
         const auto [height, hash] = header_oracle_.BestChain();
 
@@ -2634,13 +2635,13 @@ auto Test_HeaderOracle_base::apply_blocks(
 auto Test_HeaderOracle_base::apply_blocks_batch(
     const ot::UnallocatedVector<Test>& vector) -> bool
 {
-    auto headers = ot::UnallocatedVector<std::unique_ptr<bb::Header>>{};
+    auto headers = ot::Vector<std::unique_ptr<bb::Header>>{};
 
     for (const auto& [block, position, best] : vector) {
         headers.emplace_back(get_test_block(block));
     }
 
-    return header_oracle_.AddHeaders(headers);
+    return header_oracle_.Internal().AddHeaders(headers);
 }
 
 auto Test_HeaderOracle_base::create_blocks(
@@ -2683,22 +2684,28 @@ auto Test_HeaderOracle_base::get_test_block(const ot::UnallocatedCString& hash)
 
 auto Test_HeaderOracle_base::init_network(
     const ot::api::session::Client& api,
-    const b::Type type) noexcept -> std::shared_ptr<bc::Manager>
+    const b::Type type) noexcept -> bc::Manager&
 {
+    OT_ASSERT(b::Type::Unknown != type);
+
     static const auto config = [] {
         auto output = ot::blockchain::node::internal::Config{};
         output.profile_ = ot::BlockchainProfile::desktop_native;
 
         return output;
     }();
-    auto out = ot::factory::BlockchainNetworkBitcoin(
-        api, type, config, "do not init peers", "");
+    auto& ptr = network(type);
 
-    OT_ASSERT(out);
+    if (false == ptr.operator bool()) {
+        ptr = ot::factory::BlockchainNetworkBitcoin(
+            api, type, config, "do not init peers", "");
 
-    out->Internal().Start(out);
+        OT_ASSERT(ptr);
 
-    return out;
+        ptr->Internal().Start(ptr);
+    }
+
+    return *ptr;
 }
 
 auto Test_HeaderOracle_base::make_position(
@@ -2720,6 +2727,31 @@ auto Test_HeaderOracle_base::make_test_block(
     test_blocks_.emplace(hash, std::move(pHeader));
 
     return true;
+}
+
+auto Test_HeaderOracle_base::network(const b::Type type) noexcept
+    -> std::shared_ptr<bc::Manager>&
+{
+    static auto map = ot::Map<b::Type, std::shared_ptr<bc::Manager>>{};
+
+    if (b::Type::Unknown == type) {
+        for (auto& [chain, ptr] : map) {
+            if (ptr) { ptr->Internal().Shutdown().get(); }
+        }
+
+        map.clear();
+        static auto null = std::shared_ptr<bc::Manager>{};
+
+        return null;
+    } else {
+
+        return map[type];
+    }
+}
+
+auto Test_HeaderOracle_base::Shutdown() noexcept -> void
+{
+    network(b::Type::Unknown);
 }
 
 auto Test_HeaderOracle_base::verify_best_chain(const BestChainVector& vector)
@@ -2809,8 +2841,5 @@ Test_HeaderOracle_base::~Test_HeaderOracle_base() = default;
 
 Test_HeaderOracle_btc::~Test_HeaderOracle_btc() = default;
 
-Test_HeaderOracle::~Test_HeaderOracle()
-{
-    network_->Internal().Shutdown().get();
-}
+Test_HeaderOracle::~Test_HeaderOracle() = default;
 }  // namespace ottest

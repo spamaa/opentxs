@@ -14,7 +14,9 @@ namespace opentxs
 using namespace std::literals::chrono_literals;
 
 using Clock = std::chrono::system_clock;
+using sClock = std::chrono::steady_clock;
 using Time = Clock::time_point;
+using sTime = sClock::time_point;
 
 OPENTXS_EXPORT auto Sleep(const std::chrono::microseconds us) -> bool;
 }  // namespace opentxs

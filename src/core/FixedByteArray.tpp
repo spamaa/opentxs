@@ -38,7 +38,12 @@ FixedByteArray<N>::FixedByteArray(const ReadView bytes) noexcept(false)
     : data_()
 {
     if (false == Assign(bytes)) {
-        throw std::out_of_range{"input size incorrect"};
+        const auto error = CString{"input size "}
+                               .append(std::to_string(bytes.size()))
+                               .append(" vs expected ")
+                               .append(std::to_string(N));
+
+        throw std::out_of_range{error.c_str()};
     }
 }
 

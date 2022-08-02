@@ -16,8 +16,6 @@ class Endpoints : virtual public api::session::Endpoints
 public:
     virtual auto BlockchainBlockUpdated(const opentxs::blockchain::Type chain)
         const noexcept -> std::string_view = 0;
-    virtual auto BlockchainFilterUpdated(const opentxs::blockchain::Type chain)
-        const noexcept -> std::string_view = 0;
     virtual auto BlockchainStartupPublish() const noexcept
         -> std::string_view = 0;
     virtual auto BlockchainStartupPull() const noexcept -> std::string_view = 0;

@@ -3,6 +3,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+add_subdirectory(blockfetcher)
+add_subdirectory(cache)
+
 set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/node/BlockOracle.hpp"
 )
@@ -12,19 +15,15 @@ if(OT_BLOCKCHAIN_EXPORT)
     opentxs-common
     PRIVATE
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/blockoracle/BlockBatch.hpp"
-      "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/blockoracle/BlockFetcher.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/blockoracle/BlockOracle.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/blockoracle/Types.hpp"
+      "Actor.cpp"
+      "Actor.hpp"
       "BlockBatch.cpp"
       "BlockBatch.hpp"
-      "BlockFetcher.cpp"
-      "BlockFetcher.hpp"
       "BlockOracle.cpp"
-      "BlockOracle.hpp"
-      "Cache.cpp"
-      "Cache.hpp"
-      "MemDB.cpp"
-      "MemDB.hpp"
+      "Shared.cpp"
+      "Shared.hpp"
   )
   target_link_libraries(opentxs-common PRIVATE Boost::headers)
   target_link_libraries(opentxs PUBLIC Boost::system)

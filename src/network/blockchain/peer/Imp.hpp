@@ -110,6 +110,11 @@ class ConnectionManager;
 
 namespace zeromq
 {
+namespace socket
+{
+class Raw;
+}  // namespace socket
+
 class Frame;
 class Message;
 }  // namespace zeromq
@@ -128,7 +133,6 @@ class Peer::Imp : public Actor<Imp, PeerJob>
 {
 public:
     auto Init(boost::shared_ptr<Imp> me) noexcept -> void;
-    auto Shutdown() noexcept -> void;
 
     Imp() = delete;
     Imp(const Imp&) = delete;
@@ -166,6 +170,7 @@ protected:
     const opentxs::blockchain::Type chain_;
     const Dir dir_;
     opentxs::blockchain::database::Peer& database_;
+    network::zeromq::socket::Raw& to_block_cache_;
 
     static auto print_state(State) noexcept -> std::string_view;
 
@@ -312,7 +317,7 @@ private:
     auto connect_dealer(std::string_view endpoint, Work work) noexcept -> void;
     auto do_disconnect() noexcept -> void;
     auto do_shutdown() noexcept -> void;
-    auto do_startup() noexcept -> void;
+    auto do_startup() noexcept -> bool;
     virtual auto extract_body_size(const zeromq::Frame& header) const noexcept
         -> std::size_t = 0;
     auto pipeline(const Work work, Message&& msg) noexcept -> void;
@@ -320,6 +325,8 @@ private:
     auto pipeline_untrusted(const Work work, Message&& msg) noexcept -> void;
     auto process_activitytimeout(Message&& msg) noexcept -> void;
     auto process_block(Message&& msg) noexcept -> void;
+    auto process_block(opentxs::blockchain::block::Hash&& hash) noexcept
+        -> void;
     auto process_blockbatch(Message&& msg) noexcept -> void;
     auto process_blockheader(Message&& msg) noexcept -> void;
     auto process_body(Message&& msg) noexcept -> void;
@@ -328,7 +335,6 @@ private:
     auto process_connect(bool) noexcept -> void;
     auto process_dealerconnected(Message&& msg) noexcept -> void;
     auto process_disconnect(Message&& msg) noexcept -> void;
-    virtual auto process_getblock(Message&& msg) noexcept -> void = 0;
     auto process_getheaders(Message&& msg) noexcept -> void;
     auto process_header(Message&& msg) noexcept -> void;
     auto process_jobavailableblock(Message&& msg) noexcept -> void;

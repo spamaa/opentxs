@@ -6,21 +6,26 @@
 #pragma once
 
 #include <boost/json.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <chrono>
 #include <cstdint>
+#include <exception>
 #include <future>
+#include <memory>
 #include <optional>
 #include <random>
+#include <string_view>
 
-#include "core/Worker.hpp"
 #include "internal/blockchain/node/wallet/FeeSource.hpp"
-#include "internal/network/zeromq/socket/Raw.hpp"
+#include "internal/blockchain/node/wallet/Types.hpp"
+#include "internal/network/zeromq/Types.hpp"
 #include "internal/util/Timer.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/core/display/Scale.hpp"
 #include "opentxs/util/Allocated.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/WorkType.hpp"
+#include "util/Actor.hpp"
 #include "util/Allocated.hpp"
 #include "util/Work.hpp"
 
@@ -42,6 +47,14 @@ namespace api
 class Session;
 }  // namespace api
 
+namespace blockchain
+{
+namespace node
+{
+class Manager;
+}  // namespace node
+}  // namespace blockchain
+
 namespace display
 {
 class Scale;
@@ -51,6 +64,11 @@ namespace network
 {
 namespace zeromq
 {
+namespace socket
+{
+class Raw;
+}  // namespace socket
+
 class Message;
 }  // namespace zeromq
 }  // namespace network
@@ -62,60 +80,69 @@ class Timer;
 // NOLINTEND(modernize-concat-nested-namespaces)
 
 class opentxs::blockchain::node::wallet::FeeSource::Imp
-    : public opentxs::implementation::Allocated,
-      public Worker<Imp, api::Session>
+    : public Actor<Imp, FeeSourceJobs>
 {
 public:
-    const CString hostname_;
-    const CString path_;
-    const bool https_;
-    const CString asio_;
-
-    enum class Work : OTZMQWorkType {
-        shutdown = value(WorkType::Shutdown),
-        query = OT_ZMQ_INTERNAL_SIGNAL + 0,
-        init = OT_ZMQ_INIT_SIGNAL,
-        statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
-    };
-
-    auto Shutdown() noexcept -> void;
+    auto Init(boost::shared_ptr<Imp> me) noexcept -> void
+    {
+        signal_startup(me);
+    }
 
     ~Imp() override;
 
 protected:
+    const CString asio_;
+
     auto process_double(double rate, unsigned long long int scale) noexcept
         -> std::optional<Amount>;
     auto process_int(std::int64_t rate, unsigned long long int scale) noexcept
         -> std::optional<Amount>;
     auto shutdown_timers() noexcept -> void;
 
-    Imp(const api::Session& api,
-        CString endpoint,
-        CString hostname,
-        CString path,
+    Imp(std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        std::string_view hostname,
+        std::string_view path,
         bool https,
+        network::zeromq::BatchID batch,
         allocator_type&& alloc) noexcept;
 
 private:
-    friend Worker<Imp, api::Session>;
+    friend Actor<Imp, FeeSourceJobs>;
 
-    static auto display_scale() -> const display::Scale&;
-
+    std::shared_ptr<const api::Session> api_p_;
+    std::shared_ptr<const node::Manager> node_p_;
+    const api::Session& api_;
+    const node::Manager& node_;
+    const CString hostname_;
+    const CString path_;
+    const bool https_;
     std::random_device rd_;
     std::default_random_engine eng_;
     std::uniform_int_distribution<int> dist_;
-    network::zeromq::socket::Raw to_oracle_;
+    network::zeromq::socket::Raw& to_oracle_;
     std::optional<std::future<boost::json::value>> future_;
     Timer timer_;
+
+    static auto display_scale() -> const display::Scale&;
 
     auto jitter() noexcept -> std::chrono::seconds;
     virtual auto process(const boost::json::value& data) noexcept
         -> std::optional<Amount> = 0;
 
-    auto pipeline(network::zeromq::Message&&) noexcept -> void;
+    auto do_shutdown() noexcept -> void;
+    auto do_startup() noexcept -> bool;
+    auto pipeline(const Work work, Message&& msg) noexcept -> void;
     auto query() noexcept -> void;
     auto reset_timer() noexcept -> void;
-    auto shutdown(std::promise<void>&) noexcept -> void;
-    auto startup() noexcept -> void;
-    auto state_machine() noexcept -> bool;
+    auto work() noexcept -> bool;
+
+    Imp(std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        std::string_view hostname,
+        std::string_view path,
+        bool https,
+        CString&& asio,
+        network::zeromq::BatchID batch,
+        allocator_type&& alloc) noexcept;
 };

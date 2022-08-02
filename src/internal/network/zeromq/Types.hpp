@@ -9,9 +9,12 @@
 #include <functional>
 #include <future>
 #include <tuple>
+#include <utility>
 
 #include "opentxs/network/zeromq/socket/Types.hpp"
+#include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Container.hpp"
+#include "opentxs/util/WorkType.hpp"
 #include "util/Work.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
@@ -28,6 +31,7 @@ namespace socket
 class Raw;
 }  // namespace socket
 
+class FrameSection;
 class Message;
 }  // namespace zeromq
 }  // namespace network
@@ -55,6 +59,13 @@ enum class Operation : OTZMQWorkType {
     shutdown = OT_ZMQ_INTERNAL_SIGNAL + 3,
 };
 
+auto check_frame_count(
+    const FrameSection& body,
+    std::size_t required,
+    alloc::Default alloc) noexcept(false) -> void;
+[[nodiscard]] auto check_frame_count(
+    const FrameSection& body,
+    std::size_t required) noexcept -> bool;
 auto GetBatchID() noexcept -> BatchID;
 auto GetSocketID() noexcept -> SocketID;
 }  // namespace opentxs::network::zeromq

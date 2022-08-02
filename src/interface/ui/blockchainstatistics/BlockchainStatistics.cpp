@@ -67,7 +67,7 @@ BlockchainStatistics::BlockchainStatistics(
     const api::session::Client& api,
     const SimpleCallback& cb) noexcept
     : BlockchainStatisticsList(api, identifier::Generic{}, cb, false)
-    , Worker(api, {})
+    , Worker(api, {}, "ui::BlockchainStatistics")
     , blockchain_(api.Network().Blockchain())
     , cache_()
     , timer_(api.Network().Asio().Internal().GetTimer())

@@ -110,7 +110,7 @@ private:
 
     auto calculate_next_block() noexcept -> bool;
     auto do_shutdown() noexcept -> void;
-    auto do_startup() noexcept -> void;
+    auto do_startup() noexcept -> bool;
     auto find_best_position(block::Position candidate) noexcept -> void;
     auto pipeline(const Work work, Message&& msg) noexcept -> void;
     auto process_block(network::zeromq::Message&& in) noexcept -> void;
@@ -122,10 +122,16 @@ private:
     auto state_normal(const Work work, network::zeromq::Message&& msg) noexcept
         -> void;
     auto transition_state_shutdown() noexcept -> void;
+    auto update_best_position(block::Position&& position) noexcept -> void;
+    auto update_current_position(block::Position&& position) noexcept -> void;
     auto update_position(
         const block::Position& previousCfheader,
         const block::Position& previousCfilter,
         const block::Position& newTip) noexcept -> void;
+    auto update_position(
+        const block::Position& previousCfheader,
+        const block::Position& previousCfilter,
+        block::Position&& newTip) noexcept -> void;
     auto work() noexcept -> bool;
 };
 }  // namespace opentxs::blockchain::node::filteroracle

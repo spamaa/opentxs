@@ -9,9 +9,10 @@
 #include <utility>
 
 #include "ottest/fixtures/blockchain/HeaderOracle.hpp"
+#include "internal/blockchain/node/HeaderOracle.hpp"
 
-ot::UnallocatedVector<std::unique_ptr<bb::Header>> headers_btc_{};
-ot::UnallocatedVector<std::unique_ptr<bb::Header>> headers_bch_{};
+ot::Vector<std::unique_ptr<bb::Header>> headers_btc_{};
+ot::Vector<std::unique_ptr<bb::Header>> headers_bch_{};
 
 namespace ottest
 {
@@ -49,7 +50,7 @@ TEST_F(Test_HeaderOracle_btc, stage_headers)
 
 TEST_F(Test_HeaderOracle_btc, receive_btc)
 {
-    EXPECT_TRUE(header_oracle_.AddHeaders(headers_btc_));
+    EXPECT_TRUE(header_oracle_.Internal().AddHeaders(headers_btc_));
 
     const auto [height, hash] = header_oracle_.BestChain();
 
@@ -66,13 +67,10 @@ TEST_F(Test_HeaderOracle_btc, receive_btc)
 
 TEST_F(Test_HeaderOracle_btc, receive_bch)
 {
-    const auto network = init_network(api_, b::Type::BitcoinCash);
+    const auto& network = init_network(api_, b::Type::BitcoinCash);
+    auto& oracle = const_cast<bc::HeaderOracle&>(network.HeaderOracle());
 
-    ASSERT_TRUE(network);
-
-    auto& oracle = const_cast<bc::HeaderOracle&>(network->HeaderOracle());
-
-    EXPECT_TRUE(oracle.AddHeaders(headers_bch_));
+    EXPECT_TRUE(oracle.Internal().AddHeaders(headers_bch_));
 
     const auto [height, hash] = oracle.BestChain();
 
@@ -86,4 +84,6 @@ TEST_F(Test_HeaderOracle_btc, receive_bch)
 
     EXPECT_EQ(expectedWork, header->Work()->Decimal());
 }
+
+TEST_F(Test_HeaderOracle_btc, shutdown) { Shutdown(); }
 }  // namespace ottest

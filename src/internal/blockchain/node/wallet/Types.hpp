@@ -7,7 +7,6 @@
 
 #include <cstddef>
 #include <memory>
-#include <mutex>
 #include <string_view>
 
 #include "opentxs/util/WorkType.hpp"
@@ -20,6 +19,8 @@ using StateSequence = std::size_t;
 // WARNING update print function if new values are added or removed
 enum class WalletJobs : OTZMQWorkType {
     shutdown = value(WorkType::Shutdown),
+    start_wallet = OT_ZMQ_INTERNAL_SIGNAL + 0,
+    rescan = OT_ZMQ_BLOCKCHAIN_WALLET_RESCAN,
     init = OT_ZMQ_INIT_SIGNAL,
     statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };
@@ -30,8 +31,11 @@ enum class AccountsJobs : OTZMQWorkType {
     nym = value(WorkType::NymCreated),
     header = value(WorkType::BlockchainNewHeader),
     reorg = value(WorkType::BlockchainReorg),
-    rescan = OT_ZMQ_INTERNAL_SIGNAL + 6,
+    rescan = OT_ZMQ_BLOCKCHAIN_WALLET_RESCAN,
+    reorg_ready = OT_ZMQ_BLOCKCHAIN_WALLET_REORG_READY,
+    shutdown_ready = OT_ZMQ_BLOCKCHAIN_WALLET_SHUTDOWN_READY,
     init = OT_ZMQ_INIT_SIGNAL,
+    prepare_shutdown = OT_ZMQ_PREPARE_SHUTDOWN,
     statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };
 
@@ -39,8 +43,9 @@ enum class AccountsJobs : OTZMQWorkType {
 enum class AccountJobs : OTZMQWorkType {
     shutdown = value(WorkType::Shutdown),
     subaccount = value(WorkType::BlockchainAccountCreated),
-    prepare_reorg = OT_ZMQ_INTERNAL_SIGNAL + 0,
-    rescan = OT_ZMQ_INTERNAL_SIGNAL + 6,
+    prepare_reorg = OT_ZMQ_BLOCKCHAIN_WALLET_PREPARE_REORG,
+    rescan = OT_ZMQ_BLOCKCHAIN_WALLET_RESCAN,
+    finish_reorg = OT_ZMQ_BLOCKCHAIN_WALLET_FINISH_REORG,
     init = OT_ZMQ_INIT_SIGNAL,
     key = OT_ZMQ_NEW_BLOCKCHAIN_WALLET_KEY_SIGNAL,
     prepare_shutdown = OT_ZMQ_PREPARE_SHUTDOWN,
@@ -50,17 +55,18 @@ enum class AccountJobs : OTZMQWorkType {
 // WARNING update print function if new values are added or removed
 enum class SubchainJobs : OTZMQWorkType {
     shutdown = value(WorkType::Shutdown),
-    filter = value(WorkType::BlockchainNewFilter),
+    filter = OT_ZMQ_NEW_FILTER_SIGNAL,
     mempool = value(WorkType::BlockchainMempoolUpdated),
     block = value(WorkType::BlockchainBlockAvailable),
-    prepare_reorg = OT_ZMQ_INTERNAL_SIGNAL + 0,
-    update = OT_ZMQ_INTERNAL_SIGNAL + 1,
-    process = OT_ZMQ_INTERNAL_SIGNAL + 2,
-    watchdog = OT_ZMQ_INTERNAL_SIGNAL + 3,
-    watchdog_ack = OT_ZMQ_INTERNAL_SIGNAL + 4,
-    reprocess = OT_ZMQ_INTERNAL_SIGNAL + 5,
-    rescan = OT_ZMQ_INTERNAL_SIGNAL + 6,
-    do_rescan = OT_ZMQ_INTERNAL_SIGNAL + 7,
+    prepare_reorg = OT_ZMQ_BLOCKCHAIN_WALLET_PREPARE_REORG,
+    update = OT_ZMQ_BLOCKCHAIN_WALLET_UPDATE,
+    process = OT_ZMQ_BLOCKCHAIN_WALLET_PROCESS,
+    watchdog = OT_ZMQ_BLOCKCHAIN_WALLET_WATCHDOG,
+    watchdog_ack = OT_ZMQ_BLOCKCHAIN_WALLET_WATCHDOG_ACK,
+    reprocess = OT_ZMQ_BLOCKCHAIN_WALLET_REPROCESS,
+    rescan = OT_ZMQ_BLOCKCHAIN_WALLET_RESCAN,
+    do_rescan = OT_ZMQ_BLOCKCHAIN_WALLET_DO_RESCAN,
+    finish_reorg = OT_ZMQ_BLOCKCHAIN_WALLET_FINISH_REORG,
     init = OT_ZMQ_INIT_SIGNAL,
     key = OT_ZMQ_NEW_BLOCKCHAIN_WALLET_KEY_SIGNAL,
     prepare_shutdown = OT_ZMQ_PREPARE_SHUTDOWN,
@@ -76,12 +82,25 @@ enum class JobType : unsigned int {
     progress,
 };
 
-auto lock_for_reorg(
-    const std::string_view name,
-    std::timed_mutex& mutex) noexcept -> std::unique_lock<std::timed_mutex>;
+enum class FeeOracleJobs : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    update_estimate = OT_ZMQ_INTERNAL_SIGNAL + 0,
+    init = OT_ZMQ_INIT_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+
+enum class FeeSourceJobs : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    query = OT_ZMQ_INTERNAL_SIGNAL + 0,
+    init = OT_ZMQ_INIT_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+
 auto print(WalletJobs) noexcept -> std::string_view;
 auto print(AccountsJobs) noexcept -> std::string_view;
 auto print(AccountJobs) noexcept -> std::string_view;
 auto print(SubchainJobs) noexcept -> std::string_view;
 auto print(JobType) noexcept -> std::string_view;
+auto print(FeeOracleJobs) noexcept -> std::string_view;
+auto print(FeeSourceJobs) noexcept -> std::string_view;
 }  // namespace opentxs::blockchain::node::wallet

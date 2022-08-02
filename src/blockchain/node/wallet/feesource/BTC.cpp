@@ -3,37 +3,52 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// IWYU pragma: no_include <boost/smart_ptr/detail/operator_bool.hpp>
+
 #include "0_stdafx.hpp"    // IWYU pragma: associated
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "internal/blockchain/node/wallet/Factory.hpp"  // IWYU pragma: associated
 
 #include <boost/json.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <exception>
 #include <optional>
+#include <string_view>
 #include <utility>
 
-#include "blockchain/node/wallet/feeoracle/FeeSource.hpp"
+#include "blockchain/node/wallet/feesource/FeeSource.hpp"
 #include "internal/blockchain/node/wallet/FeeSource.hpp"
+#include "internal/network/zeromq/Context.hpp"
+#include "internal/network/zeromq/Types.hpp"
 #include "internal/util/LogMacros.hpp"
-#include "internal/util/P0330.hpp"
+#include "opentxs/api/network/Network.hpp"
+#include "opentxs/api/session/Session.hpp"
+#include "opentxs/blockchain/Types.hpp"
 #include "opentxs/core/Amount.hpp"
+#include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/util/Allocated.hpp"
+#include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Log.hpp"
 
 namespace opentxs::blockchain::node::wallet
 {
+using namespace std::literals;
+
 class Bitcoiner_live final : public FeeSource::Imp
 {
 public:
     Bitcoiner_live(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"bitcoiner.live", alloc},
-              CString{"/api/fees/estimates/latest", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "bitcoiner.live"sv,
+              "/api/fees/estimates/latest"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -64,14 +79,16 @@ class BitGo final : public FeeSource::Imp
 {
 public:
     BitGo(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"www.bitgo.com", alloc},
-              CString{"/api/v2/btc/tx/fee", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "www.bitgo.com"sv,
+              "/api/v2/btc/tx/fee"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -101,14 +118,16 @@ class Bitpay final : public FeeSource::Imp
 {
 public:
     Bitpay(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"insight.bitpay.com", alloc},
-              CString{"/api/utils/estimatefee?nbBlocks=2,4,6", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "insight.bitpay.com"sv,
+              "/api/utils/estimatefee?nbBlocks=2,4,6"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -138,14 +157,16 @@ class Blockchain_info final : public FeeSource::Imp
 {
 public:
     Blockchain_info(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"api.blockchain.info", alloc},
-              CString{"/mempool/fees", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "api.blockchain.info"sv,
+              "/mempool/fees"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -175,14 +196,16 @@ class Blockchair final : public FeeSource::Imp
 {
 public:
     Blockchair(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"api.blockchair.com", alloc},
-              CString{"/bitcoin/stats", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "api.blockchair.com"sv,
+              "/bitcoin/stats"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -214,14 +237,16 @@ class BlockCypher final : public FeeSource::Imp
 {
 public:
     BlockCypher(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"api.blockcypher.com", alloc},
-              CString{"/v1/btc/main", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "api.blockcypher.com"sv,
+              "/v1/btc/main"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -251,14 +276,16 @@ class Blockstream final : public FeeSource::Imp
 {
 public:
     Blockstream(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"blockstream.info", alloc},
-              CString{"/api/fee-estimates", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "blockstream.info"sv,
+              "/api/fee-estimates"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -288,14 +315,16 @@ class BTC_com final : public FeeSource::Imp
 {
 public:
     BTC_com(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"btc.com", alloc},
-              CString{"/service/fees/distribution", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "btc.com"sv,
+              "/service/fees/distribution"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -326,14 +355,16 @@ class Earn final : public FeeSource::Imp
 {
 public:
     Earn(
-        const api::Session& api,
-        const std::string_view endpoint,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept
-        : Imp(api,
-              CString{endpoint, alloc},
-              CString{"bitcoinfees.earn.com", alloc},
-              CString{"/api/v1/fees/recommended", alloc},
+        : Imp(std::move(api),
+              std::move(node),
+              "bitcoinfees.earn.com"sv,
+              "/api/v1/fees/recommended"sv,
               true,
+              std::move(batch),
               std::move(alloc))
     {
         LogTrace()(OT_PRETTY_CLASS())("My notification endpoint is ")(asio_)
@@ -363,86 +394,81 @@ private:
 namespace opentxs::factory
 {
 auto BTCFeeSources(
-    const api::Session& api,
-    const std::string_view endpoint,
-    alloc::Default pmr) noexcept
-    -> ForwardList<blockchain::node::wallet::FeeSource>
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const blockchain::node::Manager> node) noexcept -> void
 {
-    using ReturnType = blockchain::node::wallet::FeeSource;
-    auto sources = ForwardList<ReturnType>{pmr};
-    sources.emplace_front([&] {
+    OT_ASSERT(api);
+    OT_ASSERT(node);
+
+    using Source = blockchain::node::wallet::FeeSource;
+    const auto& asio = api->Network().ZeroMQ().Internal();
+    // TODO the version of libc++ present in android ndk 23.0.7599858 has a
+    // broken std::allocate_shared function so we're using boost::shared_ptr
+    // instead of std::shared_ptr
+    // clang-format off
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::Bitcoiner_live;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-    sources.emplace_front([&] {
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::BitGo;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-    sources.emplace_front([&] {
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::Bitpay;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-    sources.emplace_front([&] {
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::Blockchain_info;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-    sources.emplace_front([&] {
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::Blockchair;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-    sources.emplace_front([&] {
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::BlockCypher;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-    sources.emplace_front([&] {
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::Blockstream;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-    sources.emplace_front([&] {
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::BTC_com;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-    sources.emplace_front([&] {
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    Source{[&]() -> boost::shared_ptr<Source::Imp> {
         using Imp = blockchain::node::wallet::Earn;
-        auto alloc = alloc::PMR<Imp>{pmr};
-        auto* out = alloc.allocate(1_uz);
-        alloc.construct(out, api, endpoint);
+        const auto batchID = asio.PreallocateBatch();
 
-        return out;
-    }());
-
-    return sources;
+        return boost::allocate_shared<Imp>(
+            alloc::PMR<Imp>{asio.Alloc(batchID)}, api, node, batchID);
+    }()}.Init();
+    // clang-format on
 }
 }  // namespace opentxs::factory

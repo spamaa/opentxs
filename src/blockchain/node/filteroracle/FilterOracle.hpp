@@ -262,5 +262,8 @@ private:
         const cfilter::Header& header) noexcept -> block::Position;
     auto compare_tips_to_checkpoint() noexcept -> void;
     auto compare_tips_to_header_chain() noexcept -> bool;
+    auto update_tip(
+        const cfilter::Type type,
+        const block::Position& pos) noexcept -> void;
 };
 }  // namespace opentxs::blockchain::node::implementation

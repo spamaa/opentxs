@@ -64,6 +64,8 @@ class ListenCallback;
 class Message;
 }  // namespace zeromq
 }  // namespace network
+
+class Log;
 // }  // namespace v1
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
@@ -102,6 +104,7 @@ private:
     using QueuedChainMessages = Map<Chain, QueuedMessages>;
 
     const api::Session& api_;
+    const Log& log_;
     const CString endpoint_;
     const CString monitor_endpoint_;
     const CString loopback_endpoint_;
@@ -123,6 +126,8 @@ private:
     mutable std::default_random_engine eng_;
     client::Server blank_;
     Timer timer_;
+    Timer register_;
+    int register_attempts_;
     HeightMap progress_;
     ServerMap servers_;
     ChainMap clients_;
@@ -146,6 +151,7 @@ private:
     auto ping_server(client::Server& server) noexcept -> void;
     auto process_external(Message&& msg) noexcept -> void;
     auto process_header(Message&& msg) noexcept -> void;
+    auto process_init(Message&& msg) noexcept -> void;
     auto process_internal(Message&& msg) noexcept -> void;
     auto process_monitor(Message&& msg) noexcept -> void;
     auto process_pushtx(Message&& msg) noexcept -> void;
@@ -155,6 +161,7 @@ private:
     auto process_server(Message&& msg) noexcept -> void;
     auto process_server(const CString ep) noexcept -> void;
     auto process_wallet(Message&& msg) noexcept -> void;
+    auto register_with_wallet() noexcept -> void;
     auto reset_timer() noexcept -> void;
     auto server_is_active(client::Server& server) noexcept -> void;
     auto server_is_stalled(client::Server& server) noexcept -> void;

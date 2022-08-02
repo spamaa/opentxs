@@ -74,6 +74,7 @@ Client::Imp::Imp(
     const api::Session& api,
     zeromq::internal::Handle&& handle) noexcept
     : api_(api)
+    , log_(LogTrace())
     , endpoint_(zeromq::MakeArbitraryInproc())
     , monitor_endpoint_(zeromq::MakeArbitraryInproc())
     , loopback_endpoint_(zeromq::MakeArbitraryInproc())
@@ -89,7 +90,6 @@ Client::Imp::Imp(
             [this](auto&& in) { process_monitor(std::move(in)); }));
         out.listen_callbacks_.emplace_back(Callback::Factory(
             [this](auto&& in) { process_wallet(std::move(in)); }));
-        out.thread_name_ = "P2PClient";
 
         return out;
     }())
@@ -140,8 +140,7 @@ Client::Imp::Imp(
 
         OT_ASSERT(rc);
 
-        LogTrace()(OT_PRETTY_CLASS())("internal router bound to ")(endpoint_)
-            .Flush();
+        log_(OT_PRETTY_CLASS())("internal router bound to ")(endpoint_).Flush();
 
         return out;
     }())
@@ -171,7 +170,7 @@ Client::Imp::Imp(
 
         OT_ASSERT(rc);
 
-        LogTrace()(OT_PRETTY_CLASS())("loopback bound to ")(loopback_endpoint_)
+        log_(OT_PRETTY_CLASS())("loopback bound to ")(loopback_endpoint_)
             .Flush();
 
         return out;
@@ -183,10 +182,8 @@ Client::Imp::Imp(
 
         OT_ASSERT(rc);
 
-        LogTrace()(OT_PRETTY_CLASS())("wallet socket connected to ")(endpoint)
+        log_(OT_PRETTY_CLASS())("wallet socket connected to ")(endpoint)
             .Flush();
-        // TODO use a timer to re-send this message if necessary
-        out.SendDeferred(MakeWork(Job::Register));
 
         return out;
     }())
@@ -203,6 +200,8 @@ Client::Imp::Imp(
     , eng_(rd_())
     , blank_()
     , timer_(api_.Network().Asio().Internal().GetTimer())
+    , register_(api_.Network().Asio().Internal().GetTimer())
+    , register_attempts_(-1)
     , progress_()
     , servers_()
     , clients_()
@@ -259,12 +258,12 @@ Client::Imp::Imp(
                [id = wallet_.ID(), &cb = wallet_cb_](auto&& m) {
                    cb.Process(std::move(m));
                }},
-          },
-          batch_.thread_name_))
+          }))
 {
     OT_ASSERT(nullptr != thread_);
 
-    LogTrace()(OT_PRETTY_CLASS())("using ZMQ batch ")(batch_.id_).Flush();
+    log_(OT_PRETTY_CLASS())("using ZMQ batch ")(batch_.id_).Flush();
+    register_with_wallet();
 }
 
 auto Client::Imp::Endpoint() const noexcept -> std::string_view
@@ -276,8 +275,7 @@ auto Client::Imp::flush_pending() noexcept -> void
 {
     OT_ASSERT(0 < connected_servers_.size());
 
-    LogTrace()(OT_PRETTY_CLASS())("sending ")(pending_.size())(
-        " queued messages")
+    log_(OT_PRETTY_CLASS())("sending ")(pending_.size())(" queued messages")
         .Flush();
 
     while (0 < pending_.size()) {
@@ -294,8 +292,7 @@ auto Client::Imp::flush_pending(Chain chain) noexcept -> void
 
         OT_ASSERT(0 < providers.size());
 
-        LogTrace()(OT_PRETTY_CLASS())("sending ")(pending.size())(
-            " queued messages")
+        log_(OT_PRETTY_CLASS())("sending ")(pending.size())(" queued messages")
             .Flush();
 
         while (0 < pending.size()) {
@@ -309,24 +306,27 @@ auto Client::Imp::flush_pending(Chain chain) noexcept -> void
 auto Client::Imp::forward_to_all(Message&& message) noexcept -> void
 {
     if (0 == connected_servers_.size()) {
-        LogTrace()(OT_PRETTY_CLASS())("No connected peers available").Flush();
+        log_(OT_PRETTY_CLASS())("No connected peers available").Flush();
         pending_.push_back(std::move(message));
         // TODO limit queue size
     } else {
         for (const auto& id : connected_servers_) {
             auto& server = servers_.at(id);
-            LogTrace()("Forwarding request to ")(id).Flush();
-            external_router_.SendExternal([&] {
-                auto msg = zeromq::Message{};
-                msg.AddFrame(server.endpoint_);
-                msg.StartBody();
+            log_("Forwarding request to ")(id).Flush();
+            external_router_.SendExternal(
+                [&] {
+                    auto msg = zeromq::Message{};
+                    msg.AddFrame(server.endpoint_);
+                    msg.StartBody();
 
-                for (const auto& frame : message.Body()) {
-                    msg.AddFrame(frame);
-                }
+                    for (const auto& frame : message.Body()) {
+                        msg.AddFrame(frame);
+                    }
 
-                return msg;
-            }());
+                    return msg;
+                }(),
+                __FILE__,
+                __LINE__);
         }
     }
 }
@@ -337,7 +337,7 @@ auto Client::Imp::forward_to_all(Chain chain, Message&& message) noexcept
     const auto& providers = providers_[chain];
 
     if (0 == providers.size()) {
-        LogTrace()(OT_PRETTY_CLASS())("No connected ")(print(chain))(
+        log_(OT_PRETTY_CLASS())("No connected ")(print(chain))(
             " peers available")
             .Flush();
         auto& pending = pending_chain_[chain];
@@ -346,18 +346,21 @@ auto Client::Imp::forward_to_all(Chain chain, Message&& message) noexcept
     } else {
         for (const auto& id : providers) {
             auto& server = servers_.at(id);
-            LogTrace()("Forwarding request to ")(id).Flush();
-            external_router_.SendExternal([&] {
-                auto msg = zeromq::Message{};
-                msg.AddFrame(server.endpoint_);
-                msg.StartBody();
+            log_("Forwarding request to ")(id).Flush();
+            external_router_.SendExternal(
+                [&] {
+                    auto msg = zeromq::Message{};
+                    msg.AddFrame(server.endpoint_);
+                    msg.StartBody();
 
-                for (const auto& frame : message.Body()) {
-                    msg.AddFrame(frame);
-                }
+                    for (const auto& frame : message.Body()) {
+                        msg.AddFrame(frame);
+                    }
 
-                return msg;
-            }());
+                    return msg;
+                }(),
+                __FILE__,
+                __LINE__);
         }
     }
 }
@@ -431,16 +434,19 @@ auto Client::Imp::Init(const api::network::Blockchain& parent) noexcept -> void
 
 auto Client::Imp::ping_server(client::Server& server) noexcept -> void
 {
-    external_router_.SendExternal([&] {
-        auto msg = zeromq::Message{};
-        msg.AddFrame(server.endpoint_);
-        msg.StartBody();
-        const auto query = factory::BlockchainSyncQuery(0);
+    external_router_.SendExternal(
+        [&] {
+            auto msg = zeromq::Message{};
+            msg.AddFrame(server.endpoint_);
+            msg.StartBody();
+            const auto query = factory::BlockchainSyncQuery(0);
 
-        if (false == query.Serialize(msg)) { OT_FAIL; }
+            if (false == query.Serialize(msg)) { OT_FAIL; }
 
-        return msg;
-    }());
+            return msg;
+        }(),
+        __FILE__,
+        __LINE__);
     server.last_sent_ = Clock::now();
     server.waiting_ = true;
 }
@@ -513,8 +519,8 @@ auto Client::Imp::process_external(Message&& msg) noexcept -> void
                 if (server.publisher_.empty() && (false == ep.empty())) {
                     if (external_sub_.Connect(ep.c_str())) {
                         server.publisher_ = ep;
-                        LogDetail()("Subscribed to ")(
-                            ep)(" for new block notifications")
+                        log_("Subscribed to ")(ep)(
+                            " for new block notifications")
                             .Flush();
                     } else {
                         LogError()(OT_PRETTY_CLASS())(
@@ -532,13 +538,11 @@ auto Client::Imp::process_external(Message&& msg) noexcept -> void
 
                     if (acceptable) {
                         providers.emplace(endpoint);
-                        LogVerbose()(endpoint)(" has data for ")(print(chain))
-                            .Flush();
+                        log_(endpoint)(" has data for ")(print(chain)).Flush();
                         flush_pending(chain);
                     } else {
                         providers.erase(endpoint);
-                        LogVerbose()(endpoint)(" is out of date for ")(
-                            print(chain))
+                        log_(endpoint)(" is out of date for ")(print(chain))
                             .Flush();
                     }
 
@@ -570,7 +574,7 @@ auto Client::Imp::process_external(Message&& msg) noexcept -> void
 
                     if (false == notification.Serialize(msg)) { OT_FAIL; }
 
-                    internal_router_.Send(std::move(msg));
+                    internal_router_.Send(std::move(msg), __FILE__, __LINE__);
                 }
             } break;
             case Type::new_block_header:
@@ -594,7 +598,7 @@ auto Client::Imp::process_external(Message&& msg) noexcept -> void
 
                 if (false == data.Serialize(msg)) { OT_FAIL; }
 
-                internal_router_.Send(std::move(msg));
+                internal_router_.Send(std::move(msg), __FILE__, __LINE__);
             } break;
             default: {
                 const auto error =
@@ -606,7 +610,7 @@ auto Client::Imp::process_external(Message&& msg) noexcept -> void
             }
         }
     } catch (const std::exception& e) {
-        LogVerbose()(OT_PRETTY_CLASS())(e.what()).Flush();
+        log_(OT_PRETTY_CLASS())(e.what()).Flush();
 
         return;
     }
@@ -629,9 +633,17 @@ auto Client::Imp::process_header(Message&& msg) noexcept -> void
     const auto chain = body.at(1).as<Chain>();
     auto& height = progress_[chain];
     height = body.at(index).as<Height>();
-    LogVerbose()(OT_PRETTY_CLASS())("minimum acceptable height for ")(
-        print(chain))(" is ")(height)
+    log_(OT_PRETTY_CLASS())("minimum acceptable height for ")(print(chain))(
+        " is ")(height)
         .Flush();
+}
+
+auto Client::Imp::process_init(Message&& msg) noexcept -> void
+{
+    const auto rc = wallet_.SendDeferred(
+        MakeWork(Job::Register), __FILE__, __LINE__, ++register_attempts_ < 3);
+
+    if (false == rc) { register_with_wallet(); }
 }
 
 auto Client::Imp::process_internal(Message&& msg) noexcept -> void
@@ -661,6 +673,9 @@ auto Client::Imp::process_internal(Message&& msg) noexcept -> void
         } break;
         case Job::Request: {
             process_request(std::move(msg));
+        } break;
+        case Job::Init: {
+            process_init(std::move(msg));
         } break;
         case Job::StateMachine: {
             state_machine();
@@ -740,8 +755,8 @@ auto Client::Imp::process_register(Message&& msg) noexcept -> void
     const auto chain = body.at(1).as<Chain>();
     clients_[chain] = identity.Bytes();
     const auto& providers = providers_[chain];
-    LogVerbose()(OT_PRETTY_CLASS())("querying ")(providers.size())(
-        " providers for ")(print(chain))
+    log_(OT_PRETTY_CLASS())("querying ")(providers.size())(" providers for ")(
+        print(chain))
         .Flush();
 
     for (const auto& endpoint : providers) {
@@ -749,7 +764,8 @@ auto Client::Imp::process_register(Message&& msg) noexcept -> void
         server.new_local_handler_ = true;
     }
 
-    internal_router_.Send(tagged_reply_to_message(msg, Job::Register));
+    internal_router_.Send(
+        tagged_reply_to_message(msg, Job::Register), __FILE__, __LINE__);
 }
 
 auto Client::Imp::process_request(Message&& msg) noexcept -> void
@@ -781,15 +797,18 @@ auto Client::Imp::process_request(Message&& msg) noexcept -> void
 
         return factory::BlockchainSyncRequest(std::move(states));
     }();
-    external_router_.SendExternal([&] {
-        auto out = zeromq::Message{};
-        out.AddFrame(provider);
-        out.StartBody();
+    external_router_.SendExternal(
+        [&] {
+            auto out = zeromq::Message{};
+            out.AddFrame(provider);
+            out.StartBody();
 
-        if (false == request.Serialize(out)) { OT_FAIL; }
+            if (false == request.Serialize(out)) { OT_FAIL; }
 
-        return out;
-    }());
+            return out;
+        }(),
+        __FILE__,
+        __LINE__);
     server.last_sent_ = Clock::now();
 }
 
@@ -809,7 +828,7 @@ auto Client::Imp::process_response(Message&& msg) noexcept -> void
         switch (type) {
             case Type::publish_ack:
             case Type::contract: {
-                wallet_.Send(std::move(msg));
+                wallet_.Send(std::move(msg), __FILE__, __LINE__);
             } break;
             case Type::pushtx_reply: {
                 // TODO notify mempool
@@ -860,8 +879,7 @@ auto Client::Imp::process_server(const CString ep) noexcept -> void
 {
     if (external_router_.Connect(ep.c_str())) {
         servers_.try_emplace(ep, ep);
-        LogDetail()(OT_PRETTY_CLASS())("Connecting to p2p server at ")(ep)
-            .Flush();
+        log_(OT_PRETTY_CLASS())("Connecting to p2p server at ")(ep).Flush();
     } else {
         LogError()(OT_PRETTY_CLASS())("failed to connect router to ")(ep)
             .Flush();
@@ -880,7 +898,7 @@ auto Client::Imp::process_wallet(Message&& msg) noexcept -> void
 
     switch (type) {
         case Job::Response: {
-            external_router_.SendExternal(std::move(msg));
+            external_router_.SendExternal(std::move(msg), __FILE__, __LINE__);
         } break;
         case Job::PublishContract:
         case Job::QueryContract: {
@@ -908,6 +926,22 @@ auto Client::Imp::process_wallet(Message&& msg) noexcept -> void
     }
 }
 
+auto Client::Imp::register_with_wallet() noexcept -> void
+{
+    register_.SetRelative(250ms);
+    register_.Wait([this](const auto& error) {
+        if (error) {
+            if (boost::system::errc::operation_canceled != error.value()) {
+                LogError()(OT_PRETTY_CLASS())(error).Flush();
+            }
+        } else {
+            to_loopback_.modify_detach([&](auto& socket) {
+                socket.Send(MakeWork(Job::Init), __FILE__, __LINE__);
+            });
+        }
+    });
+}
+
 auto Client::Imp::reset_timer() noexcept -> void
 {
     static constexpr auto interval = 10s;
@@ -919,7 +953,7 @@ auto Client::Imp::reset_timer() noexcept -> void
             }
         } else {
             to_loopback_.modify_detach([&](auto& socket) {
-                socket.Send(MakeWork(Job::StateMachine));
+                socket.Send(MakeWork(Job::StateMachine), __FILE__, __LINE__);
             });
             reset_timer();
         }
@@ -967,13 +1001,16 @@ auto Client::Imp::startup(const api::network::Blockchain& parent) noexcept
 {
     to_loopback_.modify_detach([&](auto& socket) {
         for (const auto& ep : parent.GetSyncServers()) {
-            socket.Send([&] {
-                auto out = MakeWork(Job::SyncServerUpdated);
-                out.AddFrame(ep);
-                out.AddFrame(true);
+            socket.Send(
+                [&] {
+                    auto out = MakeWork(Job::SyncServerUpdated);
+                    out.AddFrame(ep);
+                    out.AddFrame(true);
 
-                return out;
-            }());
+                    return out;
+                }(),
+                __FILE__,
+                __LINE__);
         }
     });
 }
@@ -997,28 +1034,33 @@ auto Client::Imp::state_machine() noexcept -> void
 
 Client::Imp::~Imp()
 {
-    shutdown();
+    register_.Cancel();
     timer_.Cancel();
+    shutdown();
 }
 }  // namespace opentxs::network::p2p
 
 namespace opentxs::network::p2p
 {
 Client::Client(const api::Session& api) noexcept
-    : Client(api, api.Network().ZeroMQ().Internal().MakeBatch([] {
-        using Type = Imp::SocketType;
-        auto out = Vector<Type>{
-            Type::Router,
-            Type::Pair,
-            Type::Subscribe,
-            Type::Router,
-            Type::Subscribe,
-            Type::Pair,
-            Type::Pair,
-        };
+    : Client(
+          api,
+          api.Network().ZeroMQ().Internal().MakeBatch(
+              [] {
+                  using Type = Imp::SocketType;
+                  auto out = Vector<Type>{
+                      Type::Router,     // NOTE external_router_
+                      Type::Pair,       // NOTE monitor_
+                      Type::Subscribe,  // NOTE external_sub_
+                      Type::Router,     // NOTE internal_router_
+                      Type::Subscribe,  // NOTE internal_sub_
+                      Type::Pair,       // NOTE loopback_
+                      Type::Dealer,     // NOTE wallet_
+                  };
 
-        return out;
-    }()))
+                  return out;
+              }(),
+              "network::p2p::Client"))
 {
 }
 

@@ -343,6 +343,16 @@ else()
   )
 endif()
 
+if("${CMAKE_CXX_COMPILER_ID}"
+   MATCHES
+   Clang
+   AND CMAKE_CXX_COMPILER_VERSION
+       VERSION_LESS
+       14.0.0
+)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reserved-identifier")
+endif()
+
 # -----------------------------------------------------------------------------
 # Print system information and build options
 

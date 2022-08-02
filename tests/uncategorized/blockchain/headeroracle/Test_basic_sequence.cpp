@@ -73,4 +73,6 @@ TEST_F(Test_HeaderOracle, basic_sequence)
         }
     }
 }
+
+TEST_F(Test_HeaderOracle, shutdown) { Shutdown(); }
 }  // namespace ottest

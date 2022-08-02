@@ -14,6 +14,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <thread>
 #include <type_traits>
@@ -66,6 +67,26 @@ Pool::Pool(std::shared_ptr<const Context> parent) noexcept
         assert(rc);
 
         threads_.try_emplace(n, n, *this, endpoint);
+    }
+}
+
+auto Pool::ActiveBatches(alloc::Default alloc) const noexcept -> CString
+{
+    auto handle = batches_.lock_shared();
+    const auto& map = *handle;
+
+    if (map.empty()) {
+
+        return {"no batches", alloc};
+    } else {
+        // TODO c++20 allocator
+        auto out = std::stringstream{"batches:\n"};
+
+        for (const auto& [id, batch] : map) {
+            out << "ID: " << id << ", Name: " << batch->thread_name_ << '\n';
+        }
+
+        return {out.str().c_str(), alloc};
     }
 }
 
@@ -192,13 +213,17 @@ auto Pool::get(BatchID id) noexcept -> context::Thread&
     return threads_.at(id % count_);
 }
 
-auto Pool::MakeBatch(Vector<socket::Type>&& types) noexcept -> internal::Handle
+auto Pool::MakeBatch(
+    Vector<socket::Type>&& types,
+    std::string_view name) noexcept -> internal::Handle
 {
-    return MakeBatch(GetBatchID(), std::move(types));
+    return MakeBatch(GetBatchID(), std::move(types), name);
 }
 
-auto Pool::MakeBatch(const BatchID id, Vector<socket::Type>&& types) noexcept
-    -> internal::Handle
+auto Pool::MakeBatch(
+    const BatchID id,
+    Vector<socket::Type>&& types,
+    std::string_view name) noexcept -> internal::Handle
 {
     Batches::iterator it;
     auto added{false};
@@ -206,7 +231,8 @@ auto Pool::MakeBatch(const BatchID id, Vector<socket::Type>&& types) noexcept
     batches_.modify([&](auto& batches) {
         result = batches.try_emplace(
             id,
-            std::make_shared<internal::Batch>(id, parent_, std::move(types)));
+            std::make_shared<internal::Batch>(
+                id, parent_, std::move(types), name));
     });
 
     assert(added);
@@ -254,12 +280,15 @@ auto Pool::Modify(SocketID id, ModifyCallback cb) noexcept -> void
             map[id].emplace_back(std::move(cb));
         }
         auto& notify = socket(batchID);
-        const auto rc = notify.lock()->Send([&] {
-            auto out = MakeWork(Operation::change_socket);
-            out.AddFrame(id);
+        const auto rc = notify.lock()->Send(
+            [&] {
+                auto out = MakeWork(Operation::change_socket);
+                out.AddFrame(id);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
 
         if (false == rc) {
 
@@ -286,7 +315,8 @@ auto Pool::Shutdown() noexcept -> void
 
         for (auto& [id, data] : notify_) {
             auto& socket = data.second;
-            socket.lock()->Send(MakeWork(Operation::shutdown));
+            socket.lock()->Send(
+                MakeWork(Operation::shutdown), __FILE__, __LINE__);
         }
     }
 }
@@ -296,10 +326,8 @@ auto Pool::socket(BatchID id) noexcept -> GuardedSocket&
     return notify_.at(id % count_).second;
 }
 
-auto Pool::Start(
-    BatchID id,
-    StartArgs&& sockets,
-    const std::string_view threadname) noexcept -> zeromq::internal::Thread*
+auto Pool::Start(BatchID id, StartArgs&& sockets) noexcept
+    -> zeromq::internal::Thread*
 {
     const auto ticket = gate_.get();
 
@@ -318,13 +346,15 @@ auto Pool::Start(
 
         auto& thread = get(id);
         auto& notify = socket(id);
-        const auto rc = notify.lock()->Send([&] {
-            auto out = MakeWork(Operation::add_socket);
-            out.AddFrame(id);
-            out.AddFrame(threadname.data(), threadname.size());
+        const auto rc = notify.lock()->Send(
+            [&] {
+                auto out = MakeWork(Operation::add_socket);
+                out.AddFrame(id);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
 
         if (rc) {
 
@@ -367,12 +397,15 @@ auto Pool::Stop(BatchID id) noexcept -> void
         }
 
         auto& notify = socket(id);
-        const auto rc = notify.lock()->Send([&] {
-            auto out = MakeWork(Operation::remove_socket);
-            out.AddFrame(id);
+        const auto rc = notify.lock()->Send(
+            [&] {
+                auto out = MakeWork(Operation::remove_socket);
+                out.AddFrame(id);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
 
         if (false == rc) { throw std::runtime_error{"failed stop batch"}; }
     } catch (const std::exception& e) {

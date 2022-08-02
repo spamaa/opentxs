@@ -31,7 +31,6 @@
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/socket/SocketType.hpp"
-#include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "util/Thread.hpp"
 
@@ -98,7 +97,6 @@ auto Thread::modify(Message&& message) noexcept -> void
     switch (body.at(0).as<Operation>()) {
         case Operation::add_socket: {
             const auto batch = body.at(1).as<BatchID>();
-            const auto threadname = body.at(2).Bytes();
 
             for (auto [socket, cb] : parent_.GetStartArgs(batch)) {
                 assert(cb);
@@ -110,8 +108,6 @@ auto Thread::modify(Message&& message) noexcept -> void
 
                 assert(data_.items_.size() == data_.data_.size());
             }
-
-            thread_name_ = threadname;
         } break;
         case Operation::remove_socket: {
             const auto batch = body.at(1).as<BatchID>();

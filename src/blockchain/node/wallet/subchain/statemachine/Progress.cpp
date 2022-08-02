@@ -11,6 +11,7 @@
 
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <atomic>
 #include <chrono>
 #include <iterator>
 #include <memory>
@@ -20,8 +21,8 @@
 #include "blockchain/node/wallet/subchain/SubchainStateData.hpp"
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Job.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
@@ -78,6 +79,7 @@ auto Progress::Imp::do_process_update(Message&& msg) noexcept -> void
     OT_ASSERT(0u < clean.size());
 
     const auto& best = clean.crbegin()->second;
+    log_(OT_PRETTY_CLASS())(name_)(" received update: ")(best).Flush();
     auto handle = parent_.progress_position_.lock();
     auto& last = *handle;
 
@@ -85,7 +87,7 @@ auto Progress::Imp::do_process_update(Message&& msg) noexcept -> void
         parent_.db_.SubchainSetLastScanned(parent_.db_key_, best);
         last = best;
         notify(best);
-        to_scan_.Send(MakeWork(Work::statemachine));
+        to_scan_.Send(MakeWork(Work::statemachine), __FILE__, __LINE__);
     }
 
     const auto database = Clock::now();
@@ -102,24 +104,29 @@ auto Progress::Imp::do_process_update(Message&& msg) noexcept -> void
         .Flush();
 }
 
-auto Progress::Imp::notify(const block::Position& pos) const noexcept -> void
+auto Progress::Imp::do_reorg(
+    const node::HeaderOracle& oracle,
+    const Lock& oracleLock,
+    Reorg::Params& params) noexcept -> bool
 {
-    parent_.ReportScan(pos);
-}
+    if (false == parent_.need_reorg_) { return true; }
 
-auto Progress::Imp::ProcessReorg(
-    const Lock& headerOracleLock,
-    const block::Position& parent) noexcept -> void
-{
+    const auto& [position, tx] = params;
     auto handle = parent_.progress_position_.lock();
     auto& last = *handle;
 
     if (last.has_value()) {
-        const auto target =
-            parent_.ReorgTarget(headerOracleLock, parent, last.value());
+        const auto target = parent_.ReorgTarget(position, last.value());
         last = target;
         notify(target);
     }
+
+    return Job::do_reorg(oracle, oracleLock, params);
+}
+
+auto Progress::Imp::notify(const block::Position& pos) const noexcept -> void
+{
+    parent_.ReportScan(pos);
 }
 
 auto Progress::Imp::process_do_rescan(Message&& in) noexcept -> void
@@ -146,24 +153,14 @@ Progress::Progress(
             alloc::PMR<Imp>{asio.Alloc(batchID)}, parent, batchID);
     }())
 {
+    OT_ASSERT(imp_);
+}
+
+auto Progress::Init() noexcept -> void
+{
     imp_->Init(imp_);
+    imp_.reset();
 }
 
-auto Progress::ChangeState(const State state, StateSequence reorg) noexcept
-    -> bool
-{
-    return imp_->ChangeState(state, reorg);
-}
-
-auto Progress::ProcessReorg(
-    const Lock& headerOracleLock,
-    const block::Position& parent) noexcept -> void
-{
-    imp_->ProcessReorg(headerOracleLock, parent);
-}
-
-Progress::~Progress()
-{
-    if (imp_) { imp_->Shutdown(); }
-}
+Progress::~Progress() = default;
 }  // namespace opentxs::blockchain::node::wallet

@@ -146,6 +146,7 @@ public:
      */
     virtual auto CommonParent(const block::Position& input) const noexcept
         -> std::pair<block::Position, block::Position> = 0;
+    virtual auto Exists(const block::Hash& hash) const noexcept -> bool = 0;
     virtual auto GetCheckpoint() const noexcept -> block::Position = 0;
     virtual auto GetPosition(const block::Height height) const noexcept
         -> block::Position = 0;
@@ -160,15 +161,6 @@ public:
     virtual auto RecentHashes(alloc::Default alloc = {}) const noexcept
         -> Hashes = 0;
     virtual auto Siblings() const noexcept -> UnallocatedSet<block::Hash> = 0;
-
-    virtual auto AddCheckpoint(
-        const block::Height position,
-        const block::Hash& requiredHash) noexcept -> bool = 0;
-    virtual auto AddHeader(std::unique_ptr<block::Header>) noexcept -> bool = 0;
-    virtual auto AddHeaders(
-        UnallocatedVector<std::unique_ptr<block::Header>>&) noexcept
-        -> bool = 0;
-    virtual auto DeleteCheckpoint() noexcept -> bool = 0;
 
     OPENTXS_NO_EXPORT virtual auto Internal() noexcept
         -> internal::HeaderOracle& = 0;

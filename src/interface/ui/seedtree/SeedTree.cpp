@@ -17,6 +17,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -63,7 +64,7 @@ SeedTree::SeedTree(
     const api::session::Client& api,
     const SimpleCallback& cb) noexcept
     : SeedTreeList(api, identifier::Generic{}, cb, false)
-    , Worker(api, 100ms)
+    , Worker(api, 100ms, "ui::SeedTree")
     , callbacks_()
     , default_nym_()
     , default_seed_()

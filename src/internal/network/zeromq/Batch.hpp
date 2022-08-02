@@ -49,11 +49,11 @@ class Batch
 {
 public:
     const BatchID id_;
+    const CString thread_name_;
     Vector<OTZMQListenCallback> listen_callbacks_;
     Vector<OTZMQReplyCallback> reply_callbacks_;
     Vector<socket::Raw> sockets_;
     std::atomic_bool toggle_;
-    CString thread_name_;
 
     auto ClearCallbacks() noexcept -> void;
 
@@ -61,7 +61,7 @@ public:
         const BatchID id,
         const zeromq::Context& context,
         Vector<socket::Type>&& types,
-        const std::string_view threadname = {}) noexcept;
+        const std::string_view threadname) noexcept;
     Batch() = delete;
     Batch(const Batch&) = delete;
     Batch(Batch&&) = delete;

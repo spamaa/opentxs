@@ -7,12 +7,14 @@
 
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
+#include <cstddef>
+#include <chrono>
 #include <functional>
-
-#include "opentxs/util/Time.hpp"
 
 namespace opentxs
 {
+using namespace std::literals::chrono_literals;
+
 using PeriodicTask = std::function<void()>;
 }  // namespace opentxs
 
@@ -21,9 +23,11 @@ namespace opentxs::api
 class OPENTXS_EXPORT Periodic
 {
 public:
-    virtual auto Cancel(const int task) const -> bool = 0;
+    using TaskID = std::ptrdiff_t;
+
+    virtual auto Cancel(const TaskID task) const -> bool = 0;
     virtual auto Reschedule(
-        const int task,
+        const TaskID task,
         const std::chrono::seconds& interval) const -> bool = 0;
     /** Adds a task to the periodic task list with the specified interval. By
      * default, schedules for immediate execution.
@@ -33,7 +37,7 @@ public:
     virtual auto Schedule(
         const std::chrono::seconds& interval,
         const opentxs::PeriodicTask& task,
-        const std::chrono::seconds& last = 0s) const -> int = 0;
+        const std::chrono::seconds& last = 0s) const -> TaskID = 0;
 
     Periodic(const Periodic&) = delete;
     Periodic(Periodic&&) = delete;

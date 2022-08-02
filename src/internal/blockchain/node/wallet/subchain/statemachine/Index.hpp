@@ -8,8 +8,6 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 
 #include "internal/blockchain/node/wallet/subchain/statemachine/Job.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
-#include "opentxs/blockchain/block/Types.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -47,15 +45,11 @@ public:
         const boost::shared_ptr<const SubchainStateData>& parent,
         const PaymentCode& code) noexcept -> Index;
 
-    auto ChangeState(const State state, StateSequence reorg) noexcept
-        -> bool final;
-    auto ProcessReorg(
-        const Lock& headerOracleLock,
-        const block::Position& parent) noexcept -> void final;
+    auto Init() noexcept -> void final;
 
     Index() = delete;
     Index(const Index&) = delete;
-    Index(Index&&) noexcept;
+    Index(Index&&) = delete;
     auto operator=(const Index&) -> Index& = delete;
     auto operator=(Index&&) -> Index& = delete;
 

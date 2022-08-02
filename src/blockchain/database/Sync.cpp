@@ -13,7 +13,6 @@
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/database/Types.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/util/Bytes.hpp"
@@ -30,7 +29,7 @@ Sync::Sync(
     : api_(api)
     , common_(common)
     , lmdb_(lmdb)
-    , blank_position_(make_blank<block::Position>::value(api))
+    , blank_position_()
     , chain_(type)
     , genesis_([&] {
         const auto& hex = params::Chains().at(chain_).genesis_hash_hex_;

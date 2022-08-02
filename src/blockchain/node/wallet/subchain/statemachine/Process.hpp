@@ -15,6 +15,7 @@
 #include <queue>
 
 #include "blockchain/node/wallet/subchain/statemachine/Job.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/util/Mutex.hpp"
@@ -54,6 +55,8 @@ namespace wallet
 {
 class SubchainStateData;
 }  // namespace wallet
+
+class HeaderOracle;
 }  // namespace node
 }  // namespace blockchain
 
@@ -76,10 +79,6 @@ namespace opentxs::blockchain::node::wallet
 class Process::Imp final : public statemachine::Job
 {
 public:
-    auto ProcessReorg(
-        const Lock& headerOracleLock,
-        const block::Position& parent) noexcept -> void final;
-
     Imp(const boost::shared_ptr<const SubchainStateData>& parent,
         const network::zeromq::BatchID batch,
         allocator_type alloc) noexcept;
@@ -124,11 +123,16 @@ private:
         const std::shared_ptr<const bitcoin::block::Block>& block) noexcept
         -> void;
     auto do_process_update(Message&& msg) noexcept -> void final;
-    auto do_startup() noexcept -> void final;
+    auto do_reorg(
+        const node::HeaderOracle& oracle,
+        const Lock& oracleLock,
+        Reorg::Params& params) noexcept -> bool final;
+    auto do_startup_internal() noexcept -> void final;
     auto download(block::Position&& position) noexcept -> void;
     auto download(
         block::Position&& position,
         BitcoinBlockResult&& future) noexcept -> void;
+    auto forward_to_next(Message&& msg) noexcept -> void final;
     auto process_block(block::Hash&& block) noexcept -> void final;
     auto process_do_rescan(Message&& in) noexcept -> void final;
     auto process_filter(Message&& in, block::Position&& tip) noexcept

@@ -11,20 +11,30 @@
 namespace opentxs::blockchain::node
 {
 struct Endpoints final : public Allocated {
+    const CString block_cache_pull_;
+    const CString block_cache_job_ready_publish_;
     const CString block_fetcher_job_ready_publish_;
+    const CString block_fetcher_pull_;
+    const CString block_oracle_pull_;
+    const CString fee_oracle_pull_;
     const CString filter_oracle_reindex_publish_;
+    const CString new_filter_publish_;
+    const CString new_header_publish_;
     const CString p2p_requestor_pair_;
     const CString shutdown_publish_;
+    const CString wallet_pull_;
+    const CString wallet_to_accounts_push_;
 
     auto get_allocator() const noexcept -> allocator_type final
     {
-        return block_fetcher_job_ready_publish_.get_allocator();
+        return block_cache_pull_.get_allocator();
     }
 
     Endpoints(allocator_type alloc) noexcept;
-    Endpoints() noexcept = delete;
+    Endpoints() = delete;
     Endpoints(const Endpoints&) = delete;
-    Endpoints(Endpoints&&) = delete;
+    Endpoints(Endpoints&& rhs) noexcept;
+    Endpoints(Endpoints&& rhs, allocator_type alloc) noexcept;
     auto operator=(const Endpoints&) -> Endpoints& = delete;
     auto operator=(Endpoints&&) -> Endpoints& = delete;
 

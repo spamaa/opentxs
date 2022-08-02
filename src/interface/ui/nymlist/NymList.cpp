@@ -10,6 +10,7 @@
 #include <atomic>
 #include <future>
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "interface/ui/base/List.hpp"
@@ -47,7 +48,7 @@ NymList::NymList(
     const api::session::Client& api,
     const SimpleCallback& cb) noexcept
     : NymListList(api, identifier::Generic{}, cb, false)
-    , Worker(api, {})
+    , Worker(api, {}, "ui::NymList")
 {
     init_executor({
         UnallocatedCString{api.Endpoints().NymCreated()},

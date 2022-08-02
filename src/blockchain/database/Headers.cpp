@@ -21,16 +21,21 @@
 #include "Proto.tpp"
 #include "blockchain/database/common/Database.hpp"
 #include "blockchain/node/UpdateTransaction.hpp"
+#include "internal/api/network/Blockchain.hpp"
 #include "internal/api/session/FactoryAPI.hpp"
 #include "internal/blockchain/bitcoin/block/Factory.hpp"
 #include "internal/blockchain/bitcoin/block/Header.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/block/Factory.hpp"
 #include "internal/blockchain/block/Header.hpp"
 #include "internal/blockchain/database/Types.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Manager.hpp"
+#include "internal/network/zeromq/Context.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
 #include "internal/util/TSV.hpp"
+#include "opentxs/api/network/Blockchain.hpp"
+#include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -39,14 +44,68 @@
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
+#include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
-#include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/util/Bytes.hpp"
+#include "opentxs/network/zeromq/socket/SocketType.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "util/LMDB.hpp"
 #include "util/Work.hpp"
+
+namespace opentxs::blockchain::database
+{
+class Headers::IsSameTip
+{
+public:
+    auto operator()(const std::monostate& rhs) const noexcept -> bool
+    {
+        return false;
+    }
+    auto operator()(const TipData& rhs) const noexcept -> bool
+    {
+        return tip_ == rhs;
+    }
+    auto operator()(const ReorgData& rhs) const noexcept -> bool
+    {
+        return false;
+    }
+
+    IsSameTip(const block::Position& tip) noexcept
+        : tip_(tip)
+    {
+    }
+
+private:
+    const block::Position& tip_;
+};
+
+class Headers::IsSameReorg
+{
+public:
+    auto operator()(const std::monostate& rhs) const noexcept -> bool
+    {
+        return false;
+    }
+    auto operator()(const TipData& rhs) const noexcept -> bool { return false; }
+    auto operator()(const ReorgData& rhs) const noexcept -> bool
+    {
+        return (parent_ == rhs.first) && (tip_ == rhs.second);
+    }
+
+    IsSameReorg(
+        const block::Position& parent,
+        const block::Position& tip) noexcept
+        : parent_(parent)
+        , tip_(tip)
+    {
+    }
+
+private:
+    const block::Position& parent_;
+    const block::Position& tip_;
+};
+}  // namespace opentxs::blockchain::database
 
 namespace opentxs::blockchain::database
 {
@@ -61,6 +120,27 @@ Headers::Headers(
     , common_(common)
     , lmdb_(lmdb)
     , lock_()
+    , publish_tip_internal_([&] {
+        using Type = network::zeromq::socket::Type;
+        auto out = api.Network().ZeroMQ().Internal().RawSocket(Type::Publish);
+        const auto rc = out.Bind(
+            network.Internal().Endpoints().new_header_publish_.c_str());
+
+        OT_ASSERT(rc);
+
+        return out;
+    }())
+    , publish_tip_([&] {
+        using Type = network::zeromq::socket::Type;
+        auto out = api.Network().ZeroMQ().Internal().RawSocket(Type::Push);
+        const auto rc = out.Connect(
+            api.Network().Blockchain().Internal().ReorgEndpoint().data());
+
+        OT_ASSERT(rc);
+
+        return out;
+    }())
+    , last_update_(std::monostate{})
 {
     import_genesis(type);
 
@@ -224,42 +304,76 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
         return false;
     }
 
-    const auto position = best(lock);
-    const auto& [height, hash] = position;
-    const auto bytes = hash.Bytes();
+    const auto tip = best(lock);
+    const auto chain = network_.Internal().Chain();
 
     if (update.HaveReorg()) {
-        const auto [pHeight, pHash] = update.ReorgParent();
-        const auto pBytes = pHash.Bytes();
-        LogConsole()(print(network_.Internal().Chain()))(
-            " reorg detected. Last common ancestor is ")(pHash.asHex())(
-            " at height ")(pHeight)
-            .Flush();
-        // TODO c++20
-        network_.Internal().Reorg().Send(
-            [&](const auto& height, const auto& pHeight) {
-                auto work = MakeWork(WorkType::BlockchainReorg);
-                work.AddFrame(network_.Internal().Chain());
-                work.AddFrame(pBytes.data(), pBytes.size());
-                work.AddFrame(pHeight);
-                work.AddFrame(bytes.data(), bytes.size());
-                work.AddFrame(height);
+        const auto& parent = update.ReorgParent();
+        auto visitor = IsSameReorg{parent, tip};
+        auto isSame = std::visit(visitor, last_update_);
 
-                return work;
-            }(height, pHeight));
+        if (false == isSame) {
+            LogConsole()(print(chain))(
+                " reorg detected. Last common ancestor is ")(parent.print())
+                .Flush();
+            publish_tip_internal_.Send(
+                [&] {
+                    auto work = MakeWork(OT_ZMQ_REORG_SIGNAL);
+                    work.AddFrame(parent.hash_);
+                    work.AddFrame(parent.height_);
+                    work.AddFrame(tip.hash_);
+                    work.AddFrame(tip.height_);
+
+                    return work;
+                }(),
+                __FILE__,
+                __LINE__);
+            publish_tip_.Send(
+                [&] {
+                    auto work = MakeWork(WorkType::BlockchainReorg);
+                    work.AddFrame(chain);
+                    work.AddFrame(parent.hash_);
+                    work.AddFrame(parent.height_);
+                    work.AddFrame(tip.hash_);
+                    work.AddFrame(tip.height_);
+
+                    return work;
+                }(),
+                __FILE__,
+                __LINE__);
+            last_update_ = std::make_pair(parent, tip);
+        }
     } else {
-        // TODO c++20
-        network_.Internal().Reorg().Send([&](const auto& height) {
-            auto work = MakeWork(WorkType::BlockchainNewHeader);
-            work.AddFrame(network_.Internal().Chain());
-            work.AddFrame(bytes.data(), bytes.size());
-            work.AddFrame(height);
+        auto visitor = IsSameTip{tip};
+        auto isSame = std::visit(visitor, last_update_);
 
-            return work;
-        }(height));
+        if (false == isSame) {
+            publish_tip_internal_.Send(
+                [&] {
+                    auto work = MakeWork(OT_ZMQ_NEW_BLOCK_HEADER_SIGNAL);
+                    work.AddFrame(tip.hash_);
+                    work.AddFrame(tip.height_);
+
+                    return work;
+                }(),
+                __FILE__,
+                __LINE__);
+            publish_tip_.Send(
+                [&] {
+                    auto work = MakeWork(WorkType::BlockchainNewHeader);
+                    work.AddFrame(chain);
+                    work.AddFrame(tip.hash_);
+                    work.AddFrame(tip.height_);
+
+                    return work;
+                }(),
+                __FILE__,
+                __LINE__);
+            last_update_ = tip;
+        }
     }
 
-    network_.Internal().UpdateLocalHeight(position);
+    network_.Internal().UpdateLocalHeight(tip);
 
     return true;
 }

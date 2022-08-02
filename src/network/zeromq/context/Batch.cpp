@@ -22,11 +22,11 @@ Batch::Batch(
     Vector<socket::Type>&& types,
     const std::string_view threadname) noexcept
     : id_(id)
+    , thread_name_(threadname)
     , listen_callbacks_()
     , reply_callbacks_()
     , sockets_()
     , toggle_(false)
-    , thread_name_(threadname)
 {
     sockets_.reserve(types.size());
     std::transform(

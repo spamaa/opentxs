@@ -281,17 +281,20 @@ auto Log::Imp::send(const LogAction action, const Console console)
     if (auto p = get_data(buf); p) {
         auto& [buffer, socket] = *p;
         // TODO c++20
-        socket.SendDeferred([&](const auto& text) {
-            auto message = network::zeromq::Message{};
-            message.StartBody();
-            message.AddFrame(level_);
-            message.AddFrame(text.str());
-            message.AddFrame(id.data(), id.size());
-            message.AddFrame(action);
-            message.AddFrame(console);
+        socket.SendDeferred(
+            [&](const auto& text) {
+                auto message = network::zeromq::Message{};
+                message.StartBody();
+                message.AddFrame(level_);
+                message.AddFrame(text.str());
+                message.AddFrame(id.data(), id.size());
+                message.AddFrame(action);
+                message.AddFrame(console);
 
-            return message;
-        }(buffer));
+                return message;
+            }(buffer),
+            __FILE__,
+            __LINE__);
         buf.Reset(buffer);
     }
 

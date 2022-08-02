@@ -25,8 +25,8 @@
 #include "internal/api/network/Asio.hpp"
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/node/Mempool.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Job.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
@@ -115,13 +115,16 @@ auto Process::Imp::check_cache() noexcept -> void
         }
 
         if (0u < status.size()) {
-            to_index_.SendDeferred([&] {
-                auto out = MakeWork(Work::update);
-                add_last_reorg(out);
-                encode(status, out);
+            to_index_.SendDeferred(
+                [&] {
+                    auto out = MakeWork(Work::update);
+                    add_last_reorg(out);
+                    encode(status, out);
 
-                return out;
-            }());
+                    return out;
+                }(),
+                __FILE__,
+                __LINE__);
         }
     };
     const auto queue = waiting_.size() + downloading_.size() + ready_.size();
@@ -170,11 +173,75 @@ auto Process::Imp::do_process_update(Message&& msg) noexcept -> void
         waiting_.emplace_back(std::move(position));
     }
 
-    to_index_.SendDeferred(std::move(msg));
+    to_index_.SendDeferred(std::move(msg), __FILE__, __LINE__);
     do_work();
 }
 
-auto Process::Imp::do_startup() noexcept -> void
+auto Process::Imp::do_reorg(
+    const node::HeaderOracle& oracle,
+    const Lock& oracleLock,
+    Reorg::Params& params) noexcept -> bool
+{
+    if (false == parent_.need_reorg_) { return true; }
+
+    const auto& [position, tx] = params;
+    // TODO c++20 capture structured binding
+    const auto pos{position};
+    txid_cache_.clear();
+    waiting_.erase(
+        std::remove_if(
+            waiting_.begin(),
+            waiting_.end(),
+            [&](const auto& pos) { return pos > pos; }),
+        waiting_.end());
+
+    for (auto i{ready_.begin()}, end{ready_.end()}; i != end;) {
+        const auto& [position, block] = *i;
+
+        if (position > position) {
+            ready_.erase(i, end);
+
+            break;
+        } else {
+            ++i;
+        }
+    }
+
+    for (auto i{processing_.begin()}, end{processing_.end()}; i != end;) {
+        const auto& [position, block] = *i;
+
+        if (position > position) {
+            processing_.erase(i, end);
+
+            break;
+        } else {
+            ++i;
+        }
+    }
+
+    {
+        auto erase{false};
+        auto& map = downloading_;
+
+        for (auto i = map.begin(), end = map.end(); i != end;) {
+            const auto& [position, future] = *i;
+
+            if (erase || (position > position)) {
+                erase = true;
+                downloading_index_.erase(position.hash_);
+                i = map.erase(i);
+            } else {
+                ++i;
+            }
+        }
+    }
+
+    parent_.process_queue_.store(active());
+
+    return Job::do_reorg(oracle, oracleLock, params);
+}
+
+auto Process::Imp::do_startup_internal() noexcept -> void
 {
     const auto& oracle = parent_.mempool_oracle_;
 
@@ -202,65 +269,14 @@ auto Process::Imp::download(block::Position&& position) noexcept -> void
     download(std::move(position), std::move(future));
 }
 
+auto Process::Imp::forward_to_next(Message&& msg) noexcept -> void
+{
+    to_index_.Send(std::move(msg), __FILE__, __LINE__);
+}
+
 auto Process::Imp::have_items() const noexcept -> bool
 {
     return 0u < ready_.size();
-}
-
-auto Process::Imp::ProcessReorg(
-    const Lock& headerOracleLock,
-    const block::Position& parent) noexcept -> void
-{
-    txid_cache_.clear();
-    waiting_.erase(
-        std::remove_if(
-            waiting_.begin(),
-            waiting_.end(),
-            [&](const auto& pos) { return pos > parent; }),
-        waiting_.end());
-
-    for (auto i{ready_.begin()}, end{ready_.end()}; i != end;) {
-        const auto& [position, block] = *i;
-
-        if (position > parent) {
-            ready_.erase(i, end);
-
-            break;
-        } else {
-            ++i;
-        }
-    }
-
-    for (auto i{processing_.begin()}, end{processing_.end()}; i != end;) {
-        const auto& [position, block] = *i;
-
-        if (position > parent) {
-            processing_.erase(i, end);
-
-            break;
-        } else {
-            ++i;
-        }
-    }
-
-    {
-        auto erase{false};
-        auto& map = downloading_;
-
-        for (auto i = map.begin(), end = map.end(); i != end;) {
-            const auto& [position, future] = *i;
-
-            if (erase || (position > parent)) {
-                erase = true;
-                downloading_index_.erase(position.hash_);
-                i = map.erase(i);
-            } else {
-                ++i;
-            }
-        }
-    }
-
-    parent_.process_queue_.store(active());
 }
 
 auto Process::Imp::process_block(block::Hash&& hash) noexcept -> void
@@ -294,13 +310,13 @@ auto Process::Imp::process_do_rescan(Message&& in) noexcept -> void
     processing_.clear();
     txid_cache_.clear();
     parent_.process_queue_.store(0);
-    to_index_.Send(std::move(in));
+    to_index_.Send(std::move(in), __FILE__, __LINE__);
 }
 
 auto Process::Imp::process_filter(Message&& in, block::Position&&) noexcept
     -> void
 {
-    to_index_.Send(std::move(in));
+    to_index_.Send(std::move(in), __FILE__, __LINE__);
 }
 
 auto Process::Imp::process_mempool(Message&& in) noexcept -> void
@@ -452,24 +468,14 @@ Process::Process(
             alloc::PMR<Imp>{asio.Alloc(batchID)}, parent, batchID);
     }())
 {
+    OT_ASSERT(imp_);
+}
+
+auto Process::Init() noexcept -> void
+{
     imp_->Init(imp_);
+    imp_.reset();
 }
 
-auto Process::ChangeState(const State state, StateSequence reorg) noexcept
-    -> bool
-{
-    return imp_->ChangeState(state, reorg);
-}
-
-auto Process::ProcessReorg(
-    const Lock& headerOracleLock,
-    const block::Position& parent) noexcept -> void
-{
-    imp_->ProcessReorg(headerOracleLock, parent);
-}
-
-Process::~Process()
-{
-    if (imp_) { imp_->Shutdown(); }
-}
+Process::~Process() = default;
 }  // namespace opentxs::blockchain::node::wallet

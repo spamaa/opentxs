@@ -21,9 +21,10 @@
 #include "blockchain/node/wallet/subchain/SubchainStateData.hpp"
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Manager.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Job.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
@@ -31,7 +32,6 @@
 #include "internal/util/BoostPMR.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/network/Network.hpp"
-#include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/bitcoin/block/Output.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/block/Types.hpp"
@@ -62,7 +62,7 @@ Scan::Imp::Imp(
           JobType::scan,
           alloc,
           {
-              {CString{parent->api_.Endpoints().BlockchainNewFilter()},
+              {parent->node_.Internal().Endpoints().new_filter_publish_,
                Direction::Connect},
           },
           {
@@ -98,7 +98,35 @@ auto Scan::Imp::current() const noexcept -> const block::Position&
     }
 }
 
-auto Scan::Imp::do_startup() noexcept -> void
+auto Scan::Imp::do_reorg(
+    const node::HeaderOracle& oracle,
+    const Lock& oracleLock,
+    Reorg::Params& params) noexcept -> bool
+{
+    if (false == parent_.need_reorg_) { return true; }
+
+    const auto& [position, tx] = params;
+
+    if (last_scanned_.has_value()) {
+        const auto target =
+            parent_.ReorgTarget(position, last_scanned_.value());
+        log_(OT_PRETTY_CLASS())(parent_.name_)(" last scanned reset to ")(
+            target)
+            .Flush();
+        last_scanned_ = target;
+    }
+
+    if (filter_tip_.has_value() && (filter_tip_.value() > position)) {
+        log_(OT_PRETTY_CLASS())(parent_.name_)(" filter tip reset to ")(
+            position)
+            .Flush();
+        filter_tip_ = position;
+    }
+
+    return Job::do_reorg(oracle, oracleLock, params);
+}
+
+auto Scan::Imp::do_startup_internal() noexcept -> void
 {
     disable_automatic_processing_ = true;
     const auto& node = parent_.node_;
@@ -123,42 +151,30 @@ auto Scan::Imp::do_startup() noexcept -> void
         last_scanned_ = filter_tip_;
     }
 
-    to_process_.SendDeferred([&] {
-        auto out = MakeWork(Work::update);
-        add_last_reorg(out);
-        auto clean = Vector<ScanStatus>{get_allocator()};
-        clean.emplace_back(ScanState::scan_clean, last_scanned_.value());
-        encode(clean, out);
+    to_process_.SendDeferred(
+        [&] {
+            auto out = MakeWork(Work::update);
+            add_last_reorg(out);
+            auto clean = Vector<ScanStatus>{get_allocator()};
+            clean.emplace_back(ScanState::scan_clean, last_scanned_.value());
+            encode(clean, out);
 
-        return out;
-    }());
+            return out;
+        }(),
+        __FILE__,
+        __LINE__);
 }
 
-auto Scan::Imp::ProcessReorg(
-    const Lock& headerOracleLock,
-    const block::Position& parent) noexcept -> void
+auto Scan::Imp::forward_to_next(Message&& msg) noexcept -> void
 {
-    if (last_scanned_.has_value()) {
-        const auto target = parent_.ReorgTarget(
-            headerOracleLock, parent, last_scanned_.value());
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" last scanned reset to ")(
-            target)
-            .Flush();
-        last_scanned_ = target;
-    }
-
-    if (filter_tip_.has_value() && (filter_tip_.value() > parent)) {
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" filter tip reset to ")(parent)
-            .Flush();
-        filter_tip_ = parent;
-    }
+    to_process_.Send(std::move(msg), __FILE__, __LINE__);
 }
 
 auto Scan::Imp::process_do_rescan(Message&& in) noexcept -> void
 {
     last_scanned_.reset();
     parent_.match_cache_.lock()->Reset();
-    to_process_.Send(std::move(in));
+    to_process_.Send(std::move(in), __FILE__, __LINE__);
 }
 
 auto Scan::Imp::process_filter(Message&& in, block::Position&& tip) noexcept
@@ -179,7 +195,7 @@ auto Scan::Imp::process_filter(Message&& in, block::Position&& tip) noexcept
         in.AddFrame(last.value());
     }
 
-    to_process_.Send(std::move(in));
+    to_process_.Send(std::move(in), __FILE__, __LINE__);
     do_work();
 }
 
@@ -272,24 +288,30 @@ auto Scan::Imp::work() noexcept -> bool
         log_(OT_PRETTY_CLASS())(parent_.name_)(" ")(
             count)(" blocks queued for processing ")
             .Flush();
-        to_process_.SendDeferred([&] {
-            auto out = MakeWork(Work::update);
-            add_last_reorg(out);
-            encode(dirty, out);
+        to_process_.SendDeferred(
+            [&] {
+                auto out = MakeWork(Work::update);
+                add_last_reorg(out);
+                encode(dirty, out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     }
 
     if (highestClean.has_value()) {
         clean.emplace_back(ScanState::scan_clean, highestClean.value());
-        to_process_.SendDeferred([&] {
-            auto out = MakeWork(Work::update);
-            add_last_reorg(out);
-            encode(clean, out);
+        to_process_.SendDeferred(
+            [&] {
+                auto out = MakeWork(Work::update);
+                add_last_reorg(out);
+                encode(clean, out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     }
 
     return (false == caught_up());
@@ -310,23 +332,14 @@ Scan::Scan(const boost::shared_ptr<const SubchainStateData>& parent) noexcept
             alloc::PMR<Imp>{asio.Alloc(batchID)}, parent, batchID);
     }())
 {
+    OT_ASSERT(imp_);
+}
+
+auto Scan::Init() noexcept -> void
+{
     imp_->Init(imp_);
+    imp_.reset();
 }
 
-auto Scan::ChangeState(const State state, StateSequence reorg) noexcept -> bool
-{
-    return imp_->ChangeState(state, reorg);
-}
-
-auto Scan::ProcessReorg(
-    const Lock& headerOracleLock,
-    const block::Position& parent) noexcept -> void
-{
-    imp_->ProcessReorg(headerOracleLock, parent);
-}
-
-Scan::~Scan()
-{
-    if (imp_) { imp_->Shutdown(); }
-}
+Scan::~Scan() = default;
 }  // namespace opentxs::blockchain::node::wallet

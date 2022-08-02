@@ -9,7 +9,6 @@
 #include <tuple>
 #include <utility>
 
-#include "core/Shutdown.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
@@ -58,7 +57,6 @@ private:
 
 protected:
     const api::session::Endpoints& endpoints_;
-    opentxs::internal::ShutdownSender shutdown_sender_;
 
     ZMQ(const opentxs::network::zeromq::Context& zmq, const int instance)
     noexcept;

@@ -3,6 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// IWYU pragma: no_include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 // IWYU pragma: no_include "opentxs/blockchain/crypto/Subchain.hpp"
 
 #pragma once
@@ -33,6 +34,8 @@
 #include "internal/blockchain/block/Types.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
 #include "internal/blockchain/node/Wallet.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
+#include "internal/blockchain/node/wallet/ReorgSlave.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/blockchain/node/wallet/subchain/Subchain.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Index.hpp"
@@ -48,8 +51,8 @@
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/block/Script.hpp"
-#include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
+#include "opentxs/blockchain/bitcoin/cfilter/Types.hpp"
 #include "opentxs/blockchain/block/Block.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Outpoint.hpp"
@@ -70,7 +73,6 @@
 #include "opentxs/util/Time.hpp"
 #include "util/Actor.hpp"
 #include "util/JobCounter.hpp"
-#include "util/LMDB.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -120,10 +122,12 @@ namespace wallet
 {
 class Index;
 class Job;
+class Reorg;
 class ScriptForm;
 class Work;
 }  // namespace wallet
 
+class HeaderOracle;
 class Manager;
 }  // namespace node
 
@@ -150,9 +154,13 @@ namespace opentxs::blockchain::node::wallet
 {
 class SubchainStateData
     : virtual public Subchain,
-      public Actor<SubchainStateData, SubchainJobs>,
+      public opentxs::Actor<SubchainStateData, SubchainJobs>,
       public boost::enable_shared_from_this<SubchainStateData>
 {
+private:
+    std::shared_ptr<const api::Session> api_p_;
+    std::shared_ptr<const node::Manager> node_p_;
+
 public:
     using SubchainIndex = database::Wallet::SubchainIndex;
     using ElementCache =
@@ -163,6 +171,7 @@ public:
         libguarded::plain_guarded<std::optional<block::Position>>;
     using FinishedCallback =
         std::function<void(const Vector<block::Position>&)>;
+    using State = JobState;
 
     const api::Session& api_;
     const node::Manager& node_;
@@ -191,17 +200,17 @@ public:
     mutable ElementCache element_cache_;
     mutable MatchCache match_cache_;
     mutable std::atomic_bool scan_dirty_;
+    mutable std::atomic_bool need_reorg_;
     mutable std::atomic<std::size_t> process_queue_;
     mutable ProgressPosition progress_position_;
 
-    auto ChangeState(const State state, StateSequence reorg) noexcept
-        -> bool final;
     virtual auto CheckCache(const std::size_t outstanding, FinishedCallback cb)
         const noexcept -> void = 0;
     auto FinishRescan() const noexcept -> block::Height
     {
         return scan_threshold_ + maximum_scan_;
     }
+    auto GetReorg() const noexcept -> wallet::Reorg& { return reorg_; }
     auto IndexElement(
         const cfilter::Type type,
         const blockchain::crypto::Element& input,
@@ -214,7 +223,6 @@ public:
         const bitcoin::block::Transaction& tx,
         const Log& log) const noexcept -> void;
     auto ReorgTarget(
-        const Lock& headerOracleLock,
         const block::Position& reorg,
         const block::Position& current) const noexcept -> block::Position;
     auto ReportScan(const block::Position& pos) const noexcept -> void;
@@ -232,11 +240,6 @@ public:
         -> std::optional<block::Position>;
 
     auto Init(boost::shared_ptr<SubchainStateData> me) noexcept -> void final;
-    auto ProcessReorg(
-        const Lock& headerOracleLock,
-        storage::lmdb::LMDB::Transaction& tx,
-        std::atomic_int& errors,
-        const block::Position& ancestor) noexcept -> void final;
 
     SubchainStateData() = delete;
     SubchainStateData(const SubchainStateData&) = delete;
@@ -250,27 +253,24 @@ protected:
     using TXOs = database::Wallet::TXOs;
     auto set_key_data(bitcoin::block::Transaction& tx) const noexcept -> void;
 
-    virtual auto do_startup() noexcept -> void;
+    virtual auto do_startup() noexcept -> bool;
     virtual auto work() noexcept -> bool;
 
     SubchainStateData(
-        const api::Session& api,
-        const node::Manager& node,
-        database::Wallet& db,
-        const node::internal::Mempool& mempool,
+        Reorg& reorg,
         const crypto::Subaccount& subaccount,
-        const cfilter::Type filter,
-        const crypto::Subchain subchain,
-        const network::zeromq::BatchID batch,
-        const std::string_view parent,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        crypto::Subchain subchain,
+        std::string_view fromParent,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept;
 
 private:
-    friend Actor<SubchainStateData, SubchainJobs>;
+    friend opentxs::Actor<SubchainStateData, SubchainJobs>;
 
     using Transactions =
         Vector<std::shared_ptr<const bitcoin::block::Transaction>>;
-    using Task = node::internal::Wallet::Task;
     using Patterns = database::Wallet::Patterns;
     using Targets = GCS::Targets;
     using Tested = database::Wallet::MatchingIndices;
@@ -308,14 +308,9 @@ private:
     mutable std::atomic<std::size_t> elements_per_cfilter_;
     mutable JobCounter job_counter_;
     HandledReorgs reorgs_;
-    std::optional<wallet::Progress> progress_;
-    std::optional<wallet::Rescan> rescan_;
-    std::optional<wallet::Index> index_;
-    std::optional<wallet::Process> process_;
-    std::optional<wallet::Scan> scan_;
-    bool have_children_;
     Map<JobType, Time> child_activity_;
     Timer watchdog_;
+    mutable ReorgSlave reorg_;
 
     static auto describe(
         const crypto::Subaccount& account,
@@ -328,11 +323,10 @@ private:
 
     auto choose_thread_count(std::size_t elements) const noexcept
         -> std::size_t;
-    auto clear_children() noexcept -> void;
     auto get_account_targets(const Elements& elements, alloc::Default alloc)
         const noexcept -> Targets;
     virtual auto get_index(const boost::shared_ptr<const SubchainStateData>& me)
-        const noexcept -> Index = 0;
+        const noexcept -> void = 0;
     auto get_targets(const Elements& elements, Targets& targets) const noexcept
         -> void;
     auto get_targets(const TXOs& utxos, Targets& targets) const noexcept
@@ -382,31 +376,29 @@ private:
         -> void;
 
     auto do_reorg(
-        const Lock& headerOracleLock,
-        storage::lmdb::LMDB::Transaction& tx,
-        std::atomic_int& errors,
-        const block::Position ancestor) noexcept -> void;
+        const node::HeaderOracle& oracle,
+        const Lock& oracleLock,
+        Reorg::Params& params) noexcept -> bool;
     auto do_shutdown() noexcept -> void;
     auto pipeline(const Work work, Message&& msg) noexcept -> void;
     auto process_prepare_reorg(Message&& in) noexcept -> void;
     auto process_rescan(Message&& in) noexcept -> void;
     auto process_watchdog_ack(Message&& in) noexcept -> void;
     auto state_normal(const Work work, Message&& msg) noexcept -> void;
+    auto state_pre_shutdown(const Work work, Message&& msg) noexcept -> void;
     auto state_reorg(const Work work, Message&& msg) noexcept -> void;
-    auto transition_state_normal() noexcept -> bool;
-    auto transition_state_reorg(StateSequence id) noexcept -> bool;
-    auto transition_state_shutdown() noexcept -> bool;
+    auto transition_state_normal() noexcept -> void;
+    auto transition_state_pre_shutdown() noexcept -> void;
+    auto transition_state_reorg(StateSequence id) noexcept -> void;
 
     SubchainStateData(
-        const api::Session& api,
-        const node::Manager& node,
-        database::Wallet& db,
-        const node::internal::Mempool& mempool,
+        Reorg& reorg,
         const crypto::Subaccount& subaccount,
-        const cfilter::Type filter,
-        const crypto::Subchain subchain,
-        const network::zeromq::BatchID batch,
-        const std::string_view parent,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        crypto::Subchain subchain,
+        network::zeromq::BatchID batch,
+        CString&& fromParent,
         CString&& fromChildren,
         CString&& toChildren,
         CString&& toScan,

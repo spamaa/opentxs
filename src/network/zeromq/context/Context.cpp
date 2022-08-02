@@ -85,6 +85,16 @@ Context::operator void*() const noexcept
     return context_;
 }
 
+auto Context::ActiveBatches(alloc::Default alloc) const noexcept -> CString
+{
+    auto handle = pool_.lock();
+    auto& pool = *handle;
+
+    assert(pool.has_value());
+
+    return pool->ActiveBatches(std::move(alloc));
+}
+
 auto Context::Alloc(BatchID id) const noexcept -> alloc::Resource*
 {
     auto handle = pool_.lock();
@@ -129,27 +139,28 @@ auto Context::Init(std::shared_ptr<const zeromq::Context> me) noexcept -> void
 
 auto Context::max_sockets() noexcept -> int { return 32768; }
 
-auto Context::MakeBatch(Vector<socket::Type>&& types) const noexcept
-    -> internal::Handle
+auto Context::MakeBatch(Vector<socket::Type>&& types, std::string_view name)
+    const noexcept -> internal::Handle
 {
     auto handle = pool_.lock();
     auto& pool = *handle;
 
     assert(pool.has_value());
 
-    return pool->MakeBatch(std::move(types));
+    return pool->MakeBatch(std::move(types), name);
 }
 
 auto Context::MakeBatch(
     const BatchID preallocated,
-    Vector<socket::Type>&& types) const noexcept -> internal::Handle
+    Vector<socket::Type>&& types,
+    std::string_view name) const noexcept -> internal::Handle
 {
     auto handle = pool_.lock();
     auto& pool = *handle;
 
     assert(pool.has_value());
 
-    return pool->MakeBatch(preallocated, std::move(types));
+    return pool->MakeBatch(preallocated, std::move(types), name);
 }
 
 auto Context::Modify(SocketID id, ModifyCallback cb) const noexcept -> void
@@ -294,17 +305,15 @@ auto Context::RouterSocket(
         *this, static_cast<bool>(direction), callback, threadname)};
 }
 
-auto Context::Start(
-    BatchID id,
-    StartArgs&& sockets,
-    const std::string_view threadname) const noexcept -> internal::Thread*
+auto Context::Start(BatchID id, StartArgs&& sockets) const noexcept
+    -> internal::Thread*
 {
     auto handle = pool_.lock();
     auto& pool = *handle;
 
     assert(pool.has_value());
 
-    return pool->Start(id, std::move(sockets), threadname);
+    return pool->Start(id, std::move(sockets));
 }
 
 auto Context::Stop(BatchID id) const noexcept -> void

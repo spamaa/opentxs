@@ -38,6 +38,8 @@ namespace opentxs::network::zeromq::internal
 class Pool
 {
 public:
+    virtual auto ActiveBatches(alloc::Default alloc = {}) const noexcept
+        -> CString = 0;
     virtual auto BelongsToThreadPool(const std::thread::id) const noexcept
         -> bool = 0;
     virtual auto Parent() const noexcept -> const zeromq::Context& = 0;
@@ -52,13 +54,11 @@ public:
     virtual auto DoModify(SocketID id) noexcept -> void = 0;
     virtual auto MakeBatch(
         const BatchID preallocated,
-        Vector<socket::Type>&& types) noexcept -> Handle = 0;
+        Vector<socket::Type>&& types,
+        std::string_view name) noexcept -> Handle = 0;
     virtual auto ReportShutdown(unsigned int index) noexcept -> void = 0;
     virtual auto Shutdown() noexcept -> void = 0;
-    virtual auto Start(
-        BatchID id,
-        StartArgs&& sockets,
-        const std::string_view threadname) noexcept
+    virtual auto Start(BatchID id, StartArgs&& sockets) noexcept
         -> zeromq::internal::Thread* = 0;
     virtual auto Stop(BatchID id) noexcept -> void = 0;
 

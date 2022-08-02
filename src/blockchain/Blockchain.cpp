@@ -20,7 +20,6 @@
 #include <utility>
 
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
 #include "opentxs/api/session/Factory.hpp"
@@ -350,7 +349,7 @@ auto Deserialize(const Type chain, const std::uint8_t type) noexcept
 auto Deserialize(const api::Session& api, const ReadView in) noexcept
     -> block::Position
 {
-    auto output = make_blank<block::Position>::value(api);
+    auto output = block::Position{};
 
     if ((nullptr == in.data()) || (0u == in.size())) { return output; }
 

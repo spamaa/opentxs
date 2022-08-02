@@ -100,4 +100,6 @@ TEST_F(Test_HeaderOracle, receive_headers_out_of_order)
         }
     }
 }
+
+TEST_F(Test_HeaderOracle, shutdown) { Shutdown(); }
 }  // namespace ottest

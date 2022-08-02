@@ -7,8 +7,6 @@
 #include "1_Internal.hpp"            // IWYU pragma: associated
 #include "api/session/base/ZMQ.hpp"  // IWYU pragma: associated
 
-#include <string_view>
-
 #include "internal/api/session/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
 
@@ -21,7 +19,6 @@ ZMQ::ZMQ(
     , instance_(instance)
     , endpoints_p_(factory::EndpointsAPI(instance_))
     , endpoints_(*endpoints_p_)
-    , shutdown_sender_(zmq, endpoints_.Shutdown().data())
 {
     OT_ASSERT(endpoints_p_);
 }

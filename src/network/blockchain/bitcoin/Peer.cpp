@@ -38,12 +38,14 @@
 #include "internal/blockchain/node/PeerManager.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
+#include "internal/blockchain/node/blockoracle/Types.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #include "internal/blockchain/p2p/bitcoin/Factory.hpp"
 #include "internal/blockchain/p2p/bitcoin/message/Message.hpp"
 #include "internal/network/blockchain/ConnectionManager.hpp"
 #include "internal/network/blockchain/bitcoin/Factory.hpp"
 #include "internal/network/zeromq/Context.hpp"
+#include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/Future.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
@@ -368,31 +370,6 @@ auto Peer::process_broadcasttx(Message&& msg) noexcept -> void
     transmit_protocol_tx(body.at(1).Bytes());
 }
 
-auto Peer::process_getblock(Message&& msg) noexcept -> void
-{
-    const auto body = msg.Body();
-
-    OT_ASSERT(1 < body.size());
-
-    const auto count{body.size() - 1};
-    log_(OT_PRETTY_CLASS())(count)(" blocks to request from ")(name_).Flush();
-    using Inv = opentxs::blockchain::bitcoin::Inventory;
-    using BlockList = UnallocatedVector<Inv>;
-    auto blocks = Vector<BlockList>{get_allocator()};
-    blocks.reserve(1 + (count / max_inv_));
-    blocks.clear();
-    blocks.emplace_back();
-
-    for (auto i = 1_uz; i < body.size(); ++i) {
-        auto& list = blocks.back();
-        list.emplace_back(inv_block_, api_.Factory().Data(body.at(i)));
-
-        if (max_inv_ <= list.size()) { blocks.emplace_back(); }
-    }
-
-    for (auto& list : blocks) { transmit_protocol_getdata(std::move(list)); }
-}
-
 auto Peer::process_protocol(Message&& message) noexcept -> void
 {
     auto body = message.Body();
@@ -520,13 +497,17 @@ auto Peer::process_protocol_block(
     zeromq::Frame&& payload) noexcept(false) -> void
 {
     update_block_job(payload.Bytes());
-    using Task = opentxs::blockchain::node::ManagerJobs;
-    network_.Internal().Submit([&] {
-        auto work = MakeWork(Task::SubmitBlock);
-        work.AddFrame(payload);
+    to_block_cache_.SendDeferred(
+        [&] {
+            using Job = opentxs::blockchain::node::blockoracle::CacheJob;
+            auto work = MakeWork(Job::process_block);
+            work.AddFrame(std::move(payload));
 
-        return work;
-    }());
+            return work;
+        }(),
+        __FILE__,
+        __LINE__,
+        true);
 }
 
 auto Peer::process_protocol_blocktxn(
@@ -1142,30 +1123,39 @@ auto Peer::process_protocol_headers_run(
 {
     const auto size = message.size();
 
-    OT_ASSERT(0_uz < size);
+    if (0_uz < size) {
+        // TODO use header oracle's allocator
+        auto headers =
+            Vector<std::unique_ptr<opentxs::blockchain::block::Header>>{
+                get_allocator()};
+        headers.reserve(message.size());
+        auto work = [&] {
+            using Task = opentxs::blockchain::node::ManagerJobs;
+            auto out = MakeWork(Task::SubmitBlockHeader);
 
-    auto future = network_.Internal().Track([&] {
-        using Task = opentxs::blockchain::node::ManagerJobs;
-        auto work = MakeWork(Task::SubmitBlockHeader);
+            for (const auto& header : message) {
+                header.Serialize(out.AppendBytes(), false);
+                headers.emplace_back(header.clone());
+            }
 
-        for (const auto& header : message) {
-            header.Serialize(work.AppendBytes(), false);
+            return out;
+        }();
+        auto& internal =
+            const_cast<opentxs::blockchain::node::internal::HeaderOracle&>(
+                header_oracle_.Internal());
+        const auto newestID = headers.back()->Hash();
+
+        if (internal.AddHeaders(headers)) {
+            const auto pHeader = header_oracle_.LoadHeader(newestID);
+
+            OT_ASSERT(pHeader);
+
+            const auto& header = *pHeader;
+            update_remote_position(header.Position());
         }
 
-        return work;
-    }());
-    using Status = std::future_status;
-    constexpr auto limit = 20s;
-
-    if (Status::ready == future.wait_for(limit)) {
-        // TODO Headers class needs front() and back() functions
-        const auto& newest = message.at(size - 1_uz);
-        const auto pHeader = header_oracle_.LoadHeader(newest.Hash());
-
-        OT_ASSERT(pHeader);
-
-        const auto& header = *pHeader;
-        update_remote_position(header.Position());
+        // TODO make this unnecessary
+        network_.Internal().Track(std::move(work));
     }
 
     update_get_headers_job();

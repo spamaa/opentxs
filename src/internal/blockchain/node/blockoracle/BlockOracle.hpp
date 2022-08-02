@@ -3,13 +3,20 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// IWYU pragma: no_include "opentxs/blockchain/block/Position.hpp"
+
 #pragma once
 
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <cstddef>
+#include <memory>
 #include <string_view>
 
 #include "internal/blockchain/node/Types.hpp"
 #include "opentxs/blockchain/node/BlockOracle.hpp"
+#include "opentxs/blockchain/node/Types.hpp"
+#include "opentxs/util/Allocator.hpp"
+#include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "util/Work.hpp"
 
@@ -25,6 +32,20 @@ class Session;
 
 namespace blockchain
 {
+namespace bitcoin
+{
+namespace block
+{
+class Block;
+}  // namespace block
+}  // namespace bitcoin
+
+namespace block
+{
+class Hash;
+class Position;
+}  // namespace block
+
 namespace node
 {
 namespace internal
@@ -49,24 +70,23 @@ public:
 
     auto DownloadQueue() const noexcept -> std::size_t final;
     auto Endpoint() const noexcept -> std::string_view;
-    auto GetBlockBatch() const noexcept -> BlockBatch;
-    auto GetBlockJob() const noexcept -> BlockBatch;
+    auto GetBlockBatch(alloc::Default alloc) const noexcept -> BlockBatch;
+    auto GetBlockJob(alloc::Default alloc) const noexcept -> BlockBatch;
     auto Internal() const noexcept -> const BlockOracle& final { return *this; }
     auto LoadBitcoin(const block::Hash& block) const noexcept
         -> BitcoinBlockResult final;
     auto LoadBitcoin(const Vector<block::Hash>& hashes) const noexcept
         -> BitcoinBlockResults final;
-    auto SubmitBlock(const ReadView in) const noexcept -> void;
+    auto SubmitBlock(
+        std::shared_ptr<const bitcoin::block::Block> in) const noexcept -> bool;
     auto Tip() const noexcept -> block::Position final;
     auto Validate(const bitcoin::block::Block& block) const noexcept
         -> bool final;
 
-    auto Init() noexcept -> void;
     auto Internal() noexcept -> BlockOracle& final { return *this; }
     auto Start(
         std::shared_ptr<const api::Session> api,
         std::shared_ptr<const node::Manager> node) noexcept -> void;
-    auto Shutdown() noexcept -> void;
 
     BlockOracle() noexcept;
     BlockOracle(const BlockOracle&) = delete;
@@ -80,6 +100,5 @@ private:
     // TODO switch to std::shared_ptr once the android ndk ships a version of
     // libc++ with unfucked pmr / allocate_shared support
     boost::shared_ptr<Shared> shared_;
-    boost::shared_ptr<Actor> actor_;
 };
 }  // namespace opentxs::blockchain::node::internal

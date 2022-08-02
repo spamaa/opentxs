@@ -112,6 +112,11 @@ Session::Session(
           dataFolder,
           std::move(factory))
     , network_(network(zmq_context_, endpoints_, *this))
+    , shutdown_sender_(
+          network_->Asio(),
+          zmq_context_,
+          endpoints_.Shutdown(),
+          CString{"api instance "}.append(std::to_string(instance_)))
     , wallet_(nullptr)
     , encrypted_secret_()
     , master_key_lock_()

@@ -56,8 +56,6 @@ public:
         -> std::string_view final;
     auto BlockchainBlockUpdated(const opentxs::blockchain::Type chain)
         const noexcept -> std::string_view final;
-    auto BlockchainFilterUpdated(const opentxs::blockchain::Type chain)
-        const noexcept -> std::string_view final;
     auto BlockchainMempool() const noexcept -> std::string_view final;
     auto BlockchainNewFilter() const noexcept -> std::string_view final;
     auto BlockchainPeer() const noexcept -> std::string_view final;
@@ -125,7 +123,6 @@ private:
     const CString blockchain_block_available_;
     const CString blockchain_block_download_queue_;
     const BlockchainMap blockchain_block_updated_;
-    const BlockchainMap blockchain_filter_updated_;
     const CString blockchain_mempool_;
     const CString blockchain_new_filter_;
     const CString blockchain_peer_;

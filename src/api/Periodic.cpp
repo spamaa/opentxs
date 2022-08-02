@@ -7,88 +7,128 @@
 #include "1_Internal.hpp"    // IWYU pragma: associated
 #include "api/Periodic.hpp"  // IWYU pragma: associated
 
+#include <boost/system/error_code.hpp>
 #include <atomic>
 #include <chrono>
+#include <exception>
+#include <functional>
+#include <memory>
 #include <tuple>
 #include <utility>
 
-#include "internal/util/Flag.hpp"
-#include "internal/util/Mutex.hpp"
+#include "internal/api/network/Asio.hpp"
+#include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
+#include "opentxs/api/network/Asio.hpp"
 #include "opentxs/util/Container.hpp"
-#include "util/Thread.hpp"
+#include "opentxs/util/Log.hpp"
 
 namespace opentxs::api::imp
 {
-Periodic::Periodic(Flag& running)
-    : running_(running)
-    , next_id_(0)
-    , periodic_lock_()
-    , periodic_task_list_()
-    , periodic_(&Periodic::thread, this)
+Periodic::Periodic(network::Asio& asio)
+    : asio_(asio)
+    , data_()
 {
 }
 
-auto Periodic::Cancel(const int task) const -> bool
+auto Periodic::Cancel(const TaskID task) const -> bool
 {
-    Lock lock(periodic_lock_);
-    const auto output = periodic_task_list_.erase(task);
-
-    return 1 == output;
+    return 1_uz == data_.lock()->erase(task);
 }
 
-auto Periodic::Reschedule(const int task, const std::chrono::seconds& interval)
+auto Periodic::first_interval(
+    const std::chrono::seconds& interval,
+    const std::chrono::seconds& last) noexcept -> std::chrono::microseconds
+{
+    if (last <= interval) {
+
+        return interval - last;
+    } else {
+
+        return interval;
+    }
+}
+
+auto Periodic::make_callback(TaskID id) const noexcept -> Timer::Handler
+{
+    return [this, id](auto& ec) {
+        if (ec) {
+            if (boost::system::errc::operation_canceled != ec.value()) {
+                LogError()(OT_PRETTY_CLASS())(ec).Flush();
+            }
+        } else {
+            this->run(id);
+        }
+    };
+}
+
+auto Periodic::next_id() noexcept -> TaskID
+{
+    static auto counter = std::atomic_int{-1};
+
+    return ++counter;
+}
+
+auto Periodic::Reschedule(const TaskID id, const std::chrono::seconds& interval)
     const -> bool
 {
-    Lock lock(periodic_lock_);
-    auto it = periodic_task_list_.find(task);
+    auto handle = data_.lock();
+    auto& data = *handle;
+    auto i = data.find(id);
 
-    if (periodic_task_list_.end() == it) { return false; }
+    if (data.end() == i) { return false; }
 
-    std::get<1>(it->second) = interval;
+    auto& [timer, task, period] = i->second;
 
-    return false;
+    timer.Cancel();
+    period = interval;
+    timer.SetRelative(period);
+    timer.Wait(make_callback(id));
+
+    return true;
+}
+
+auto Periodic::run(TaskID id) const noexcept -> void
+{
+    auto handle = data_.lock();
+    auto& data = *handle;
+    auto i = data.find(id);
+
+    if (data.end() == i) { return; }
+
+    auto& [timer, task, period] = i->second;
+
+    try {
+        std::invoke(task);
+    } catch (std::exception& e) {
+        LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
+    }
+
+    timer.SetRelative(period);
+    timer.Wait(make_callback(id));
 }
 
 auto Periodic::Schedule(
     const std::chrono::seconds& interval,
-    const PeriodicTask& task,
-    const std::chrono::seconds& last) const -> int
+    const PeriodicTask& job,
+    const std::chrono::seconds& last) const -> TaskID
 {
-    const auto id = ++next_id_;
-    Lock lock(periodic_lock_);
-    periodic_task_list_.emplace(
-        id, TaskItem{Clock::from_time_t(last.count()), interval, task});
+    auto handle = data_.lock();
+    auto& data = *handle;
+    auto [i, added] =
+        data.try_emplace(next_id(), asio_.Internal().GetTimer(), job, interval);
+
+    OT_ASSERT(added);
+
+    const auto& id = i->first;
+    auto& [timer, task, period] = i->second;
+    timer.SetRelative(first_interval(interval, last));
+    timer.Wait(make_callback(id));
 
     return id;
 }
 
-void Periodic::Shutdown()
-{
-    if (periodic_.joinable()) { periodic_.join(); }
-}
-
-void Periodic::thread()
-{
-    SetThisThreadsName("Periodic");
-
-    while (running_) {
-        const auto now = Clock::now();
-        Lock lock(periodic_lock_);
-
-        for (auto& [key, value] : periodic_task_list_) {
-            auto& [last, interval, task] = value;
-
-            if ((now - last) > interval) {
-                last = now;
-                std::thread taskThread{task};
-                taskThread.detach();
-            }
-        }
-
-        lock.unlock();
-        Sleep(100ms);
-    }
-}
+auto Periodic::Shutdown() -> void { data_.lock()->clear(); }
 
 Periodic::~Periodic() { Shutdown(); }
 }  // namespace opentxs::api::imp

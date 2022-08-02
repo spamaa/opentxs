@@ -25,6 +25,7 @@
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/socket/SocketType.hpp"
 #include "opentxs/network/zeromq/socket/Types.hpp"
+#include "opentxs/util/Log.hpp"
 
 namespace opentxs
 {
@@ -198,26 +199,40 @@ auto Raw::record_endpoint(Endpoints& out) noexcept -> void
     out.emplace(buffer.data(), bytes);
 }
 
-auto Raw::Send(Message&& msg) noexcept -> bool
+auto Raw::Send(Message&& msg, const char* file, int line, bool silent) noexcept
+    -> bool
 {
-    const auto sent = send(std::move(msg), ZMQ_DONTWAIT);
+    const auto sent = send(std::move(msg), ZMQ_DONTWAIT, file, line, silent);
 
     OT_ASSERT(sent);
 
     return sent;
 }
 
-auto Raw::SendDeferred(Message&& msg) noexcept -> bool
+auto Raw::SendDeferred(
+    Message&& msg,
+    const char* file,
+    int line,
+    bool silent) noexcept -> bool
 {
-    return send(std::move(msg), 0);
+    return send(std::move(msg), 0, file, line, silent);
 }
 
-auto Raw::SendExternal(Message&& msg) noexcept -> bool
+auto Raw::SendExternal(
+    Message&& msg,
+    const char* file,
+    int line,
+    bool silent) noexcept -> bool
 {
-    return send(std::move(msg), ZMQ_DONTWAIT);
+    return send(std::move(msg), ZMQ_DONTWAIT, file, line, silent);
 }
 
-auto Raw::send(Message&& msg, const int baseFlags) noexcept -> bool
+auto Raw::send(
+    Message&& msg,
+    const int baseFlags,
+    const char* file,
+    int line,
+    bool silent) noexcept -> bool
 {
     auto sent{true};
     const auto parts = msg.size();
@@ -232,9 +247,11 @@ auto Raw::send(Message&& msg, const int baseFlags) noexcept -> bool
             (-1 != ::zmq_msg_send(const_cast<Frame&>(frame), Native(), flags));
     }
 
-    if (false == sent) {
-        std::cerr << (OT_PRETTY_CLASS())
-                  << "Send error: " << ::zmq_strerror(zmq_errno()) << '\n';
+    if ((false == sent) && (false == silent)) {
+        std::cerr << (OT_PRETTY_CLASS()) << "Send error from " << file << ": "
+                  << std::to_string(line) << ": " << ::zmq_strerror(zmq_errno())
+                  << '\n'
+                  << PrintStackTrace();
     }
 
     return sent;
@@ -481,6 +498,27 @@ auto Raw::UnbindAll() noexcept -> bool
     return output;
 }
 
+auto Raw::WaitForSend() noexcept -> bool { return wait(ZMQ_POLLOUT); }
+
+auto Raw::wait(int flags) noexcept -> bool
+{
+    auto poll = ::zmq_pollitem_t{};
+    poll.socket = Native();
+    poll.events = flags;
+    static constexpr auto timeout = 1000ms;
+    const auto rc = ::zmq_poll(std::addressof(poll), 1, timeout.count());
+
+    if (0 > rc) {
+        std::cerr << (OT_PRETTY_CLASS()) << ::zmq_strerror(zmq_errno())
+                  << std::endl;
+
+        return false;
+    } else {
+
+        return 0 < rc;
+    }
+}
+
 Raw::~Raw() { Close(); }
 }  // namespace opentxs::network::zeromq::socket::implementation
 
@@ -535,19 +573,28 @@ auto Raw::ID() const noexcept -> SocketID { return imp_->ID(); }
 
 auto Raw::Native() noexcept -> void* { return imp_->Native(); }
 
-auto Raw::Send(Message&& msg) noexcept -> bool
+auto Raw::Send(Message&& msg, const char* file, int line, bool silent) noexcept
+    -> bool
 {
-    return imp_->Send(std::move(msg));
+    return imp_->Send(std::move(msg), file, line, silent);
 }
 
-auto Raw::SendDeferred(Message&& msg) noexcept -> bool
+auto Raw::SendDeferred(
+    Message&& msg,
+    const char* file,
+    int line,
+    bool silent) noexcept -> bool
 {
-    return imp_->SendDeferred(std::move(msg));
+    return imp_->SendDeferred(std::move(msg), file, line, silent);
 }
 
-auto Raw::SendExternal(Message&& msg) noexcept -> bool
+auto Raw::SendExternal(
+    Message&& msg,
+    const char* file,
+    int line,
+    bool silent) noexcept -> bool
 {
-    return imp_->SendExternal(std::move(msg));
+    return imp_->SendExternal(std::move(msg), file, line, silent);
 }
 
 auto Raw::SetExposedUntrusted() noexcept -> bool
@@ -612,6 +659,8 @@ auto Raw::Unbind(const char* endpoint) noexcept -> bool
 }
 
 auto Raw::UnbindAll() noexcept -> bool { return imp_->UnbindAll(); }
+
+auto Raw::WaitForSend() noexcept -> bool { return imp_->WaitForSend(); }
 
 Raw::~Raw()
 {

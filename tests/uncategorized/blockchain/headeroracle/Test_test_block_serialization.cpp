@@ -54,4 +54,6 @@ TEST_F(Test_HeaderOracle, test_block_serialization)
     EXPECT_EQ(header->Hash(), hash2);
     EXPECT_EQ(header->ParentHash(), hash1);
 }
+
+TEST_F(Test_HeaderOracle, shutdown) { Shutdown(); }
 }  // namespace ottest

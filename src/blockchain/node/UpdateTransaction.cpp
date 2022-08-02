@@ -12,7 +12,6 @@
 #include <utility>
 
 #include "internal/blockchain/database/Header.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
@@ -29,8 +28,8 @@ UpdateTransaction::UpdateTransaction(
     , db_(db)
     , have_reorg_(false)
     , have_checkpoint_(false)
-    , reorg_from_(make_blank<block::Position>::value(api))
-    , checkpoint_(make_blank<block::Position>::value(api))
+    , reorg_from_()
+    , checkpoint_()
     , headers_()
     , best_()
     , add_sib_()

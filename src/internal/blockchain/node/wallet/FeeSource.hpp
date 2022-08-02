@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "opentxs/util/Allocated.hpp"
+#include <boost/smart_ptr/shared_ptr.hpp>
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -25,23 +25,23 @@ class FeeSource;
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
-class opentxs::blockchain::node::wallet::FeeSource final : public Allocated
+class opentxs::blockchain::node::wallet::FeeSource
 {
 public:
     class Imp;
 
-    auto Shutdown() noexcept -> void;
-    auto get_allocator() const noexcept -> allocator_type final;
+    auto Init() noexcept -> void;
 
-    FeeSource(Imp* imp) noexcept;
-    FeeSource(FeeSource&& rhs) noexcept;
-    FeeSource(FeeSource&& rhs, allocator_type alloc) noexcept;
+    FeeSource(boost::shared_ptr<Imp> imp) noexcept;
     FeeSource(const FeeSource&) = delete;
+    FeeSource(FeeSource&&) = delete;
     auto operator=(const FeeSource&) -> FeeSource& = delete;
     auto operator=(FeeSource&&) -> FeeSource& = delete;
 
-    ~FeeSource() final;
+    ~FeeSource();
 
 private:
-    Imp* imp_;
+    // TODO switch to std::shared_ptr once the android ndk ships a version of
+    // libc++ with unfucked pmr / allocate_shared support
+    boost::shared_ptr<Imp> imp_;
 };

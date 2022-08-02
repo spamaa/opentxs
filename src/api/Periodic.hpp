@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <atomic>
+#include <cs_plain_guarded.h>
 #include <chrono>
 #include <functional>
 #include <mutex>
@@ -13,6 +13,7 @@
 #include <thread>
 #include <tuple>
 
+#include "internal/util/Timer.hpp"
 #include "opentxs/api/Periodic.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Time.hpp"
@@ -22,49 +23,55 @@ namespace opentxs  // NOLINT
 {
 // inline namespace v1
 // {
-class Flag;
+namespace api
+{
+namespace network
+{
+class Asio;
+}  // namespace network
+}  // namespace api
 // }  // namespace v1
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
 namespace opentxs::api::imp
 {
-class Periodic : virtual public api::Periodic
+class Periodic final : public api::Periodic
 {
 public:
-    auto Cancel(const int task) const -> bool final;
-    auto Reschedule(const int task, const std::chrono::seconds& interval) const
-        -> bool final;
+    auto Cancel(const TaskID task) const -> bool final;
+    auto Reschedule(const TaskID task, const std::chrono::seconds& interval)
+        const -> bool final;
     auto Schedule(
         const std::chrono::seconds& interval,
         const PeriodicTask& task,
-        const std::chrono::seconds& last) const -> int final;
+        const std::chrono::seconds& last) const -> TaskID final;
 
+    auto Shutdown() -> void;
+
+    Periodic(network::Asio& asio);
     Periodic() = delete;
     Periodic(const Periodic&) = delete;
     Periodic(Periodic&&) = delete;
     auto operator=(const Periodic&) -> Periodic& = delete;
     auto operator=(Periodic&&) -> Periodic& = delete;
 
-    ~Periodic() override;
-
-protected:
-    Flag& running_;
-
-    void Shutdown();
-
-    Periodic(Flag& running);
+    ~Periodic() final;
 
 private:
-    /** Last performed, Interval, Task */
-    using TaskItem = std::tuple<Time, std::chrono::seconds, PeriodicTask>;
-    using TaskList = UnallocatedMap<int, TaskItem>;
+    using Params = std::tuple<Timer, PeriodicTask, std::chrono::microseconds>;
+    using TaskMap = Map<TaskID, Params>;
+    using Data = libguarded::plain_guarded<TaskMap>;
 
-    mutable std::atomic<int> next_id_;
-    mutable std::mutex periodic_lock_;
-    mutable TaskList periodic_task_list_;
-    std::thread periodic_;
+    network::Asio& asio_;
+    mutable Data data_;
 
-    void thread();
+    static auto first_interval(
+        const std::chrono::seconds& interval,
+        const std::chrono::seconds& last) noexcept -> std::chrono::microseconds;
+    static auto next_id() noexcept -> TaskID;
+
+    auto make_callback(TaskID id) const noexcept -> Timer::Handler;
+    auto run(TaskID id) const noexcept -> void;
 };
 }  // namespace opentxs::api::imp

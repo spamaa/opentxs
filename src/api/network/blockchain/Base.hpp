@@ -166,9 +166,9 @@ struct Blockchain::Imp : virtual public internal::Blockchain {
     {
         return false;
     }
-    auto Reorg() const noexcept -> const zmq::socket::Publish& override
+    auto ReorgEndpoint() const noexcept -> std::string_view override
     {
-        OT_FAIL;
+        return {};
     }
     auto ReportProgress(
         [[maybe_unused]] const Chain,

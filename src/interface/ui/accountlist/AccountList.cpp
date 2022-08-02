@@ -10,6 +10,7 @@
 #include <atomic>
 #include <future>
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "interface/ui/base/List.hpp"
@@ -67,7 +68,7 @@ AccountList::AccountList(
     const identifier::Nym& nymID,
     const SimpleCallback& cb) noexcept
     : AccountListList(api, nymID, cb, false)
-    , Worker(api, {})
+    , Worker(api, {}, "ui::AccountList")
     , chains_()
 {
     // TODO monitor for notary nym changes since this may affect custodial

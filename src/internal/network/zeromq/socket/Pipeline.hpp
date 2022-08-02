@@ -49,12 +49,29 @@ public:
      */
     virtual auto ExtraSocket(std::size_t index) const noexcept(false)
         -> const socket::Raw& = 0;
+    /**  Connect the pull socket to specified endpoint
+     *
+     *   \warning this must only be called from inside the callback function
+     *            being executed by the zmq thread pool.
+     *
+     *   \warning the supplied endpoint must be null terminated.
+     */
+    virtual auto PullFromThread(std::string_view endpoint) noexcept -> bool = 0;
     /**  Send from the dealer socket
      *
      *   \warning this must only be called from inside the callback function
      *            being executed by the zmq thread pool.
      */
     virtual auto SendFromThread(zeromq::Message&& msg) noexcept -> bool = 0;
+    /**  Connect the subscribe socket to specified endpoint
+     *
+     *   \warning this must only be called from inside the callback function
+     *            being executed by the zmq thread pool.
+     *
+     *   \warning the supplied endpoint must be null terminated.
+     */
+    virtual auto SubscribeFromThread(std::string_view endpoint) noexcept
+        -> bool = 0;
 
     virtual ~Pipeline() = default;
 };

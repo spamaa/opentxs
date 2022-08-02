@@ -17,7 +17,6 @@
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
 #include "internal/api/crypto/Blockchain.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Job.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
@@ -87,10 +86,10 @@ auto Index::Imp::do_process_update(Message&& msg) noexcept -> void
     }
 
     do_work();
-    to_rescan_.SendDeferred(std::move(msg));
+    to_rescan_.SendDeferred(std::move(msg), __FILE__, __LINE__);
 }
 
-auto Index::Imp::do_startup() noexcept -> void
+auto Index::Imp::do_startup_internal() noexcept -> void
 {
     last_indexed_ = parent_.db_.SubchainLastIndexed(parent_.db_key_);
     do_work();
@@ -107,22 +106,20 @@ auto Index::Imp::done(database::Wallet::ElementMap&& elements) noexcept -> void
     parent_.element_cache_.lock()->Add(std::move(elements));
 }
 
-auto Index::Imp::ProcessReorg(
-    const Lock& headerOracleLock,
-    const block::Position& parent) noexcept -> void
+auto Index::Imp::forward_to_next(Message&& msg) noexcept -> void
 {
-    // NOTE no action required
+    to_rescan_.Send(std::move(msg), __FILE__, __LINE__);
 }
 
 auto Index::Imp::process_do_rescan(Message&& in) noexcept -> void
 {
-    to_rescan_.Send(std::move(in));
+    to_rescan_.Send(std::move(in), __FILE__, __LINE__);
 }
 
 auto Index::Imp::process_filter(Message&& in, block::Position&&) noexcept
     -> void
 {
-    to_rescan_.Send(std::move(in));
+    to_rescan_.Send(std::move(in), __FILE__, __LINE__);
 }
 
 auto Index::Imp::process_key(Message&& in) noexcept -> void
@@ -168,28 +165,14 @@ namespace opentxs::blockchain::node::wallet
 Index::Index(boost::shared_ptr<Imp>&& imp) noexcept
     : imp_(std::move(imp))
 {
+    OT_ASSERT(imp_);
+}
+
+auto Index::Init() noexcept -> void
+{
     imp_->Init(imp_);
+    imp_.reset();
 }
 
-Index::Index(Index&& rhs) noexcept
-    : imp_(std::move(rhs.imp_))
-{
-}
-
-auto Index::ChangeState(const State state, StateSequence reorg) noexcept -> bool
-{
-    return imp_->ChangeState(state, reorg);
-}
-
-auto Index::ProcessReorg(
-    const Lock& headerOracleLock,
-    const block::Position& parent) noexcept -> void
-{
-    imp_->ProcessReorg(headerOracleLock, parent);
-}
-
-Index::~Index()
-{
-    if (imp_) { imp_->Shutdown(); }
-}
+Index::~Index() = default;
 }  // namespace opentxs::blockchain::node::wallet

@@ -22,13 +22,11 @@
 #include "internal/blockchain/p2p/P2P.hpp"  // IWYU pragma: keep
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
-#include "internal/util/P0330.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
-#include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/p2p/Address.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -86,7 +84,7 @@ PeerManager::PeerManager(
     std::string_view seednode,
     const node::Endpoints& endpoints) noexcept
     : internal::PeerManager()
-    , Worker(api, 100ms)
+    , Worker(api, 100ms, "blockchain::node::PeerManager")
     , node_(node)
     , database_(database)
     , chain_(chain)
@@ -184,9 +182,6 @@ auto PeerManager::JobReady(const PeerManagerJobs type) const noexcept -> void
         } break;
         case PeerManagerJobs::JobAvailableCfilters: {
             jobs_.Dispatch(jobs_.Work(PeerManagerJobs::JobAvailableCfilters));
-        } break;
-        case PeerManagerJobs::JobAvailableBlock: {
-            jobs_.Dispatch(jobs_.Work(PeerManagerJobs::JobAvailableBlock));
         } break;
         default: {
         }
@@ -322,40 +317,6 @@ auto PeerManager::pipeline(zmq::Message&& message) noexcept -> void
             OT_FAIL;
         }
     }
-}
-
-auto PeerManager::RequestBlock(const block::Hash& block) const noexcept -> bool
-{
-    if (block.empty()) { return false; }
-
-    return RequestBlocks({block.Bytes()});
-}
-
-auto PeerManager::RequestBlocks(
-    const UnallocatedVector<ReadView>& hashes) const noexcept -> bool
-{
-    if (false == running_.load()) { return false; }
-
-    if (0 == peers_.Count()) { return false; }
-
-    if (0 == hashes.size()) { return false; }
-
-    auto work = jobs_.Work(PeerManagerJobs::Getblock);
-    static constexpr auto limit =
-        1_uz;  // TODO peers don't respond well to larger values
-
-    for (const auto& block : hashes) {
-        work.AddFrame(block.data(), block.size());
-
-        if (work.Body().size() > limit) {
-            jobs_.Dispatch(std::move(work));
-            work = jobs_.Work(PeerManagerJobs::Getblock);
-        }
-    }
-
-    if (work.Body().size() > 1u) { jobs_.Dispatch(std::move(work)); }
-
-    return true;
 }
 
 auto PeerManager::RequestHeaders() const noexcept -> bool

@@ -61,9 +61,20 @@ public:
     virtual auto Disconnect(const char*) noexcept -> bool { return {}; }
     virtual auto DisconnectAll() noexcept -> bool { return {}; }
     virtual auto Native() noexcept -> void* { return nullptr; }
-    virtual auto Send(Message&&) noexcept -> bool { return {}; }
-    virtual auto SendDeferred(Message&&) noexcept -> bool { return {}; }
-    virtual auto SendExternal(Message&&) noexcept -> bool { return {}; }
+    virtual auto Send(Message&&, const char*, int, bool silent) noexcept -> bool
+    {
+        return {};
+    }
+    virtual auto SendDeferred(Message&&, const char*, int, bool) noexcept
+        -> bool
+    {
+        return {};
+    }
+    virtual auto SendExternal(Message&&, const char*, int, bool) noexcept
+        -> bool
+    {
+        return {};
+    }
     virtual auto SetExposedUntrusted() noexcept -> bool { return false; }
     virtual auto SetIncomingHWM(int) noexcept -> bool { return {}; }
     virtual auto SetLinger(int) noexcept -> bool { return {}; }
@@ -81,6 +92,7 @@ public:
     virtual auto Stop() noexcept -> void {}
     virtual auto Unbind(const char*) noexcept -> bool { return {}; }
     virtual auto UnbindAll() noexcept -> bool { return {}; }
+    virtual auto WaitForSend() noexcept -> bool { return false; }
 
     Imp() = default;
     Imp(const Imp&) = delete;
@@ -106,9 +118,18 @@ public:
     auto Disconnect(const char* endpoint) noexcept -> bool final;
     auto DisconnectAll() noexcept -> bool final;
     auto Native() noexcept -> void* final { return socket_.get(); }
-    auto Send(Message&& msg) noexcept -> bool final;
-    auto SendDeferred(Message&& msg) noexcept -> bool final;
-    auto SendExternal(Message&& msg) noexcept -> bool final;
+    auto Send(Message&& msg, const char* file, int line, bool silent) noexcept
+        -> bool final;
+    auto SendDeferred(
+        Message&& msg,
+        const char* file,
+        int line,
+        bool silent) noexcept -> bool final;
+    auto SendExternal(
+        Message&& msg,
+        const char* file,
+        int line,
+        bool silent) noexcept -> bool final;
     auto SetExposedUntrusted() noexcept -> bool final;
     auto SetIncomingHWM(int value) noexcept -> bool final;
     auto SetLinger(int value) noexcept -> bool final;
@@ -123,6 +144,7 @@ public:
     auto Stop() noexcept -> void final;
     auto Unbind(const char* endpoint) noexcept -> bool final;
     auto UnbindAll() noexcept -> bool final;
+    auto WaitForSend() noexcept -> bool final;
 
     Raw(const Context& context, const socket::Type type) noexcept;
     Raw() = delete;
@@ -148,6 +170,12 @@ private:
     Endpoints connected_endpoints_;
 
     auto record_endpoint(Endpoints& out) noexcept -> void;
-    auto send(Message&& msg, const int flags) noexcept -> bool;
+    auto send(
+        Message&& msg,
+        const int flags,
+        const char* file,
+        int line,
+        bool silent) noexcept -> bool;
+    auto wait(int flags) noexcept -> bool;
 };
 }  // namespace opentxs::network::zeromq::socket::implementation

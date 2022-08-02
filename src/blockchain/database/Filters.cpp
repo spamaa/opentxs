@@ -19,7 +19,6 @@
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/block/Factory.hpp"
 #include "internal/blockchain/database/Types.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -42,7 +41,7 @@ Filters::Filters(
     : api_(api)
     , common_(common)
     , lmdb_(lmdb)
-    , blank_position_(make_blank<block::Position>::value(api))
+    , blank_position_()
     , lock_()
 {
     import_genesis(chain);

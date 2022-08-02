@@ -13,7 +13,6 @@
 #include <future>
 #include <iterator>
 #include <stdexcept>
-#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -22,7 +21,6 @@
 #include "blockchain/node/filteroracle/FilterDownloader.hpp"
 #include "blockchain/node/filteroracle/HeaderDownloader.hpp"
 #include "internal/api/network/Blockchain.hpp"
-#include "internal/api/session/Endpoints.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/block/Block.hpp"
 #include "internal/blockchain/database/Cfilter.hpp"
@@ -35,7 +33,6 @@
 #include "internal/util/P0330.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
-#include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -135,8 +132,7 @@ FilterOracle::FilterOracle(
     , lock_()
     , new_filters_([&] {
         auto socket = api_.Network().ZeroMQ().PublishSocket();
-        auto started = socket->Start(
-            api_.Endpoints().Internal().BlockchainFilterUpdated(chain_).data());
+        auto started = socket->Start(endpoints.new_filter_publish_);
 
         OT_ASSERT(started);
 
@@ -150,12 +146,7 @@ FilterOracle::FilterOracle(
 
         return socket;
     }())
-    , cb_([this](const auto type, const auto& pos) {
-        if (false == running_) { return; }
-
-        auto lock = rLock{lock_};
-        new_tip(lock, type, pos);
-    })
+    , cb_([this](const auto type, const auto& pos) { update_tip(type, pos); })
     , filter_downloader_([&]() -> std::unique_ptr<FilterDownloader> {
         switch (config.profile_) {
             case BlockchainProfile::desktop_native: {
@@ -439,22 +430,34 @@ auto FilterOracle::new_tip(
     const cfilter::Type type,
     const block::Position& tip) const noexcept -> void
 {
-    auto last = last_broadcast_.find(type);
+    {
+        auto& last = [&]() -> auto&
+        {
+            auto& map = last_broadcast_;
 
-    if (last_broadcast_.end() != last) {
-        if (tip == last->second) {
-            // NOTE: new tip is same as previously broadcast
+            if (auto it = map.find(type); map.end() == it) {
+
+                return map
+                    .try_emplace(type, 0, header_.GenesisBlockHash(chain_))
+                    .first->second;
+            } else {
+
+                return it->second;
+            }
+        }
+        ();
+
+        if (tip == last) {
 
             return;
         } else {
-            // NOTE: new tip is different from previously broadcast
-            last->second = tip;
+            last = tip;
         }
-    } else {
-        // NOTE: first tip broadcast
-        last_broadcast_.emplace(type, tip);
     }
 
+    LogTrace()(OT_PRETTY_CLASS())(print(chain_))(
+        ": notifying peers of new filter tip ")(tip)
+        .Flush();
     last_sync_progress_ = Clock::now();
     new_filters_->Send([&] {
         auto work = MakeWork(OT_ZMQ_NEW_FILTER_SIGNAL);
@@ -824,6 +827,16 @@ auto FilterOracle::Tip(const cfilter::Type type) const noexcept
     -> block::Position
 {
     return database_.FilterTip(type);
+}
+
+auto FilterOracle::update_tip(
+    const cfilter::Type type,
+    const block::Position& pos) noexcept -> void
+{
+    if (false == running_) { return; }
+
+    auto lock = rLock{lock_};
+    new_tip(lock, type, pos);
 }
 
 FilterOracle::~FilterOracle() { Shutdown(); }

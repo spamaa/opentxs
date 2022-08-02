@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>  // IWYU pragma: keep
@@ -83,7 +84,8 @@ auto Context::SuggestFolder(std::string_view appName) noexcept
 
 namespace opentxs::api::imp
 {
-auto Context::Sessions::clear() noexcept -> void
+auto Context::Sessions::clear(
+    const opentxs::network::zeromq::Context& zmq) noexcept -> void
 {
     shutdown_ = true;
     auto futures = Vector<std::future<void>>{};
@@ -99,6 +101,20 @@ auto Context::Sessions::clear() noexcept -> void
 
     server_.clear();
     client_.clear();
+    auto done{true};
+
+    for (auto& future : futures) {
+        using Status = std::future_status;
+
+        if (Status::ready != future.wait_for(30s)) { done = false; }
+    }
+
+    if (false == done) {
+        LogError()(OT_PRETTY_CLASS())(
+            "shutdown delayed, possibly due to active zmq batches.")
+            .Flush();
+        LogError()(zmq.Internal().ActiveBatches()).Flush();
+    }
 
     for (auto& future : futures) { future.get(); }
 }
@@ -108,7 +124,7 @@ namespace opentxs::api::imp
 {
 Context::Context(Flag& running, const Options& args, PasswordCaller* password)
     : api::internal::Context()
-    , Periodic(running)
+    , running_(running)
     , args_(args)
     , home_(args_.Home().string().c_str())
     , null_callback_(opentxs::Factory::NullCallback())
@@ -138,6 +154,7 @@ Context::Context(Flag& running, const Options& args, PasswordCaller* password)
         return zmq;
     }())
     , asio_()
+    , periodic_(std::nullopt)
     , log_(factory::Log(*zmq_context_, args_.RemoteLogEndpoint()))
     , legacy_(factory::Legacy(home_))
     , config_()
@@ -158,6 +175,11 @@ Context::Context(Flag& running, const Options& args, PasswordCaller* password)
     assert(nullptr != external_password_callback_);
     assert(external_password_callback_->HaveCallback());
     assert(rpc_);
+}
+
+auto Context::Cancel(const TaskID task) const -> bool
+{
+    return periodic_->Cancel(task);
 }
 
 auto Context::client_instance(const int count) -> int
@@ -236,6 +258,7 @@ auto Context::Init() noexcept -> void
 {
     Init_Log();
     Init_Asio();
+    Init_Periodic();
     init_pid();
     Init_Crypto();
     Init_Factory();
@@ -260,6 +283,15 @@ auto Context::Init_Crypto() -> void
         factory::CryptoAPI(Config(legacy_->OpentxsConfigFilePath().string()));
 
     OT_ASSERT(crypto_);
+}
+
+auto Context::Init_Periodic() -> void
+{
+    OT_ASSERT(asio_);
+
+    periodic_.emplace(*asio_);
+
+    OT_ASSERT(periodic_.has_value());
 }
 
 auto Context::Init_Profile() -> void
@@ -369,6 +401,21 @@ auto Context::RPC(const rpc::request::Base& command) const noexcept
     return rpc_->Process(command);
 }
 
+auto Context::Reschedule(
+    const TaskID task,
+    const std::chrono::seconds& interval) const -> bool
+{
+    return periodic_->Reschedule(task, interval);
+}
+
+auto Context::Schedule(
+    const std::chrono::seconds& interval,
+    const PeriodicTask& task,
+    const std::chrono::seconds& last) const -> TaskID
+{
+    return periodic_->Schedule(interval, task, last);
+}
+
 auto Context::server_instance(const int count) -> int
 {
     // NOTE: Instance numbers must not collide between clients and servers.
@@ -379,7 +426,7 @@ auto Context::server_instance(const int count) -> int
 auto Context::shutdown() noexcept -> void
 {
     running_.Off();
-    Periodic::Shutdown();
+    periodic_->Shutdown();
     signal_handler_.modify([&](auto& data) {
         if (nullptr != data.callback_) {
             auto& callback = *data.callback_;
@@ -388,7 +435,9 @@ auto Context::shutdown() noexcept -> void
         }
     });
     rpc_.reset();
-    sessions_.lock()->clear();
+
+    if (zmq_context_) { sessions_.lock()->clear(*zmq_context_); }
+
     zap_.reset();
     shutdown_qt();
     crypto_.reset();

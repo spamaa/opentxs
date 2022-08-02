@@ -14,6 +14,7 @@
 #include <utility>
 
 #include "internal/blockchain/node/HeaderOracle.hpp"
+#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -119,9 +120,10 @@ public:
     }
     auto CommonParent(const block::Position& position) const noexcept
         -> std::pair<block::Position, block::Position> final;
+    auto Execute(Vector<ReorgTask>&& jobs) const noexcept -> bool final;
+    auto Exists(const block::Hash& hash) const noexcept -> bool final;
     auto GetCheckpoint() const noexcept -> block::Position final;
     auto GetDefaultCheckpoint() const noexcept -> CheckpointData final;
-    auto GetMutex() const noexcept -> std::mutex& final { return lock_; }
     auto GetPosition(const block::Height height) const noexcept
         -> block::Position final;
     auto GetPosition(const Lock& lock, const block::Height height)
@@ -148,7 +150,7 @@ public:
         const block::Hash& requiredHash) noexcept -> bool final;
     auto AddHeader(std::unique_ptr<block::Header> header) noexcept
         -> bool final;
-    auto AddHeaders(UnallocatedVector<std::unique_ptr<block::Header>>&) noexcept
+    auto AddHeaders(Vector<std::unique_ptr<block::Header>>&) noexcept
         -> bool final;
     auto DeleteCheckpoint() noexcept -> bool final;
     auto Init() noexcept -> void final;

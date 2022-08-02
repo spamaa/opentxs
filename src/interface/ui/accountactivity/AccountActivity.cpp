@@ -8,6 +8,7 @@
 #include "interface/ui/accountactivity/AccountActivity.hpp"  // IWYU pragma: associated
 
 #include <future>
+#include <string_view>
 #include <utility>
 
 #include "opentxs/api/session/Client.hpp"
@@ -29,7 +30,7 @@ AccountActivity::AccountActivity(
     const AccountType type,
     const SimpleCallback& cb) noexcept
     : AccountActivityList(api, nymID, cb, true)
-    , Worker(api, {})
+    , Worker(api, {}, "ui::AccountActivity")
     , callbacks_()
     , balance_(0)
     , account_id_(accountID)

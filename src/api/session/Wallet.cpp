@@ -153,17 +153,18 @@ Wallet::Wallet(const api::Session& api)
     , handle_([&] {
         using Type = opentxs::network::zeromq::socket::Type;
 
-        return api_.Network().ZeroMQ().Internal().MakeBatch({
-            Type::Pair,
-            Type::Pull,
-        });
+        return api_.Network().ZeroMQ().Internal().MakeBatch(
+            {
+                Type::Dealer,  // NOTE p2p_socket_
+                Type::Pull,    // NOTE loopback_
+            },
+            "api::session::Wallet");
     }())
     , batch_([&]() -> auto& {
         using Callback = opentxs::network::zeromq::ListenCallback;
         auto& out = handle_.batch_;
         out.listen_callbacks_.emplace_back(Callback::Factory(
             [this](auto&& in) { process_p2p(std::move(in)); }));
-        out.thread_name_ = "Wallet";
 
         return out;
     }())
@@ -208,10 +209,11 @@ Wallet::Wallet(const api::Session& api)
                &loopback_,
                [id = loopback_.ID(), &socket = p2p_socket_, &batch = batch_](
                    auto&& m) {
-                   if (batch.toggle_) { socket.Send(std::move(m)); }
+                   if (batch.toggle_) {
+                       socket.Send(std::move(m), __FILE__, __LINE__);
+                   }
                }},
-          },
-          batch_.thread_name_))
+          }))
 {
     LogTrace()(OT_PRETTY_CLASS())("using ZMQ batch ")(batch_.id_).Flush();
     account_publisher_->Start(api_.Endpoints().AccountUpdate().data());
@@ -2082,15 +2084,18 @@ auto Wallet::process_p2p_publish_contract(
                 }
             }
         }();
-        p2p_socket_.Send([&] {
-            auto out =
-                opentxs::network::zeromq::reply_to_message(std::move(msg));
-            const auto reply =
-                factory::BlockchainSyncPublishContractReply(id, payload);
-            reply.Serialize(out);
+        p2p_socket_.Send(
+            [&] {
+                auto out =
+                    opentxs::network::zeromq::reply_to_message(std::move(msg));
+                const auto reply =
+                    factory::BlockchainSyncPublishContractReply(id, payload);
+                reply.Serialize(out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     } catch (const std::exception& e) {
         LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
     }
@@ -2165,13 +2170,16 @@ auto Wallet::process_p2p_query_contract(
                 return factory::BlockchainSyncQueryContractReply(id);
             }
         }();
-        p2p_socket_.Send([&] {
-            auto out =
-                opentxs::network::zeromq::reply_to_message(std::move(msg));
-            payload.Serialize(out);
+        p2p_socket_.Send(
+            [&] {
+                auto out =
+                    opentxs::network::zeromq::reply_to_message(std::move(msg));
+                payload.Serialize(out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     } catch (const std::exception& e) {
         LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
     }
@@ -2280,12 +2288,15 @@ auto Wallet::PublishNotary(const identifier::Notary& id) const noexcept -> bool
         auto notary = Server(id);
         to_loopback_.modify_detach([&notary](auto& socket) {
             const auto command = factory::BlockchainSyncPublishContract(notary);
-            socket.Send([&] {
-                auto out = opentxs::network::zeromq::Message{};
-                command.Serialize(out);
+            socket.Send(
+                [&] {
+                    auto out = opentxs::network::zeromq::Message{};
+                    command.Serialize(out);
 
-                return out;
-            }());
+                    return out;
+                }(),
+                __FILE__,
+                __LINE__);
         });
 
         return true;
@@ -2308,12 +2319,15 @@ auto Wallet::PublishNym(const identifier::Nym& id) const noexcept -> bool
 
     to_loopback_.modify_detach([&nym](auto& socket) {
         const auto command = factory::BlockchainSyncPublishContract(*nym);
-        socket.Send([&] {
-            auto out = opentxs::network::zeromq::Message{};
-            command.Serialize(out);
+        socket.Send(
+            [&] {
+                auto out = opentxs::network::zeromq::Message{};
+                command.Serialize(out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     });
 
     return true;
@@ -2326,12 +2340,15 @@ auto Wallet::PublishUnit(const identifier::UnitDefinition& id) const noexcept
         auto unit = UnitDefinition(id);
         to_loopback_.modify_detach([&unit](auto& socket) {
             const auto command = factory::BlockchainSyncPublishContract(unit);
-            socket.Send([&] {
-                auto out = opentxs::network::zeromq::Message{};
-                command.Serialize(out);
+            socket.Send(
+                [&] {
+                    auto out = opentxs::network::zeromq::Message{};
+                    command.Serialize(out);
 
-                return out;
-            }());
+                    return out;
+                }(),
+                __FILE__,
+                __LINE__);
         });
 
         return true;
@@ -2664,12 +2681,15 @@ auto Wallet::search_notary(const identifier::Notary& id) const noexcept -> void
         .Flush();
     to_loopback_.modify_detach([&id](auto& socket) {
         const auto command = factory::BlockchainSyncQueryContract(id);
-        socket.Send([&] {
-            auto out = opentxs::network::zeromq::Message{};
-            command.Serialize(out);
+        socket.Send(
+            [&] {
+                auto out = opentxs::network::zeromq::Message{};
+                command.Serialize(out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     });
 }
 
@@ -2680,12 +2700,15 @@ auto Wallet::search_nym(const identifier::Nym& id) const noexcept -> void
         .Flush();
     to_loopback_.modify_detach([&id](auto& socket) {
         const auto command = factory::BlockchainSyncQueryContract(id);
-        socket.Send([&] {
-            auto out = opentxs::network::zeromq::Message{};
-            command.Serialize(out);
+        socket.Send(
+            [&] {
+                auto out = opentxs::network::zeromq::Message{};
+                command.Serialize(out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     });
 }
 
@@ -2697,12 +2720,15 @@ auto Wallet::search_unit(const identifier::UnitDefinition& id) const noexcept
         .Flush();
     to_loopback_.modify_detach([&id](auto& socket) {
         const auto command = factory::BlockchainSyncQueryContract(id);
-        socket.Send([&] {
-            auto out = opentxs::network::zeromq::Message{};
-            command.Serialize(out);
+        socket.Send(
+            [&] {
+                auto out = opentxs::network::zeromq::Message{};
+                command.Serialize(out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     });
 }
 

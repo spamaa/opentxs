@@ -10,23 +10,25 @@
 #include "blockchain/node/wallet/Accounts.hpp"  // IWYU pragma: associated
 
 #include <boost/smart_ptr/make_shared.hpp>
-#include <atomic>
 #include <chrono>
-#include <mutex>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
 
+#include "internal/api/session/Session.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
+#include "internal/blockchain/database/Database.hpp"
 #include "internal/blockchain/database/Wallet.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
+#include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/wallet/Account.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
-#include "internal/util/Mutex.hpp"
+#include "internal/util/P0330.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Crypto.hpp"
@@ -39,7 +41,6 @@
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
-#include "opentxs/blockchain/node/FilterOracle.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
@@ -54,8 +55,9 @@
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
+#include "opentxs/util/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
-#include "util/LMDB.hpp"
+#include "util/ScopeGuard.hpp"
 #include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::wallet
@@ -70,17 +72,18 @@ auto print(AccountsJobs job) noexcept -> std::string_view
             {Job::header, "header"},
             {Job::reorg, "reorg"},
             {Job::rescan, "rescan"},
+            {Job::reorg_ready, "reorg_ready"},
+            {Job::shutdown_ready, "shutdown_ready"},
             {Job::init, "init"},
+            {Job::prepare_shutdown, "prepare_shutdown"},
             {Job::statemachine, "statemachine"},
         };
 
         return map.at(job);
     } catch (...) {
-        LogError()(__FUNCTION__)("invalid AccountsJobs: ")(
+        LogAbort()(__FUNCTION__)("invalid AccountsJobs: ")(
             static_cast<OTZMQWorkType>(job))
-            .Flush();
-
-        OT_FAIL;
+            .Abort();
     }
 }
 }  // namespace opentxs::blockchain::node::wallet
@@ -88,19 +91,16 @@ auto print(AccountsJobs job) noexcept -> std::string_view
 namespace opentxs::blockchain::node::wallet
 {
 Accounts::Imp::Imp(
-    const api::Session& api,
-    const node::Manager& node,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
-    const network::zeromq::BatchID batch,
-    const Type chain,
-    CString&& shutdown,
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
+    network::zeromq::BatchID batch,
+    CString&& toChildren,
     allocator_type alloc) noexcept
     : Actor(
-          api,
+          *api,
           LogTrace(),
           [&] {
-              auto out = CString{print(chain), alloc};
+              auto out = CString{print(node->Internal().Chain()), alloc};
               out.append(" wallet account manager");
 
               return out;
@@ -109,64 +109,116 @@ Accounts::Imp::Imp(
           batch,
           alloc,
           {
-              {CString{api.Endpoints().BlockchainReorg(), alloc},
+              {CString{api->Endpoints().BlockchainReorg(), alloc},
                Direction::Connect},
-              {CString{api.Endpoints().NymCreated(), alloc},
+              {CString{api->Endpoints().NymCreated(), alloc},
+               Direction::Connect},
+              {CString{api->Endpoints().Shutdown(), alloc}, Direction::Connect},
+              {CString{node->Internal().Endpoints().shutdown_publish_, alloc},
                Direction::Connect},
           },
-          {},
+          {
+              {CString{
+                   node->Internal().Endpoints().wallet_to_accounts_push_,
+                   alloc},
+               Direction::Connect},
+          },
           {},
           {
               {SocketType::Publish,
                {
-                   {shutdown, Direction::Bind},
+                   {toChildren, Direction::Bind},
                }},
           })
-    , api_(api)
-    , node_(node)
-    , db_(db)
-    , mempool_(mempool)
-    , chain_(chain)
-    , filter_type_(node_.FilterOracle().DefaultType())
-    , to_children_endpoint_(std::move(shutdown))
+    , api_p_(std::move(api))
+    , node_p_(std::move(node))
+    , api_(*api_p_)
+    , node_(*node_p_)
+    , db_(node_.Internal().DB())
+    , mempool_(node_.Internal().Mempool())
+    , chain_(node_.Internal().Chain())
+    , to_children_endpoint_(std::move(toChildren))
     , to_children_(pipeline_.Internal().ExtraSocket(0))
     , state_(State::normal)
     , reorg_counter_(0)
     , accounts_(alloc)
     , startup_reorg_(std::nullopt)
+    , reorg_data_(std::nullopt)
+    , reorg_(pipeline_, alloc)
 {
 }
 
 Accounts::Imp::Imp(
-    const api::Session& api,
-    const node::Manager& node,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
     const network::zeromq::BatchID batch,
-    const Type chain,
     allocator_type alloc) noexcept
-    : Imp(api,
-          node,
-          db,
-          mempool,
-          batch,
-          chain,
+    : Imp(std::move(api),
+          std::move(node),
+          std::move(batch),
           network::zeromq::MakeArbitraryInproc(alloc.resource()),
           std::move(alloc))
 {
 }
 
-auto Accounts::Imp::do_shutdown() noexcept -> void { accounts_.clear(); }
-
-auto Accounts::Imp::do_startup() noexcept -> void
+auto Accounts::Imp::do_reorg() noexcept -> void
 {
+    try {
+        if (false == reorg_data_.has_value()) {
+            throw std::runtime_error{"missing reorg data"};
+        }
+
+        const auto& [ancestor, tip] = *reorg_data_;
+
+        {
+            auto& [position, tx] = reorg_.GetReorg(ancestor, db_.StartReorg());
+
+            if (false == reorg_.PerformReorg(node_.HeaderOracle())) {
+                throw std::runtime_error{"perform reorg error"};
+            }
+
+            if (false == db_.FinalizeReorg(tx, ancestor)) {
+                throw std::runtime_error{"finalize reorg error"};
+            }
+
+            reorg_.ClearReorg();
+        }
+
+        if (false == db_.AdvanceTo(tip)) {
+            throw std::runtime_error{"Advance chain failed"};
+        }
+
+        // TODO ensure filter oracle has processed the reorg before proceeding
+        reorg_.FinishReorg();
+    } catch (const std::exception& e) {
+        LogAbort()(OT_PRETTY_CLASS())(name_)(": ")(e.what()).Abort();
+    }
+
+    transition_state_normal();
+}
+
+auto Accounts::Imp::do_shutdown() noexcept -> void
+{
+    state_ = State::shutdown;
+    reorg_.Stop();
+    node_p_.reset();
+    api_p_.reset();
+}
+
+auto Accounts::Imp::do_startup() noexcept -> bool
+{
+    if (api_.Internal().ShuttingDown() || node_.Internal().ShuttingDown()) {
+
+        return true;
+    }
+
     for (const auto& id : api_.Wallet().LocalNyms()) { process_nym(id); }
 
     const auto oldPosition = db_.GetPosition();
     log_(OT_PRETTY_CLASS())(name_)(" last wallet position is ")(oldPosition)
         .Flush();
 
-    if (0 > oldPosition.height_) { return; }
+    if (0 > oldPosition.height_) { return false; }
 
     const auto [parent, best] = node_.HeaderOracle().CommonParent(oldPosition);
 
@@ -188,6 +240,8 @@ auto Accounts::Imp::do_startup() noexcept -> void
             return out;
         }(parent, best));
     }
+
+    return false;
 }
 
 auto Accounts::Imp::pipeline(const Work work, Message&& msg) noexcept -> void
@@ -196,11 +250,17 @@ auto Accounts::Imp::pipeline(const Work work, Message&& msg) noexcept -> void
         case State::normal: {
             state_normal(work, std::move(msg));
         } break;
+        case State::pre_reorg: {
+            state_pre_reorg(work, std::move(msg));
+        } break;
+        case State::pre_shutdown: {
+            state_pre_shutdown(work, std::move(msg));
+        } break;
         case State::shutdown: {
-            shutdown_actor();
+            // NOTE do nothing
         } break;
         default: {
-            OT_FAIL;
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": invalid state").Abort();
         }
     }
 }
@@ -216,9 +276,7 @@ auto Accounts::Imp::process_block_header(Message&& in) noexcept -> void
     const auto body = in.Body();
 
     if (3 >= body.size()) {
-        LogError()(OT_PRETTY_CLASS())(name_)(": invalid message").Flush();
-
-        OT_FAIL;
+        LogAbort()(OT_PRETTY_CLASS())(name_)(": invalid message").Abort();
     }
 
     const auto chain = body.at(1).as<blockchain::Type>();
@@ -231,34 +289,7 @@ auto Accounts::Imp::process_block_header(Message&& in) noexcept -> void
     db_.AdvanceTo(position);
 }
 
-auto Accounts::Imp::process_nym(const identifier::Nym& nym) noexcept -> bool
-{
-    const auto endpoint =
-        network::zeromq::MakeArbitraryInproc(get_allocator().resource());
-
-    if (auto i = accounts_.find(nym); accounts_.end() == i) {
-        LogConsole()("Initializing ")(name_)(" wallet for ")(nym).Flush();
-        const auto& account = api_.Crypto().Blockchain().Account(nym, chain_);
-        account.Internal().Startup();
-        auto [it, added] = accounts_.try_emplace(
-            nym,
-            api_,
-            account,
-            node_,
-            db_,
-            mempool_,
-            chain_,
-            filter_type_,
-            to_children_endpoint_);
-
-        return added;
-    } else {
-
-        return false;
-    }
-}
-
-auto Accounts::Imp::process_nym(Message&& in) noexcept -> bool
+auto Accounts::Imp::process_nym(Message&& in) noexcept -> void
 {
     const auto body = in.Body();
 
@@ -266,9 +297,24 @@ auto Accounts::Imp::process_nym(Message&& in) noexcept -> bool
 
     const auto id = api_.Factory().NymIDFromHash(body.at(1).Bytes());
 
-    if (0 == id.size()) { return false; }
+    if (0_uz == id.size()) { return; }
 
-    return process_nym(id);
+    process_nym(id);
+}
+
+auto Accounts::Imp::process_nym(const identifier::Nym& nym) noexcept -> void
+{
+    const auto [i, added] = accounts_.emplace(nym);
+
+    if (added) {
+        const auto endpoint =
+            network::zeromq::MakeArbitraryInproc(get_allocator().resource());
+        LogConsole()("Initializing ")(name_)(" for ")(nym).Flush();
+        const auto& account = api_.Crypto().Blockchain().Account(nym, chain_);
+        account.Internal().Startup();
+        wallet::Account{reorg_, account, api_p_, node_p_, to_children_endpoint_}
+            .Init();
+    }
 }
 
 auto Accounts::Imp::process_reorg(Message&& in) noexcept -> void
@@ -276,9 +322,7 @@ auto Accounts::Imp::process_reorg(Message&& in) noexcept -> void
     const auto body = in.Body();
 
     if (6 > body.size()) {
-        LogError()(OT_PRETTY_CLASS())(name_)(": invalid message").Flush();
-
-        OT_FAIL;
+        LogError()(OT_PRETTY_CLASS())(name_)(": invalid message").Abort();
     }
 
     const auto chain = body.at(1).as<blockchain::Type>();
@@ -293,90 +337,24 @@ auto Accounts::Imp::process_reorg(Message&& in) noexcept -> void
 
 auto Accounts::Imp::process_reorg(
     Message&& in,
-    const block::Position& ancestor,
-    const block::Position& tip) noexcept -> void
+    block::Position&& ancestor,
+    block::Position&& tip) noexcept -> void
 {
-    if (false == transition_state_reorg()) {
-        LogError()(OT_PRETTY_CLASS())(
-            name_)(" failed to transaction to reorg state (possibly due to "
-                   "startup condition")
-            .Flush();
-        pipeline_.Push(std::move(in));
+    OT_ASSERT(false == reorg_data_.has_value());
 
-        return;
-    }
-
-    auto errors = std::atomic_int{0};
-
-    {
-        auto lock = Lock{node_.HeaderOracle().Internal().GetMutex()};
-        auto tx = db_.StartReorg();
-        for_each([&](auto& a) {
-            a.second.ProcessReorg(lock, tx, errors, ancestor);
-        });
-
-        if (false == db_.FinalizeReorg(tx, ancestor)) { ++errors; }
-
-        try {
-            if (0 < errors) { throw std::runtime_error{"Prepare step failed"}; }
-
-            if (false == tx.Finalize(true)) {
-
-                throw std::runtime_error{"Finalize transaction failed"};
-            }
-        } catch (const std::exception& e) {
-            LogError()(OT_PRETTY_CLASS())(name_)(": ")(e.what()).Flush();
-
-            OT_FAIL;
-        }
-    }
-
-    try {
-        if (false == db_.AdvanceTo(tip)) {
-
-            throw std::runtime_error{"Advance chain failed"};
-        }
-    } catch (const std::exception& e) {
-        LogError()(OT_PRETTY_CLASS())(name_)(": ")(e.what()).Flush();
-
-        OT_FAIL;
-    }
-
-    // TODO ensure filter oracle has processed the reorg before proceeding
-    for_each([&](auto& a) {
-        const auto rc = a.second.ChangeState(Account::State::normal);
-
-        OT_ASSERT(rc);
-    });
-    LogConsole()(name_)(": reorg to ")(tip)(" finished").Flush();
+    reorg_data_.emplace(std::move(ancestor), std::move(tip));
+    transition_state_pre_reorg();
 }
 
 auto Accounts::Imp::process_rescan(Message&& in) noexcept -> void
 {
-    to_children_.Send(MakeWork(AccountJobs::rescan));
-}
-
-auto Accounts::Imp::Rescan() const noexcept -> void
-{
-    pipeline_.Push(MakeWork(Work::rescan));
-}
-
-auto Accounts::Imp::Shutdown() noexcept -> void
-{
-    // WARNING this function must never be called from with this class's
-    // Actor::worker function or else a deadlock will occur. Shutdown must only
-    // be called by a different Actor.
-    auto lock = std::unique_lock<std::timed_mutex>{reorg_lock_};
-    transition_state_shutdown();
+    to_children_.Send(MakeWork(AccountJobs::rescan), __FILE__, __LINE__);
 }
 
 auto Accounts::Imp::state_normal(const Work work, Message&& msg) noexcept
     -> void
 {
     switch (work) {
-        case Work::shutdown: {
-            shutdown_actor();
-        } break;
         case Work::nym: {
             process_nym(std::move(msg));
         } break;
@@ -392,20 +370,102 @@ auto Accounts::Imp::state_normal(const Work work, Message&& msg) noexcept
         case Work::init: {
             do_init();
         } break;
+        case Work::shutdown:
+        case Work::prepare_shutdown: {
+            transition_state_pre_shutdown();
+        } break;
         case Work::statemachine: {
             do_work();
         } break;
+        case Work::reorg_ready:
+        case Work::shutdown_ready: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+                print(work))(" message")
+                .Abort();
+        }
         default: {
-            LogError()(OT_PRETTY_CLASS())(name_)(": unhandled message type ")(
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))
-                .Flush();
-
-            OT_FAIL;
+                .Abort();
         }
     }
 }
 
-auto Accounts::Imp::transition_state_reorg() noexcept -> bool
+auto Accounts::Imp::state_pre_reorg(const Work work, Message&& msg) noexcept
+    -> void
+{
+    switch (work) {
+        case Work::nym:
+        case Work::header:
+        case Work::reorg:
+        case Work::rescan:
+        case Work::shutdown:
+        case Work::prepare_shutdown:
+        case Work::statemachine: {
+            defer(std::move(msg));
+        } break;
+        case Work::reorg_ready: {
+            do_reorg();
+        } break;
+        case Work::shutdown_ready:
+        case Work::init: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+                print(work))(" message")
+                .Abort();
+        }
+        default: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": unhandled message type ")(
+                static_cast<OTZMQWorkType>(work))
+                .Abort();
+        }
+    }
+}
+
+auto Accounts::Imp::state_pre_shutdown(const Work work, Message&& msg) noexcept
+    -> void
+{
+    switch (work) {
+        case Work::shutdown:
+        case Work::prepare_shutdown: {
+            if (reorg_.CheckShutdown()) { shutdown_actor(); }
+        } break;
+        case Work::shutdown_ready: {
+            shutdown_actor();
+        } break;
+        case Work::nym:
+        case Work::header:
+        case Work::reorg:
+        case Work::rescan:
+        case Work::statemachine: {
+            // NOTE ignore message
+        } break;
+        case Work::reorg_ready:
+        case Work::init: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+                print(work))(" message")
+                .Abort();
+        }
+        default: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": unhandled message type ")(
+                static_cast<OTZMQWorkType>(work))
+                .Abort();
+        }
+    }
+}
+
+auto Accounts::Imp::transition_state_normal() noexcept -> void
+{
+    OT_ASSERT(reorg_data_.has_value());
+
+    const auto& [ancestor, tip] = *reorg_data_;
+    auto post = ScopeGuard{[&] { reorg_data_.reset(); }};
+    LogConsole()(name_)(": reorg to ")(tip)(" finished").Flush();
+    disable_automatic_processing_ = false;
+    state_ = State::normal;
+    trigger();
+}
+
+auto Accounts::Imp::transition_state_pre_reorg() noexcept -> void
 {
     const auto id = [this] {
         if (startup_reorg_.has_value()) {
@@ -417,38 +477,23 @@ auto Accounts::Imp::transition_state_reorg() noexcept -> bool
         }
     }();
     log_(OT_PRETTY_CLASS())(name_)(": processing reorg ")(id).Flush();
+    disable_automatic_processing_ = true;
+    state_ = State::pre_reorg;
+    startup_reorg_.reset();
+    log_(OT_PRETTY_CLASS())(name_)(": transitioned to pre_reorg state").Flush();
 
-    if (false == startup_reorg_.has_value()) {
-        to_children_.SendDeferred([=] {
-            auto out = MakeWork(AccountJobs::prepare_reorg);
-            out.AddFrame(id);
-
-            return out;
-        }());
+    if (reorg_.PrepareReorg(id)) {
+        log_(OT_PRETTY_CLASS())(name_)(": zero children").Flush();
     }
-
-    auto success{true};
-
-    for_each([&](auto& a) {
-        success &= a.second.ChangeState(Account::State::reorg, id);
-    });
-
-    if (success) { startup_reorg_.reset(); }
-
-    return success;
 }
 
-auto Accounts::Imp::transition_state_shutdown() noexcept -> void
+auto Accounts::Imp::transition_state_pre_shutdown() noexcept -> void
 {
-    to_children_.SendDeferred(MakeWork(AccountJobs::prepare_shutdown));
-    for_each([](auto& a) {
-        auto rc = a.second.ChangeState(Account::State::shutdown);
+    state_ = State::pre_shutdown;
+    log_(OT_PRETTY_CLASS())(name_)(": transitioned to pre_shutdown state")
+        .Flush();
 
-        OT_ASSERT(rc);
-    });
-    state_ = State::shutdown;
-    log_(OT_PRETTY_CLASS())(name_)(": transitioned to shutdown state").Flush();
-    signal_shutdown();
+    if (reorg_.PrepareShutdown()) { shutdown_actor(); }
 }
 
 auto Accounts::Imp::work() noexcept -> bool { return false; }
@@ -459,13 +504,13 @@ Accounts::Imp::~Imp() = default;
 namespace opentxs::blockchain::node::wallet
 {
 Accounts::Accounts(
-    const api::Session& api,
-    const node::Manager& node,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
-    const Type chain) noexcept
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node) noexcept
     : imp_([&] {
-        const auto& asio = api.Network().ZeroMQ().Internal();
+        OT_ASSERT(api);
+        OT_ASSERT(node);
+
+        const auto& asio = api->Network().ZeroMQ().Internal();
         const auto batchID = asio.PreallocateBatch();
         // TODO the version of libc++ present in android ndk 23.0.7599858
         // has a broken std::allocate_shared function so we're using
@@ -473,12 +518,9 @@ Accounts::Accounts(
 
         return boost::allocate_shared<Imp>(
             alloc::PMR<Imp>{asio.Alloc(batchID)},
-            api,
-            node,
-            db,
-            mempool,
-            batchID,
-            chain);
+            std::move(api),
+            std::move(node),
+            batchID);
     }())
 {
     OT_ASSERT(imp_);
@@ -486,9 +528,5 @@ Accounts::Accounts(
 
 auto Accounts::Init() noexcept -> void { imp_->Init(imp_); }
 
-auto Accounts::Rescan() const noexcept -> void { imp_->Rescan(); }
-
-auto Accounts::Shutdown() noexcept -> void { imp_->Shutdown(); }
-
-Accounts::~Accounts() { imp_->Shutdown(); }
+Accounts::~Accounts() = default;
 }  // namespace opentxs::blockchain::node::wallet

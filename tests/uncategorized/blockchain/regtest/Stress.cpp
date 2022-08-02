@@ -502,8 +502,8 @@ TEST_F(Regtest_stress, bob_after_receive)
         expected_account_bob_,
         make_cb(account_activity_, u8"account_activity_"));
     constexpr auto expectedTotal = amount_ * transaction_count_;
+    wait_for_counter(account_activity_, false);
 
-    EXPECT_TRUE(wait_for_counter(account_activity_));
     EXPECT_EQ(widget.Balance(), expectedTotal);
     EXPECT_EQ(widget.BalancePolarity(), 1);
 

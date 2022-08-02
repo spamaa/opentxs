@@ -10,9 +10,8 @@
 #include <future>
 #include <string_view>
 
-#include "opentxs/network/zeromq/ListenCallback.hpp"
+#include "internal/util/Timer.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
-#include "opentxs/network/zeromq/socket/Subscribe.hpp"
 #include "opentxs/util/Container.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
@@ -20,6 +19,14 @@ namespace opentxs  // NOLINT
 {
 // inline namespace v1
 // {
+namespace api
+{
+namespace network
+{
+class Asio;
+}  // namespace network
+}  // namespace api
+
 namespace network
 {
 namespace zeromq
@@ -36,16 +43,18 @@ namespace opentxs::internal
 class ShutdownSender
 {
 public:
-    const UnallocatedCString endpoint_;
+    const CString endpoint_;
 
-    auto Activate() const noexcept -> void;
     auto Activated() const noexcept -> bool { return activated_; }
 
+    auto Activate() noexcept -> void;
     auto Close() noexcept -> void;
 
     ShutdownSender(
+        const api::network::Asio& asio,
         const network::zeromq::Context& zmq,
-        std::string_view endpoint) noexcept;
+        std::string_view endpoint,
+        std::string_view name) noexcept;
     ShutdownSender() = delete;
     ShutdownSender(const ShutdownSender&) = delete;
     ShutdownSender(ShutdownSender&&) = delete;
@@ -55,37 +64,10 @@ public:
     ~ShutdownSender();
 
 private:
-    mutable std::atomic_bool activated_;
+    const CString name_;
+
+    std::atomic_bool activated_;
     OTZMQPublishSocket socket_;
-};
-
-class ShutdownReceiver
-{
-public:
-    using Promise = std::promise<void>;
-    using Future = std::shared_future<void>;
-    using Callback = std::function<void(Promise&)>;
-    using Endpoints = UnallocatedVector<UnallocatedCString>;
-
-    Promise promise_;
-    Future future_;
-
-    auto Close() noexcept -> void;
-
-    ShutdownReceiver(
-        const network::zeromq::Context& zmq,
-        const Endpoints endpoints,
-        Callback cb) noexcept;
-    ShutdownReceiver() = delete;
-    ShutdownReceiver(const ShutdownReceiver&) = delete;
-    ShutdownReceiver(ShutdownReceiver&&) = delete;
-    auto operator=(const ShutdownReceiver&) -> ShutdownReceiver& = delete;
-    auto operator=(ShutdownReceiver&&) -> ShutdownReceiver& = delete;
-
-    ~ShutdownReceiver();
-
-private:
-    OTZMQListenCallback callback_;
-    OTZMQSubscribeSocket socket_;
+    Timer repeat_;
 };
 }  // namespace opentxs::internal
