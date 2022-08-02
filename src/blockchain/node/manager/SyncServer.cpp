@@ -20,6 +20,7 @@
 
 #include "internal/api/session/Endpoints.hpp"
 #include "internal/blockchain/database/Sync.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/network/p2p/Factory.hpp"
@@ -66,8 +67,8 @@ SyncServer::SyncServer(
     const node::Manager& node,
     const blockchain::Type chain,
     const cfilter::Type type,
-    const UnallocatedCString& shutdown,
-    const UnallocatedCString& publishEndpoint) noexcept
+    const node::Endpoints& endpoints,
+    std::string_view publishEndpoint) noexcept
     : SyncDM(
           [&] { return db.SyncTip(); }(),
           [&] {
@@ -94,7 +95,7 @@ SyncServer::SyncServer(
     , zmq_thread_(&SyncServer::zmq_thread, this)
 {
     init_executor(
-        {shutdown,
+        {UnallocatedCString(endpoints.shutdown_publish_.c_str()),
          UnallocatedCString{
              api_.Endpoints().Internal().BlockchainFilterUpdated(chain_)}});
     ::zmq_setsockopt(socket_.get(), ZMQ_LINGER, &linger_, sizeof(linger_));

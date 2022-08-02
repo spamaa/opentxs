@@ -32,6 +32,7 @@
 #include "internal/api/network/Asio.hpp"
 #include "internal/api/network/Blockchain.hpp"
 #include "internal/api/session/Endpoints.hpp"
+#include "internal/api/session/Session.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/database/Factory.hpp"
@@ -87,7 +88,6 @@
 #include "opentxs/network/p2p/State.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
-#include "opentxs/network/zeromq/ZeroMQ.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameIterator.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
@@ -228,9 +228,7 @@ Base::Base(
             }
         }
     }())
-    , shutdown_sender_(
-          api.Network().ZeroMQ(),
-          network::zeromq::MakeArbitraryInproc())
+    , shutdown_sender_(api.Network().ZeroMQ(), endpoints_.shutdown_publish_)
     , database_p_(factory::BlockchainDatabase(
           api,
           *this,
@@ -243,14 +241,7 @@ Base::Base(
           api_.Network().Blockchain().Internal().Mempool(),
           chain_)
     , header_p_(factory::HeaderOracle(api, *database_p_, chain_))
-    , block_(factory::BlockOracle(
-          api,
-          *this,
-          config_,
-          *header_p_,
-          *database_p_,
-          chain_,
-          shutdown_sender_.endpoint_))
+    , block_()
     , filter_p_(factory::BlockchainFilterOracle(
           api,
           config_,
@@ -260,7 +251,7 @@ Base::Base(
           *database_p_,
           chain_,
           filter_type_,
-          shutdown_sender_.endpoint_))
+          endpoints_))
     , peer_p_(factory::BlockchainPeerManager(
           api,
           config_,
@@ -272,7 +263,7 @@ Base::Base(
           *database_p_,
           chain_,
           seednode,
-          shutdown_sender_.endpoint_))
+          endpoints_))
     , wallet_p_([&]() -> std::unique_ptr<blockchain::node::Wallet> {
         if (config_.disable_wallet_) {
 
@@ -280,12 +271,7 @@ Base::Base(
         } else {
 
             return factory::BlockchainWallet(
-                api,
-                *this,
-                *database_p_,
-                mempool_,
-                chain_,
-                shutdown_sender_.endpoint_);
+                api, *this, *database_p_, mempool_, chain_, endpoints_);
         }
     }())
     , database_(*database_p_)
@@ -295,7 +281,6 @@ Base::Base(
     , wallet_(*wallet_p_)
     , start_(Clock::now())
     , sync_endpoint_(syncEndpoint)
-    , requestor_endpoint_(network::zeromq::MakeArbitraryInproc())
     , sync_server_([&] {
         if (config_.provide_sync_server_) {
             return std::make_unique<base::SyncServer>(
@@ -306,24 +291,25 @@ Base::Base(
                 *this,
                 chain_,
                 filters_.DefaultType(),
-                shutdown_sender_.endpoint_,
+                endpoints_,
                 sync_endpoint_);
         } else {
             return std::unique_ptr<base::SyncServer>{};
         }
     }())
-    , p2p_requestor_([&] {
+    , have_p2p_requestor_([&] {
         switch (config_.profile_) {
             case BlockchainProfile::mobile:
             case BlockchainProfile::desktop: {
+                p2p::Requestor{api_.Internal().GetShared(), chain_, endpoints_}
+                    .Start();
 
-                return std::make_unique<p2p::Requestor>(
-                    api_, chain_, requestor_endpoint_);
+                return true;
             }
             case BlockchainProfile::desktop_native:
             case BlockchainProfile::server: {
 
-                return std::unique_ptr<p2p::Requestor>{};
+                return false;
             }
             default: {
                 OT_FAIL;
@@ -334,7 +320,7 @@ Base::Base(
           [&](auto&& m) { pipeline_.Push(std::move(m)); }))
     , sync_socket_(api_.Network().ZeroMQ().PairSocket(
           sync_cb_,
-          requestor_endpoint_,
+          endpoints_.p2p_requestor_pair_,
           "Blockchain sync"))
     , local_chain_height_(0)
     , remote_chain_height_(params::Chains().at(chain_).checkpoint_.height_)
@@ -503,13 +489,18 @@ auto Base::AddPeer(const blockchain::p2p::Address& address) const noexcept
     return peer_.AddPeer(address);
 }
 
+auto Base::BlockOracle() const noexcept -> const node::BlockOracle&
+{
+    return block_;
+}
+
 auto Base::BroadcastTransaction(
     const bitcoin::block::Transaction& tx,
     const bool pushtx) const noexcept -> bool
 {
     mempool_.Submit(tx.clone());
 
-    if (pushtx && p2p_requestor_) {
+    if (pushtx && have_p2p_requestor_) {
         sync_socket_->Send([&] {
             auto out = network::zeromq::Message{};
             const auto command =
@@ -728,7 +719,7 @@ auto Base::Listen(const blockchain::p2p::Address& address) const noexcept
 
 auto Base::notify_sync_client() const noexcept -> void
 {
-    if (p2p_requestor_) {
+    if (have_p2p_requestor_) {
         sync_socket_->Send([this] {
             const auto tip = filters_.FilterTip(filters_.DefaultType());
             auto msg = MakeWork(OTZMQWorkType{OT_ZMQ_INTERNAL_SIGNAL + 2});
@@ -785,7 +776,6 @@ auto Base::pipeline(zmq::Message&& in) noexcept -> void
         case ManagerJobs::Heartbeat: {
             // TODO upgrade all the oracles to no longer require this
             mempool_.Heartbeat();
-            block_.Heartbeat();
             filters_.Internal().Heartbeat();
             peer_.Heartbeat();
 
@@ -1264,7 +1254,7 @@ auto Base::shutdown(std::promise<void>& promise) noexcept -> void
 
         if (sync_server_) { sync_server_->Shutdown(); }
 
-        if (p2p_requestor_) {
+        if (have_p2p_requestor_) {
             sync_socket_->Send(MakeWork(WorkType::Shutdown));
         }
 
@@ -1285,9 +1275,19 @@ auto Base::ShuttingDown() const noexcept -> bool
 
 auto Base::Start(std::shared_ptr<const node::Manager> me) noexcept -> void
 {
-    OT_ASSERT(me);
+    auto ptr = [&] {
+        auto handle = self_.lock();
+        auto& self = *handle;
+        self = std::move(me);
+        auto out = self.lock();
+
+        OT_ASSERT(out);
+
+        return out;
+    }();
 
     *(self_.lock()) = std::move(me);
+    block_.Start(api_.Internal().GetShared(), ptr);
     init_promise_.set_value();
     peer_.Start();
 }

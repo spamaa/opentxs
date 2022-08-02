@@ -47,6 +47,7 @@ namespace node
 {
 class FilterOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
 
@@ -67,8 +68,6 @@ class BlockIndexer::Imp final : public Actor<Imp, BlockIndexerJob>
 {
 public:
     auto Init(boost::shared_ptr<Imp> me) noexcept -> void;
-    auto Reindex() noexcept -> void;
-    auto Shutdown() noexcept -> void;
 
     Imp(const api::Session& api,
         const node::Manager& node,
@@ -77,7 +76,7 @@ public:
         NotifyCallback&& notify,
         blockchain::Type chain,
         cfilter::Type type,
-        std::string_view parentEndpoint,
+        const node::Endpoints& endpoints,
         const network::zeromq::BatchID batch,
         allocator_type alloc) noexcept;
     Imp() = delete;

@@ -59,7 +59,8 @@ auto MemDB::push(block::Hash&& id, BitcoinBlockResult&& future) noexcept -> void
     }
 
     if (0u < index_.count(id.Bytes())) {
-        LogError()(OT_PRETTY_CLASS())("block ")(id.asHex())(" already cached")
+        LogTrace()(OT_PRETTY_CLASS())("block ")
+            .asHex(id)(" already cached")
             .Flush();
 
         return;

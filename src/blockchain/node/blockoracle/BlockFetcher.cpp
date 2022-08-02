@@ -15,7 +15,6 @@
 #include <exception>
 #include <iterator>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <sstream>
 #include <string_view>
@@ -25,8 +24,12 @@
 
 #include "blockchain/node/blockoracle/BlockBatch.hpp"
 #include "internal/api/session/Endpoints.hpp"
+#include "internal/api/session/Session.hpp"
 #include "internal/blockchain/database/Block.hpp"
+#include "internal/blockchain/database/Database.hpp"
+#include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
+#include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
@@ -41,6 +44,7 @@
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
+#include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
@@ -87,33 +91,66 @@ auto print(BlockFetcherJob job) noexcept -> std::string_view
 
 namespace opentxs::blockchain::node::blockoracle
 {
+BlockFetcher::Shared::Data::Data(allocator_type alloc) noexcept
+    : tip_()
+    , queue_()
+    , blocks_(alloc)
+    , job_index_(alloc)
+{
+}
+
+auto BlockFetcher::Shared::Data::get_allocator() const noexcept
+    -> allocator_type
+{
+    return job_index_.get_allocator();
+}
+}  // namespace opentxs::blockchain::node::blockoracle
+
+namespace opentxs::blockchain::node::blockoracle
+{
+BlockFetcher::Shared::Shared(allocator_type alloc) noexcept
+    : data_(std::move(alloc))
+{
+}
+
+auto BlockFetcher::Shared::get_allocator() const noexcept -> allocator_type
+{
+    return data_.lock()->get_allocator();
+}
+}  // namespace opentxs::blockchain::node::blockoracle
+
+namespace opentxs::blockchain::node::blockoracle
+{
 BlockFetcher::Imp::Imp(
-    const api::Session& api,
-    const Endpoints& endpoints,
-    const HeaderOracle& header,
-    database::Block& db,
-    blockchain::Type chain,
-    std::size_t peerTarget,
-    network::zeromq::BatchID batch,
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
+    boost::shared_ptr<Shared> shared,
+    network::zeromq::BatchID batchID,
     allocator_type alloc) noexcept
     : Actor(
-          api,
+          *api,
           LogTrace(),
           [&] {
               using opentxs::blockchain::print;
-              auto out = CString{print(chain), alloc};
+              auto out = CString{print(node->Internal().Chain()), alloc};
               out.append(" block fetcher");
 
               return out;
           }(),
           0ms,
-          batch,
+          batchID,
           alloc,
           [&] {
               using Dir = network::zeromq::socket::Direction;
               auto out = network::zeromq::EndpointArgs{alloc};
               out.emplace_back(
-                  CString{api.Endpoints().BlockchainReorg(), alloc},
+                  CString{api->Endpoints().BlockchainReorg(), alloc},
+                  Dir::Connect);
+              out.emplace_back(
+                  CString{api->Endpoints().Shutdown(), alloc}, Dir::Connect);
+              out.emplace_back(
+                  CString{
+                      node->Internal().Endpoints().shutdown_publish_, alloc},
                   Dir::Connect);
 
               return out;
@@ -128,28 +165,36 @@ BlockFetcher::Imp::Imp(
               out.emplace_back(std::make_pair<Socket, Args>(
                   Socket::Publish,
                   {
-                      {{endpoints.block_fetcher_job_ready_, alloc}, Dir::Bind},
+                      {{node->Internal()
+                            .Endpoints()
+                            .block_fetcher_job_ready_publish_,
+                        alloc},
+                       Dir::Bind},
                   }));
               out.emplace_back(std::make_pair<Socket, Args>(
                   Socket::Publish,
                   {
                       {CString{
-                           api.Endpoints().Internal().BlockchainBlockUpdated(
-                               chain),
+                           api->Endpoints().Internal().BlockchainBlockUpdated(
+                               node->Internal().Chain()),
                            alloc},
                        Dir::Bind},
                   }));
 
               return out;
           }())
-    , api_(api)
-    , header_oracle_(header)
-    , db_(db)
+    , api_p_(std::move(api))
+    , node_p_(std::move(node))
+    , shared_(std::move(shared))
+    , api_(*api_p_)
+    , node_(*node_p_)
+    , header_oracle_(node_.HeaderOracle())
+    , db_(node_.Internal().DB())
     , job_ready_(pipeline_.Internal().ExtraSocket(0))
     , tip_updated_(pipeline_.Internal().ExtraSocket(1))
-    , chain_(chain)
-    , peer_target_(peerTarget)
-    , data_(get_allocator())
+    , chain_(node_.Internal().Chain())
+    , peer_target_(node_.Internal().GetConfig().PeerTarget(chain_))
+    , data_(shared_->data_)
     , self_()
 {
 }
@@ -171,52 +216,62 @@ auto BlockFetcher::Imp::broadcast_tip(const block::Position& tip) noexcept
     }());
 }
 
-auto BlockFetcher::Imp::do_shutdown() noexcept -> void { self_.reset(); }
+auto BlockFetcher::Imp::do_shutdown() noexcept -> void
+{
+    self_.reset();
+    node_p_.reset();
+    api_p_.reset();
+}
 
 auto BlockFetcher::Imp::do_startup() noexcept -> void
 {
-    {
-        auto handle = data_.lock();
-        auto& tip = handle->tip_;
-        tip = db_.BlockTip();
-        const auto original = tip;
+    if ((api_.Internal().ShuttingDown()) || (node_.Internal().ShuttingDown())) {
+        shutdown_actor();
+    } else {
+        {
+            auto handle = data_.lock();
+            auto& tip = handle->tip_;
+            tip = db_.BlockTip();
+            const auto original = tip;
 
-        OT_ASSERT(0 <= tip.height_);
+            OT_ASSERT(0 <= tip.height_);
 
-        if (auto r = header_oracle_.CalculateReorg(tip); false == r.empty()) {
-            const auto& last = r.back();
+            if (auto r = header_oracle_.CalculateReorg(tip);
+                false == r.empty()) {
+                const auto& last = r.back();
 
-            OT_ASSERT(0 < last.height_);
+                OT_ASSERT(0 < last.height_);
 
-            const auto header = header_oracle_.LoadHeader(last.hash_);
+                const auto header = header_oracle_.LoadHeader(last.hash_);
 
-            OT_ASSERT(header);
+                OT_ASSERT(header);
 
-            tip = {last.height_ - 1, header->ParentHash()};
-        }
-
-        while (tip.height_ > 0) {
-            if (auto block = db_.BlockLoadBitcoin(tip.hash_); block) {
-
-                break;
-            } else {
-
-                tip = header_oracle_.GetPosition(tip.height_ - 1);
+                tip = {last.height_ - 1, header->ParentHash()};
             }
+
+            while (tip.height_ > 0) {
+                if (auto block = db_.BlockLoadBitcoin(tip.hash_); block) {
+
+                    break;
+                } else {
+
+                    tip = header_oracle_.GetPosition(tip.height_ - 1);
+                }
+            }
+
+            if (original != tip) { broadcast_tip(tip); }
+
+            log_(OT_PRETTY_CLASS())(": best downloaded full block is ")(tip)
+                .Flush();
         }
 
-        if (original != tip) { broadcast_tip(tip); }
-
-        log_(OT_PRETTY_CLASS())(": best downloaded full block is ")(tip)
-            .Flush();
+        do_work();
     }
-
-    do_work();
 }
 
 auto BlockFetcher::Imp::erase_obsolete(
     const block::Position& after,
-    Data& data) noexcept -> void
+    Shared::Data& data) noexcept -> void
 {
     auto& blocks = data.blocks_;
 
@@ -452,16 +507,7 @@ auto BlockFetcher::Imp::process_reorg(Message&& msg) noexcept -> void
     do_work();
 }
 
-auto BlockFetcher::Imp::Shutdown() noexcept -> void
-{
-    // WARNING this function must never be called from with this class's
-    // Actor::worker function or else a deadlock will occur. Shutdown must only
-    // be called by a different Actor.
-    auto lock = std::unique_lock<std::timed_mutex>{reorg_lock_};
-    signal_shutdown();
-}
-
-auto BlockFetcher::Imp::update_tip(Data& data) noexcept -> void
+auto BlockFetcher::Imp::update_tip(Shared::Data& data) noexcept -> void
 {
     auto& tip = data.tip_;
     auto& blocks = data.blocks_;
@@ -577,55 +623,76 @@ auto BlockFetcher::Imp::work() noexcept -> bool
     return false;
 }
 
-BlockFetcher::Imp::~Imp() { do_shutdown(); }
+BlockFetcher::Imp::~Imp() = default;
 }  // namespace opentxs::blockchain::node::blockoracle
 
 namespace opentxs::blockchain::node::blockoracle
 {
 BlockFetcher::BlockFetcher(
-    const api::Session& api,
-    const Endpoints& endpoints,
-    const HeaderOracle& header,
-    database::Block& db,
-    blockchain::Type chain,
-    std::size_t peerTarget) noexcept
-    : imp_([&] {
-        using ReturnType = BlockFetcher::Imp;
-        const auto& asio = api.Network().ZeroMQ().Internal();
-        const auto batchID = asio.PreallocateBatch();
-        // TODO the version of libc++ present in android ndk 23.0.7599858
-        // has a broken std::allocate_shared function so we're using
-        // boost::shared_ptr instead of std::shared_ptr
-
-        return boost::allocate_shared<ReturnType>(
-            alloc::PMR<ReturnType>{asio.Alloc(batchID)},
-            api,
-            endpoints,
-            header,
-            db,
-            chain,
-            peerTarget,
-            batchID);
-    }())
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
+    network::zeromq::BatchID batchID,
+    allocator_type alloc) noexcept
+    : shared_(boost::allocate_shared<Shared>(alloc::PMR<Shared>{alloc}))
+    , actor_(boost::allocate_shared<Imp>(
+          alloc::PMR<Imp>{alloc},
+          std::move(api),
+          std::move(node),
+          shared_,
+          batchID))
 {
-    OT_ASSERT(imp_);
+    // TODO the version of libc++ present in android ndk 23.0.7599858 has a
+    // broken std::allocate_shared function so we're using boost::shared_ptr
+    // instead of std::shared_ptr
+
+    OT_ASSERT(shared_);
+    OT_ASSERT(actor_);
+}
+
+BlockFetcher::BlockFetcher(
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
+    network::zeromq::BatchID batchID) noexcept
+    : BlockFetcher(
+          api,
+          node,
+          batchID,
+          api->Network().ZeroMQ().Internal().Alloc(batchID))
+{
+}
+
+BlockFetcher::BlockFetcher(
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node) noexcept
+    : BlockFetcher(
+          api,
+          node,
+          api->Network().ZeroMQ().Internal().PreallocateBatch())
+{
 }
 
 BlockFetcher::BlockFetcher(const BlockFetcher& rhs) noexcept
-    : imp_(rhs.imp_)
+    : shared_(rhs.shared_)
+    , actor_(rhs.actor_)
 {
-    OT_ASSERT(imp_);
+    OT_ASSERT(shared_);
+    OT_ASSERT(actor_);
 }
 
 BlockFetcher::BlockFetcher(BlockFetcher&& rhs) noexcept
-    : imp_(std::move(rhs.imp_))
+    : shared_(std::move(rhs.shared_))
+    , actor_(std::move(rhs.actor_))
 {
-    OT_ASSERT(imp_);
+    OT_ASSERT(shared_);
+    OT_ASSERT(actor_);
 }
 
 auto BlockFetcher::operator=(const BlockFetcher& rhs) noexcept -> BlockFetcher&
 {
-    if (this != std::addressof(rhs)) { imp_ = rhs.imp_; }
+    if (this != std::addressof(rhs)) {
+        shared_ = rhs.shared_;
+        actor_ = rhs.actor_;
+    }
 
     return *this;
 }
@@ -633,28 +700,34 @@ auto BlockFetcher::operator=(const BlockFetcher& rhs) noexcept -> BlockFetcher&
 auto BlockFetcher::operator=(BlockFetcher&& rhs) noexcept -> BlockFetcher&
 {
     using std::swap;
-    swap(imp_, rhs.imp_);
+    swap(shared_, rhs.shared_);
+    swap(actor_, rhs.actor_);
 
     return *this;
 }
 
 auto BlockFetcher::get_allocator() const noexcept -> allocator_type
 {
-    return imp_->get_allocator();
+    OT_ASSERT(actor_);
+
+    return actor_->get_allocator();
 }
 
 auto BlockFetcher::GetJob(allocator_type alloc) const noexcept
     -> internal::BlockBatch
 {
-    return imp_->GetJob(alloc);
+    OT_ASSERT(actor_);
+
+    return actor_->GetJob(alloc);
 }
 
-auto BlockFetcher::Shutdown() noexcept -> void
+auto BlockFetcher::Init() noexcept -> void
 {
-    if (imp_) { imp_->Shutdown(); }
+    OT_ASSERT(actor_);
+
+    actor_->Init(actor_);
+    actor_.reset();
 }
 
-auto BlockFetcher::Start() noexcept -> void { imp_->Init(imp_); }
-
-BlockFetcher::~BlockFetcher() { Shutdown(); }
+BlockFetcher::~BlockFetcher() = default;
 }  // namespace opentxs::blockchain::node::blockoracle

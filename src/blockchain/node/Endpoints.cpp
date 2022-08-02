@@ -12,7 +12,12 @@
 namespace opentxs::blockchain::node
 {
 Endpoints::Endpoints(allocator_type alloc) noexcept
-    : block_fetcher_job_ready_(network::zeromq::MakeArbitraryInproc(alloc))
+    : block_fetcher_job_ready_publish_(
+          network::zeromq::MakeArbitraryInproc(alloc))
+    , filter_oracle_reindex_publish_(
+          network::zeromq::MakeArbitraryInproc(alloc))
+    , p2p_requestor_pair_(network::zeromq::MakeArbitraryInproc(alloc))
+    , shutdown_publish_(network::zeromq::MakeArbitraryInproc(alloc))
 {
 }
 }  // namespace opentxs::blockchain::node

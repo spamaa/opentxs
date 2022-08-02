@@ -11,7 +11,7 @@
 
 namespace opentxs::blockchain::node::internal
 {
-auto BlockOracle::Imp::get_validator(
+auto BlockOracle::Shared::get_validator(
     const blockchain::Type chain,
     const node::HeaderOracle& headers) noexcept
     -> std::unique_ptr<const block::Validator>

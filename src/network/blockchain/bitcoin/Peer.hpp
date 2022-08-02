@@ -77,6 +77,7 @@ class BlockOracle;
 class FilterOracle;
 class HeaderOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 
 namespace p2p
@@ -120,7 +121,7 @@ public:
         int peerID,
         std::unique_ptr<opentxs::blockchain::p2p::internal::Address> address,
         opentxs::blockchain::p2p::bitcoin::ProtocolVersion protocol,
-        std::string_view fromNode,
+        const opentxs::blockchain::node::Endpoints& endpoints,
         std::string_view fromParent,
         zeromq::BatchID batch,
         allocator_type alloc) noexcept;

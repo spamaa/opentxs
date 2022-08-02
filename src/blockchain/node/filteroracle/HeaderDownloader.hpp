@@ -58,6 +58,7 @@ namespace node
 {
 class HeaderOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
 
@@ -97,7 +98,7 @@ public:
         FilterOracle::FilterDownloader& filter,
         const blockchain::Type chain,
         const cfilter::Type type,
-        const UnallocatedCString& shutdown,
+        const node::Endpoints& endpoints,
         Callback&& cb) noexcept;
 
     ~HeaderDownloader();

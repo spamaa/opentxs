@@ -15,6 +15,7 @@
 #include <future>
 #include <memory>
 #include <mutex>
+#include <string_view>
 #include <thread>
 
 #include "blockchain/DownloadManager.hpp"
@@ -67,6 +68,7 @@ class SyncServer;
 class FilterOracle;
 class HeaderOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 
 class GCS;
@@ -109,8 +111,8 @@ public:
         const node::Manager& node,
         const blockchain::Type chain,
         const cfilter::Type type,
-        const UnallocatedCString& shutdown,
-        const UnallocatedCString& publishEndpoint) noexcept;
+        const node::Endpoints& endpoints,
+        std::string_view publishEndpoint) noexcept;
 
     ~SyncServer();
 

@@ -8,6 +8,7 @@
 #include <atomic>
 #include <functional>
 #include <future>
+#include <string_view>
 
 #include "opentxs/network/zeromq/ListenCallback.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
@@ -44,7 +45,7 @@ public:
 
     ShutdownSender(
         const network::zeromq::Context& zmq,
-        const UnallocatedCString endpoint) noexcept;
+        std::string_view endpoint) noexcept;
     ShutdownSender() = delete;
     ShutdownSender(const ShutdownSender&) = delete;
     ShutdownSender(ShutdownSender&&) = delete;

@@ -27,6 +27,7 @@
 #include "internal/blockchain/block/Block.hpp"
 #include "internal/blockchain/database/Cfilter.hpp"
 #include "internal/blockchain/node/Config.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Factory.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/filteroracle/BlockIndexer.hpp"
@@ -69,13 +70,13 @@ auto BlockchainFilterOracle(
     blockchain::database::Cfilter& database,
     const blockchain::Type chain,
     const blockchain::cfilter::Type filter,
-    const UnallocatedCString& shutdown) noexcept
+    const blockchain::node::Endpoints& endpoints) noexcept
     -> std::unique_ptr<blockchain::node::FilterOracle>
 {
     using ReturnType = opentxs::blockchain::node::implementation::FilterOracle;
 
     return std::make_unique<ReturnType>(
-        api, config, node, header, block, database, chain, filter, shutdown);
+        api, config, node, header, block, database, chain, filter, endpoints);
 }
 }  // namespace opentxs::factory
 
@@ -122,7 +123,7 @@ FilterOracle::FilterOracle(
     database::Cfilter& database,
     const blockchain::Type chain,
     const blockchain::cfilter::Type filter,
-    const UnallocatedCString& shutdown) noexcept
+    const node::Endpoints& endpoints) noexcept
     : internal::FilterOracle()
     , api_(api)
     , node_(node)
@@ -136,6 +137,14 @@ FilterOracle::FilterOracle(
         auto socket = api_.Network().ZeroMQ().PublishSocket();
         auto started = socket->Start(
             api_.Endpoints().Internal().BlockchainFilterUpdated(chain_).data());
+
+        OT_ASSERT(started);
+
+        return socket;
+    }())
+    , reindex_blocks_([&] {
+        auto socket = api_.Network().ZeroMQ().PublishSocket();
+        auto started = socket->Start(endpoints.filter_oracle_reindex_publish_);
 
         OT_ASSERT(started);
 
@@ -158,7 +167,7 @@ FilterOracle::FilterOracle(
                     node_,
                     chain,
                     default_type_,
-                    shutdown,
+                    endpoints,
                     cb_);
             }
             case BlockchainProfile::mobile:
@@ -184,7 +193,7 @@ FilterOracle::FilterOracle(
                     *filter_downloader_,
                     chain,
                     default_type_,
-                    shutdown,
+                    endpoints,
                     [&](const auto& position, const auto& header) {
                         return compare_header_to_checkpoint(position, header);
                     });
@@ -200,11 +209,11 @@ FilterOracle::FilterOracle(
             }
         }
     }())
-    , block_indexer_([&]() -> std::unique_ptr<filteroracle::BlockIndexer> {
+    , block_indexer_()
+    , have_block_indexer_([&] {
         switch (config.profile_) {
             case BlockchainProfile::server: {
-
-                return std::make_unique<filteroracle::BlockIndexer>(
+                block_indexer_ = std::make_unique<filteroracle::BlockIndexer>(
                     api,
                     node_,
                     *this,
@@ -212,18 +221,18 @@ FilterOracle::FilterOracle(
                     filteroracle::NotifyCallback{cb_},
                     chain,
                     default_type_,
-                    shutdown);
-            }
+                    endpoints);
+            } break;
             case BlockchainProfile::mobile:
             case BlockchainProfile::desktop:
             case BlockchainProfile::desktop_native: {
-
-                return {};
-            }
+            } break;
             default: {
                 OT_FAIL;
             }
         }
+
+        return block_indexer_.operator bool();
     }())
     , last_sync_progress_()
     , last_broadcast_()
@@ -767,8 +776,8 @@ auto FilterOracle::reset_tips_to(
         ++counter;
     }
 
-    if (resetBlock && block_indexer_) {
-        block_indexer_->Reindex();
+    if (resetBlock && have_block_indexer_) {
+        reindex_blocks_->Send(MakeWork(filteroracle::BlockIndexerJob::reindex));
         headerTipHasBeenReset = true;
         filterTipHasBeenReset = true;
     }
@@ -805,7 +814,10 @@ auto FilterOracle::Start() noexcept -> void
 
     if (filter_downloader_) { filter_downloader_->Start(); }
 
-    if (block_indexer_) { block_indexer_->Start(); }
+    if (block_indexer_) {
+        block_indexer_->Start();
+        block_indexer_.reset();
+    }
 }
 
 auto FilterOracle::Tip(const cfilter::Type type) const noexcept

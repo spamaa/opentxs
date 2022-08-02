@@ -23,6 +23,7 @@
 #include "internal/blockchain/database/Database.hpp"
 #include "internal/blockchain/database/Peer.hpp"
 #include "internal/blockchain/node/Config.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/PeerManager.hpp"
 #include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
@@ -89,6 +90,7 @@ auto print(PeerJob job) noexcept -> std::string_view
             {Job::jobavailablecfheaders, "jobavailablecfheaders"sv},
             {Job::jobavailablecfilters, "jobavailablecfilters"sv},
             {Job::jobavailableblock, "jobavailableblock"sv},
+            {Job::jobavailableblockbatch, "jobavailableblockbatch"sv},
             {Job::dealerconnected, "dealerconnected"sv},
             {Job::jobtimeout, "jobtimeout"sv},
             {Job::needpeers, "needpeers"sv},
@@ -151,7 +153,7 @@ Peer::Imp::Imp(
     std::chrono::milliseconds inactivityInterval,
     std::chrono::milliseconds peersInterval,
     std::size_t headerBytes,
-    std::string_view fromNode,
+    const opentxs::blockchain::node::Endpoints& endpoints,
     std::string_view fromParent,
     zeromq::BatchID batch,
     allocator_type alloc) noexcept
@@ -182,7 +184,7 @@ Peer::Imp::Imp(
           batch,
           alloc,
           {
-              {CString{fromNode, alloc}, Direction::Connect},
+              {CString{endpoints.shutdown_publish_, alloc}, Direction::Connect},
               {CString{api->Endpoints().BlockchainReorg(), alloc},
                Direction::Connect},
           },
@@ -570,6 +572,7 @@ auto Peer::Imp::is_allowed_state(Work work) const noexcept -> bool
                 case Work::jobavailablecfheaders:
                 case Work::jobavailablecfilters:
                 case Work::jobavailableblock:
+                case Work::jobavailableblockbatch:
                 case Work::jobtimeout:
                 case Work::needpeers:
                 case Work::statetimeout:
@@ -669,6 +672,9 @@ auto Peer::Imp::pipeline_trusted(
         } break;
         case Work::jobavailableblock: {
             process_jobavailableblock(std::move(msg));
+        } break;
+        case Work::jobavailableblockbatch: {
+            process_jobavailableblockbatch(std::move(msg));
         } break;
         case Work::dealerconnected: {
             process_dealerconnected(std::move(msg));
@@ -935,6 +941,28 @@ auto Peer::Imp::process_jobavailableblock(Message&& msg) noexcept -> void
     }
 }
 
+auto Peer::Imp::process_jobavailableblockbatch(Message&& msg) noexcept -> void
+{
+    if (has_job()) {
+        log_(OT_PRETTY_CLASS())(name_)(": already have ")(job_name()).Flush();
+
+        return;
+    }
+
+    auto job = block_oracle_.Internal().GetBlockBatch();
+
+    if (0_uz < job.Remaining()) {
+        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(job))(" ")(
+            job.ID())
+            .Flush();
+        job_ = std::move(job);
+        run_job();
+    } else {
+        log_(OT_PRETTY_CLASS())(name_)(": job already accepted by another peer")
+            .Flush();
+    }
+}
+
 auto Peer::Imp::process_jobavailablecfheaders(Message&& msg) noexcept -> void
 {
     if (has_job()) {
@@ -1182,6 +1210,7 @@ auto Peer::Imp::transition_state_run() noexcept -> void
         pipeline_.PullFrom(parent_.Endpoint(Task::BroadcastTransaction));
         pipeline_.SubscribeTo(parent_.Endpoint(Task::JobAvailableBlock));
         pipeline_.SubscribeTo(api_.Endpoints().BlockchainBlockDownloadQueue());
+        pipeline_.SubscribeTo(block_oracle_.Internal().Endpoint());
     }
 
     if (cfilter || cfilter_capability_) {

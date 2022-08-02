@@ -35,6 +35,7 @@ enum class PeerJob : OTZMQWorkType {
         value(opentxs::blockchain::node::PeerManagerJobs::JobAvailableCfilters),
     jobavailableblock =
         value(opentxs::blockchain::node::PeerManagerJobs::JobAvailableBlock),
+    jobavailableblockbatch = OT_ZMQ_BLOCK_FETCH_JOB_AVAILABLE,
     dealerconnected = OT_ZMQ_INTERNAL_SIGNAL + 120,
     jobtimeout = OT_ZMQ_INTERNAL_SIGNAL + 121,
     needpeers = OT_ZMQ_INTERNAL_SIGNAL + 122,

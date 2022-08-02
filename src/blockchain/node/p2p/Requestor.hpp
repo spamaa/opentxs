@@ -17,14 +17,12 @@
 #include <mutex>
 #include <optional>
 #include <queue>
-#include <string_view>
 #include <thread>
 
 #include "internal/blockchain/node/p2p/Requestor.hpp"
 #include "internal/network/p2p/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/util/Timer.hpp"
-#include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/util/Allocated.hpp"
@@ -44,10 +42,18 @@ namespace api
 class Session;
 }  // namespace api
 
+namespace blockchain
+{
 namespace block
 {
 class Position;
 }  // namespace block
+
+namespace node
+{
+struct Endpoints;
+}  // namespace node
+}  // namespace blockchain
 
 namespace network
 {
@@ -80,12 +86,11 @@ public:
     {
         signal_startup(me);
     }
-    auto Shutdown() noexcept -> void { signal_shutdown(); }
 
-    Imp(const api::Session& api,
+    Imp(std::shared_ptr<const api::Session> api,
         const network::zeromq::BatchID batch,
         const Type chain,
-        const std::string_view toParent,
+        const Endpoints& endpoints,
         allocator_type alloc) noexcept;
     Imp() = delete;
     Imp(const Imp&) = delete;
@@ -106,6 +111,7 @@ private:
     static constexpr auto remote_position_timeout_{2 * 60s};
     static constexpr auto heartbeat_timeout_{5 * 60s};
 
+    std::shared_ptr<const api::Session> api_p_;
     const api::Session& api_;
     const Type chain_;
     network::zeromq::socket::Raw& to_parent_;
@@ -125,10 +131,8 @@ private:
     bool received_first_ack_;
     bool processing_;
 
-    static auto blank(const api::Session& api) noexcept
-        -> const block::Position&;
+    static auto blank() noexcept -> const block::Position&;
 
-    auto blank() const noexcept -> const block::Position&;
     auto next_position() const noexcept -> const block::Position&;
 
     auto add_to_queue(const network::p2p::Data& data, Message&& msg) noexcept

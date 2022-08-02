@@ -11,11 +11,14 @@
 namespace opentxs::blockchain::node
 {
 struct Endpoints final : public Allocated {
-    const CString block_fetcher_job_ready_;
+    const CString block_fetcher_job_ready_publish_;
+    const CString filter_oracle_reindex_publish_;
+    const CString p2p_requestor_pair_;
+    const CString shutdown_publish_;
 
     auto get_allocator() const noexcept -> allocator_type final
     {
-        return block_fetcher_job_ready_.get_allocator();
+        return block_fetcher_job_ready_publish_.get_allocator();
     }
 
     Endpoints(allocator_type alloc) noexcept;

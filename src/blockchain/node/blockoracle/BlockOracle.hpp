@@ -8,6 +8,7 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/vector.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <cs_plain_guarded.h>
 #include <cs_shared_guarded.h>
 #include <chrono>
 #include <cstddef>
@@ -33,6 +34,8 @@
 #include "internal/blockchain/node/blockoracle/BlockFetcher.hpp"
 #include "internal/blockchain/node/blockoracle/BlockOracle.hpp"
 #include "internal/network/zeromq/Types.hpp"
+#include "internal/network/zeromq/socket/Raw.hpp"
+#include "internal/util/Timer.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
@@ -89,6 +92,7 @@ struct Config;
 
 class HeaderOracle;
 class Manager;
+struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
 
@@ -111,20 +115,28 @@ class Message;
 
 namespace opentxs::blockchain::node::internal
 {
-class BlockOracle::Imp final : public Actor<Imp, BlockOracleJobs>
+using namespace std::literals;
+
+class BlockOracle::Shared : public Allocated
 {
+private:
+    std::shared_ptr<const api::Session> api_p_;
+    std::shared_ptr<const node::Manager> node_p_;
+
 public:
-    auto DownloadQueue() const noexcept -> std::size_t
-    {
-        return cache_.lock_shared()->DownloadQueue();
-    }
-    auto Endpoint() const noexcept -> std::string_view
-    {
-        return submit_endpoint_;
-    }
-    auto GetBlockBatch(boost::shared_ptr<Imp> me) const noexcept -> BlockBatch;
+    using Cache =
+        libguarded::shared_guarded<blockoracle::Cache, std::shared_mutex>;
+    using GuardedSocket =
+        libguarded::plain_guarded<network::zeromq::socket::Raw>;
+
+    const CString submit_endpoint_;
+    mutable Cache cache_;
+    mutable GuardedSocket to_actor_;
+
+    auto GetBlockBatch(boost::shared_ptr<Shared> me) const noexcept
+        -> BlockBatch;
     auto GetBlockJob() const noexcept -> BlockBatch;
-    auto Heartbeat() const noexcept -> void;
+    auto get_allocator() const noexcept -> allocator_type final;
     auto LoadBitcoin(const block::Hash& block) const noexcept
         -> BitcoinBlockResult;
     auto LoadBitcoin(const Vector<block::Hash>& hashes) const noexcept
@@ -136,64 +148,74 @@ public:
         return validator_->Validate(block);
     }
 
-    auto Init(boost::shared_ptr<Imp> me) noexcept -> void
-    {
-        signal_startup(me);
-    }
-    auto Shutdown() noexcept -> void { return signal_shutdown(); }
+    auto Shutdown() noexcept -> void;
     auto StartDownloader() noexcept -> void;
 
-    Imp(const api::Session& api,
-        const node::Manager& node,
-        const internal::Config& config,
-        const node::HeaderOracle& header,
-        database::Block& db,
-        const blockchain::Type chain,
-        const std::string_view parent,
-        const network::zeromq::BatchID batch,
+    Shared(
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
         allocator_type alloc) noexcept;
-    Imp() = delete;
-    Imp(const Imp&) = delete;
-    Imp(Imp&&) = delete;
-    auto operator=(const Imp&) -> Imp& = delete;
-    auto operator=(Imp&&) -> Imp& = delete;
-
-    ~Imp() final;
+    Shared() = delete;
+    Shared(const Shared&) = delete;
+    Shared(Shared&&) = delete;
+    auto operator=(const Shared&) -> Shared& = delete;
+    auto operator=(Shared&&) -> Shared& = delete;
 
 private:
-    friend Actor<Imp, BlockOracleJobs>;
+    using OptionalFetcher = std::optional<blockoracle::BlockFetcher>;
+    using GuardedFetcher = libguarded::plain_guarded<OptionalFetcher>;
 
-    using Task = BlockOracleJobs;
-    using Cache =
-        libguarded::shared_guarded<blockoracle::Cache, std::shared_mutex>;
-
-    const api::Session& api_;
-    const node::Manager& node_;
     const database::Block& db_;
-    const CString submit_endpoint_;
     const std::unique_ptr<const block::Validator> validator_;
-    std::optional<blockoracle::BlockFetcher> block_fetcher_;
-    mutable Cache cache_;
+    mutable GuardedFetcher block_fetcher_;
 
     static auto get_validator(
         const blockchain::Type chain,
         const node::HeaderOracle& headers) noexcept
         -> std::unique_ptr<const block::Validator>;
 
+    auto trigger() const noexcept -> void;
+};
+}  // namespace opentxs::blockchain::node::internal
+
+namespace opentxs::blockchain::node::internal
+{
+class BlockOracle::Actor final
+    : public opentxs::Actor<BlockOracle::Actor, BlockOracleJobs>
+{
+public:
+    auto Init(boost::shared_ptr<Actor> me) noexcept -> void;
+
+    Actor(
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        boost::shared_ptr<Shared> shared,
+        network::zeromq::BatchID batch,
+        allocator_type alloc) noexcept;
+    Actor() = delete;
+    Actor(const Actor&) = delete;
+    Actor(Actor&&) = delete;
+    auto operator=(const Actor&) -> Actor& = delete;
+    auto operator=(Actor&&) -> Actor& = delete;
+
+    ~Actor() final;
+
+private:
+    friend opentxs::Actor<BlockOracle::Actor, BlockOracleJobs>;
+
+    static constexpr auto heartbeat_interval_ = 1s;
+
+    std::shared_ptr<const api::Session> api_p_;
+    std::shared_ptr<const node::Manager> node_p_;
+    boost::shared_ptr<Shared> shared_;
+    const api::Session& api_;
+    const node::Manager& node_;
+    Shared::Cache& cache_;
+    Timer heartbeat_;
+
     auto do_shutdown() noexcept -> void;
     auto do_startup() noexcept -> void;
     auto pipeline(const Work work, Message&& msg) noexcept -> void;
     auto work() noexcept -> bool;
-
-    Imp(const api::Session& api,
-        const node::Manager& node,
-        const internal::Config& config,
-        const node::HeaderOracle& header,
-        database::Block& db,
-        const blockchain::Type chain,
-        const std::string_view parent,
-        const network::zeromq::BatchID batch,
-        CString&& submitEndpoint,
-        allocator_type alloc) noexcept;
 };
 }  // namespace opentxs::blockchain::node::internal

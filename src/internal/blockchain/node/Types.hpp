@@ -85,7 +85,6 @@ enum class BlockOracleJobs : OTZMQWorkType {
     shutdown = value(WorkType::Shutdown),
     request_blocks = OT_ZMQ_INTERNAL_SIGNAL + 0,
     process_block = OT_ZMQ_INTERNAL_SIGNAL + 1,
-    start_downloader = OT_ZMQ_INTERNAL_SIGNAL + 2,
     init = OT_ZMQ_INIT_SIGNAL,
     statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };

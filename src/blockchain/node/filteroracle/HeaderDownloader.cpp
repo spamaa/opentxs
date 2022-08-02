@@ -16,6 +16,7 @@
 #include "blockchain/node/filteroracle/FilterDownloader.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/database/Cfilter.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -46,7 +47,7 @@ FilterOracle::HeaderDownloader::HeaderDownloader(
     FilterOracle::FilterDownloader& filter,
     const blockchain::Type chain,
     const cfilter::Type type,
-    const UnallocatedCString& shutdown,
+    const node::Endpoints& endpoints,
     Callback&& cb) noexcept
     : HeaderDM(
           [&] { return db.FilterHeaderTip(type); }(),
@@ -70,7 +71,8 @@ FilterOracle::HeaderDownloader::HeaderDownloader(
     , checkpoint_(std::move(cb))
 {
     init_executor(
-        {shutdown, UnallocatedCString{api_.Endpoints().BlockchainReorg()}});
+        {endpoints.shutdown_publish_.c_str(),
+         UnallocatedCString{api_.Endpoints().BlockchainReorg()}});
 
     OT_ASSERT(checkpoint_);
 }

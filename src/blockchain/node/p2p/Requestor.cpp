@@ -20,7 +20,9 @@
 
 #include "internal/api/network/Asio.hpp"
 #include "internal/api/network/Blockchain.hpp"
+#include "internal/api/session/Session.hpp"
 #include "internal/blockchain/Params.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
@@ -36,7 +38,6 @@
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
-#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/network/p2p/Acknowledgement.hpp"
 #include "opentxs/network/p2p/Base.hpp"
@@ -59,13 +60,13 @@
 namespace opentxs::blockchain::node::p2p
 {
 Requestor::Imp::Imp(
-    const api::Session& api,
+    std::shared_ptr<const api::Session> api,
     const network::zeromq::BatchID batch,
     const Type chain,
-    const std::string_view toParent,
+    const Endpoints& endpoints,
     allocator_type alloc) noexcept
     : Actor(
-          api,
+          *api,
           LogTrace(),
           [&] {
               auto out = CString(print(chain), alloc);
@@ -78,20 +79,22 @@ Requestor::Imp::Imp(
           batch,
           alloc,
           {
-              {CString{api.Endpoints().Shutdown()}, Direction::Connect},
+              {CString{api->Endpoints().Shutdown()}, Direction::Connect},
+              {endpoints.shutdown_publish_, Direction::Connect},
           },
           {},
           {
-              {CString{api.Network().Blockchain().Internal().SyncEndpoint()},
+              {CString{api->Network().Blockchain().Internal().SyncEndpoint()},
                Direction::Connect},
           },
           {
               {SocketType::Pair,
                {
-                   {CString{toParent}, Direction::Bind},
+                   {endpoints.p2p_requestor_pair_, Direction::Bind},
                }},
           })
-    , api_(api)
+    , api_p_(std::move(api))
+    , api_(*api_p_)
     , chain_(chain)
     , to_parent_(pipeline_.Internal().ExtraSocket(0))
     , state_(State::init)
@@ -101,9 +104,9 @@ Requestor::Imp::Imp(
     , last_remote_position_()
     , begin_sync_()
     , last_request_(std::nullopt)
-    , remote_position_(blank(api_))
-    , local_position_(blank(api_))
-    , queue_position_(blank(api_))
+    , remote_position_()
+    , local_position_()
+    , queue_position_()
     , queued_bytes_()
     , processed_bytes_()
     , queue_()
@@ -131,17 +134,11 @@ auto Requestor::Imp::add_to_queue(
     update_queue_position(data);
 }
 
-auto Requestor::Imp::blank(const api::Session& api) noexcept
-    -> const block::Position&
+auto Requestor::Imp::blank() noexcept -> const block::Position&
 {
-    static const auto output = block::Position{-1, block::Hash{}};
+    static const auto output = block::Position{};
 
     return output;
-}
-
-auto Requestor::Imp::blank() const noexcept -> const block::Position&
-{
-    return blank(api_);
 }
 
 auto Requestor::Imp::check_remote_position() noexcept -> void
@@ -166,7 +163,14 @@ auto Requestor::Imp::check_remote_position() noexcept -> void
     }
 }
 
-auto Requestor::Imp::do_init() noexcept -> void { register_chain(); }
+auto Requestor::Imp::do_init() noexcept -> void
+{
+    if (api_.Internal().ShuttingDown()) {
+        shutdown_actor();
+    } else {
+        register_chain();
+    }
+}
 
 auto Requestor::Imp::do_common() noexcept -> void
 {
@@ -196,6 +200,7 @@ auto Requestor::Imp::do_shutdown() noexcept -> void
     init_timer_.Cancel();
     request_timer_.Cancel();
     heartbeat_timer_.Cancel();
+    api_p_.reset();
 }
 
 auto Requestor::Imp::do_startup() noexcept -> void
@@ -630,23 +635,17 @@ auto Requestor::Imp::work() noexcept -> bool
     return false;
 }
 
-Requestor::Imp::~Imp()
-{
-    signal_shutdown();
-    init_timer_.Cancel();
-    request_timer_.Cancel();
-    heartbeat_timer_.Cancel();
-}
+Requestor::Imp::~Imp() = default;
 }  // namespace opentxs::blockchain::node::p2p
 
 namespace opentxs::blockchain::node::p2p
 {
 Requestor::Requestor(
-    const api::Session& api,
+    std::shared_ptr<const api::Session> api,
     const Type chain,
-    const std::string_view toParent) noexcept
+    const Endpoints& endpoints) noexcept
     : imp_([&] {
-        const auto& asio = api.Network().ZeroMQ().Internal();
+        const auto& asio = api->Network().ZeroMQ().Internal();
         const auto batchID = asio.PreallocateBatch();
         // TODO the version of libc++ present in android ndk 23.0.7599858
         // has a broken std::allocate_shared function so we're using
@@ -654,14 +653,15 @@ Requestor::Requestor(
 
         return boost::allocate_shared<Imp>(
             alloc::PMR<Imp>{asio.Alloc(batchID)},
-            api,
+            std::move(api),
             batchID,
             chain,
-            toParent);
+            endpoints);
     }())
 {
-    imp_->Init(imp_);
 }
 
-Requestor::~Requestor() { imp_->Shutdown(); }
+auto Requestor::Start() noexcept -> void { imp_->Init(imp_); }
+
+Requestor::~Requestor() = default;
 }  // namespace opentxs::blockchain::node::p2p

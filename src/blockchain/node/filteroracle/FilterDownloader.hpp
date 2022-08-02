@@ -12,6 +12,7 @@
 #include "blockchain/DownloadManager.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/database/Cfilter.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
@@ -72,7 +73,7 @@ public:
         const node::Manager& node,
         const blockchain::Type chain,
         const cfilter::Type type,
-        const UnallocatedCString& shutdown,
+        const node::Endpoints& endpoints,
         const filteroracle::NotifyCallback& notify) noexcept
         : FilterDM(
               [&] { return db.FilterTip(type); }(),
@@ -95,7 +96,7 @@ public:
         , type_(type)
         , notify_(notify)
     {
-        init_executor({shutdown});
+        init_executor({endpoints.shutdown_publish_.c_str()});
     }
 
     ~FilterDownloader() { signal_shutdown().get(); }

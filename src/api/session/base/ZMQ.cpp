@@ -11,7 +11,6 @@
 
 #include "internal/api/session/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
-#include "opentxs/util/Container.hpp"
 
 namespace opentxs::api::session
 {
