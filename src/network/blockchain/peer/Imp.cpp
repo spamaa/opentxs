@@ -825,6 +825,8 @@ auto Peer::Imp::process_block(Message&& msg) noexcept -> void
 auto Peer::Imp::process_block(opentxs::blockchain::block::Hash&& hash) noexcept
     -> void
 {
+    if (State::run != state_) { return; }
+
     log_(OT_PRETTY_CLASS())(name_)(": received block oracle update message")
         .Flush();
 
@@ -1282,8 +1284,9 @@ auto Peer::Imp::transmit(
         case State::run: {
         } break;
         default: {
-
-            OT_FAIL;
+            LogAbort()(OT_PRETTY_CLASS())("attempting to transmit in state ")(
+                print_state(state_))
+                .Abort();
         }
     }
 
