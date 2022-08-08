@@ -1087,6 +1087,9 @@ auto SubchainStateData::scan(
             // average cfilter element count (estimated) and match set for this
             // subchain (known).
             const auto threads = choose_thread_count(elementCount);
+
+            OT_ASSERT(0_uz < threads);
+
             const auto scanBatch = std::min(
                 maximum_scan_,
                 GetBatchSize(elementsPerFilter, elementCount) * threads);
@@ -1115,6 +1118,9 @@ auto SubchainStateData::scan(
                 static_cast<std::size_t>(stopHeight - startHeight + 1);
             const auto blocks = headers.BestHashes(
                 startHeight, target, get_allocator().resource());
+
+            if (blocks.empty()) { throw std::runtime_error{""}; }
+
             auto filterPromise = std::promise<Vector<GCS>>{};
             auto filterFuture = filterPromise.get_future();
             auto tp = api_.Network().Asio().Internal().Post(
@@ -1128,6 +1134,9 @@ auto SubchainStateData::scan(
 
             auto selected = BlockTargets{get_allocator()};
             select_targets(*handle, blocks, elements, startHeight, selected);
+
+            OT_ASSERT(false == selected.empty());
+
             auto results = wallet::MatchCache::Results{get_allocator()};
             auto prehash = PrehashData{
                 api_,
