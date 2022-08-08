@@ -121,6 +121,7 @@ auto print(SubchainJobs job) noexcept -> std::string_view
             {Job::filter, "filter"},
             {Job::mempool, "mempool"},
             {Job::block, "block"},
+            {Job::start_scan, "start_scan"},
             {Job::prepare_reorg, "prepare_reorg"},
             {Job::update, "update"},
             {Job::process, "process"},
@@ -1591,6 +1592,7 @@ auto SubchainStateData::state_normal(const Work work, Message&& msg) noexcept
         case Work::filter:
         case Work::mempool:
         case Work::block:
+        case Work::start_scan:
         case Work::update:
         case Work::watchdog:
         case Work::reprocess:
@@ -1628,6 +1630,7 @@ auto SubchainStateData::state_pre_shutdown(
         case Work::filter:
         case Work::mempool:
         case Work::block:
+        case Work::start_scan:
         case Work::update:
         case Work::watchdog:
         case Work::reprocess:
@@ -1666,6 +1669,7 @@ auto SubchainStateData::state_reorg(const Work work, Message&& msg) noexcept
         case Work::filter:
         case Work::mempool:
         case Work::block:
+        case Work::start_scan:
         case Work::update:
         case Work::watchdog:
         case Work::reprocess:
@@ -1719,7 +1723,6 @@ auto SubchainStateData::to_patterns(const Elements& in, allocator_type alloc)
 
 auto SubchainStateData::transition_state_normal() noexcept -> void
 {
-    disable_automatic_processing_ = false;
     state_ = State::normal;
     log_(OT_PRETTY_CLASS())(name_)(" transitioned to normal state ").Flush();
     trigger();
@@ -1741,7 +1744,6 @@ auto SubchainStateData::transition_state_reorg(StateSequence id) noexcept
 
     if (0_uz == reorgs_.count(id)) {
         reorgs_.emplace(id);
-        disable_automatic_processing_ = true;
         state_ = State::reorg;
         log_(OT_PRETTY_CLASS())(name_)(" ready to process reorg ")(id).Flush();
         reorg_.AcknowledgePrepareReorg(

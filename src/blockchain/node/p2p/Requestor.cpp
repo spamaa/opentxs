@@ -691,7 +691,7 @@ auto Requestor::Imp::transition_state_sync() noexcept -> void
 {
     sync_start_time_.set_value(Clock::now());
     state_ = State::sync;
-    flush_cache();
+    trigger();
 }
 
 auto Requestor::Imp::transmit(Message&& msg, bool request) noexcept -> void

@@ -283,8 +283,7 @@ auto Process::Imp::process_block(block::Hash&& hash) noexcept -> void
 {
     if (auto index = downloading_index_.find(hash);
         downloading_index_.end() != index) {
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" processing block ")(
-            hash.asHex())
+        log_(OT_PRETTY_CLASS())(name_)(" processing block ")(hash.asHex())
             .Flush();
         auto& data = index->second;
         const auto& [position, future] = *data;
@@ -332,7 +331,7 @@ auto Process::Imp::process_mempool(Message&& in) noexcept -> void
     // as mempool transactions even if they are erroneously received from peers
     // on a subsequent run of the application
     if (0u < txid_cache_.count(txid)) {
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" transaction ")
+        log_(OT_PRETTY_CLASS())(name_)(" transaction ")
             .asHex(txid)(" already process as confirmed")
             .Flush();
 
@@ -347,14 +346,13 @@ auto Process::Imp::process_mempool(Message&& in) noexcept -> void
 auto Process::Imp::process_process(block::Position&& pos) noexcept -> void
 {
     if (const auto i = processing_.find(pos); i == processing_.end()) {
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" block ")(
+        log_(OT_PRETTY_CLASS())(name_)(" block ")(
             pos)(" has been removed from the processing list due to reorg")
             .Flush();
     } else {
         --parent_.process_queue_;
         processing_.erase(i);
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" finished processing block ")(
-            pos)
+        log_(OT_PRETTY_CLASS())(name_)(" finished processing block ")(pos)
             .Flush();
     }
 
@@ -363,15 +361,14 @@ auto Process::Imp::process_process(block::Position&& pos) noexcept -> void
 
 auto Process::Imp::process_reprocess(Message&& msg) noexcept -> void
 {
-    log_(OT_PRETTY_CLASS())(parent_.name_)(" received re-process request")
-        .Flush();
+    log_(OT_PRETTY_CLASS())(name_)(" received re-process request").Flush();
     auto dirty = Vector<ScanStatus>{get_allocator()};
     extract_dirty(parent_.api_, msg, dirty);
     parent_.process_queue_ += dirty.size();
 
     for (auto& [type, position] : dirty) {
-        log_(OT_PRETTY_CLASS())(parent_.name_)(
-            " scheduling re-processing for block ")(position)
+        log_(OT_PRETTY_CLASS())(name_)(" scheduling re-processing for block ")(
+            position)
             .Flush();
         auto future = parent_.node_.BlockOracle().LoadBitcoin(position.hash_);
         static constexpr auto ready = std::future_status::ready;
@@ -381,13 +378,13 @@ auto Process::Imp::process_reprocess(Message&& msg) noexcept -> void
         // requests from the Scan we expedite them as much as is reasonable.
 
         if (ready == future.wait_for(1s)) {
-            log_(OT_PRETTY_CLASS())(parent_.name_)(" adding block ")(
+            log_(OT_PRETTY_CLASS())(name_)(" adding block ")(
                 position)(" to front of process queue since it is already "
                           "downloaded")
                 .Flush();
             ready_.emplace(std::move(position), future.get());
         } else {
-            log_(OT_PRETTY_CLASS())(parent_.name_)(" adding block ")(
+            log_(OT_PRETTY_CLASS())(name_)(" adding block ")(
                 position)(" to download queue")
                 .Flush();
             download(std::move(position), std::move(future));
@@ -401,7 +398,7 @@ auto Process::Imp::queue_downloads() noexcept -> void
 {
     while ((downloading_.size() < download_limit_) && (0u < waiting_.size())) {
         auto& position = waiting_.front();
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" adding block ")(
+        log_(OT_PRETTY_CLASS())(name_)(" adding block ")(
             position)(" to download queue")
             .Flush();
         download(std::move(position));
@@ -427,7 +424,7 @@ auto Process::Imp::queue_process() noexcept -> bool
         OT_ASSERT(processing_.end() != i);
 
         auto& [position, block] = *i;
-        log_(OT_PRETTY_CLASS())(parent_.name_)(" adding block ")(
+        log_(OT_PRETTY_CLASS())(name_)(" adding block ")(
             position)(" to process queue")
             .Flush();
         parent_.api_.Network().Asio().Internal().Post(
@@ -445,11 +442,12 @@ auto Process::Imp::queue_process() noexcept -> bool
 
 auto Process::Imp::work() noexcept -> bool
 {
+    if (State::reorg == state()) { return false; }
+
     check_cache();
     queue_downloads();
-    Job::work();
 
-    return check_process();
+    return Job::work() || check_process();
 }
 }  // namespace opentxs::blockchain::node::wallet
 

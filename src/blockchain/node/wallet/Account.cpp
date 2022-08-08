@@ -480,7 +480,6 @@ auto Account::Imp::state_reorg(const Work work, Message&& msg) noexcept -> void
 
 auto Account::Imp::transition_state_normal() noexcept -> void
 {
-    disable_automatic_processing_ = false;
     state_ = State::normal;
     log_(OT_PRETTY_CLASS())(name_)(" transitioned to normal state ").Flush();
     trigger();
@@ -500,7 +499,6 @@ auto Account::Imp::transition_state_reorg(StateSequence id) noexcept -> void
 
     if (0_uz == reorgs_.count(id)) {
         reorgs_.emplace(id);
-        disable_automatic_processing_ = true;
         state_ = State::reorg;
         log_(OT_PRETTY_CLASS())(name_)(" ready to process reorg ")(id).Flush();
         reorg_.AcknowledgePrepareReorg(

@@ -38,6 +38,7 @@
 #include "opentxs/network/zeromq/socket/Types.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
+#include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::wallet
 {
@@ -65,8 +66,13 @@ Index::Imp::Imp(
                {
                    {parent->to_rescan_endpoint_, Direction::Connect},
                }},
+              {SocketType::Push,
+               {
+                   {parent->to_scan_endpoint_, Direction::Connect},
+               }},
           })
     , to_rescan_(pipeline_.Internal().ExtraSocket(1))
+    , to_scan_(pipeline_.Internal().ExtraSocket(2))
     , last_indexed_(std::nullopt)
 {
 }
@@ -79,8 +85,8 @@ auto Index::Imp::do_process_update(Message&& msg) noexcept -> void
 
     for (const auto& [type, position] : clean) {
         if (ScanState::processed == type) {
-            log_(OT_PRETTY_CLASS())(parent_.name_)(" re-indexing ")(
-                parent_.name_)(" due to processed block ")(position)
+            log_(OT_PRETTY_CLASS())(name_)(" re-indexing ")(
+                name_)(" due to processed block ")(position)
                 .Flush();
         }
     }
@@ -93,8 +99,9 @@ auto Index::Imp::do_startup_internal() noexcept -> void
 {
     last_indexed_ = parent_.db_.SubchainLastIndexed(parent_.db_key_);
     do_work();
-    log_(OT_PRETTY_CLASS())(parent_.name_)(" notifying scan task to begin work")
+    log_(OT_PRETTY_CLASS())(name_)(" notifying scan task to begin work")
         .Flush();
+    to_scan_.SendDeferred(MakeWork(Work::start_scan), __FILE__, __LINE__);
 }
 
 auto Index::Imp::done(database::Wallet::ElementMap&& elements) noexcept -> void
@@ -150,13 +157,13 @@ auto Index::Imp::process_key(Message&& in) noexcept -> void
 
 auto Index::Imp::work() noexcept -> bool
 {
+    if (State::reorg == state()) { return false; }
+
     const auto need = need_index(last_indexed_);
 
     if (need.has_value()) { process(last_indexed_, need.value()); }
 
-    Job::work();
-
-    return false;
+    return Job::work();
 }
 }  // namespace opentxs::blockchain::node::wallet
 

@@ -460,7 +460,6 @@ auto Accounts::Imp::transition_state_normal() noexcept -> void
     const auto& [ancestor, tip] = *reorg_data_;
     auto post = ScopeGuard{[&] { reorg_data_.reset(); }};
     LogConsole()(name_)(": reorg to ")(tip)(" finished").Flush();
-    disable_automatic_processing_ = false;
     state_ = State::normal;
     trigger();
 }
@@ -477,7 +476,6 @@ auto Accounts::Imp::transition_state_pre_reorg() noexcept -> void
         }
     }();
     log_(OT_PRETTY_CLASS())(name_)(": processing reorg ")(id).Flush();
-    disable_automatic_processing_ = true;
     state_ = State::pre_reorg;
     startup_reorg_.reset();
     log_(OT_PRETTY_CLASS())(name_)(": transitioned to pre_reorg state").Flush();

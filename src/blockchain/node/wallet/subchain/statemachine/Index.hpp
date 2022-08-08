@@ -77,6 +77,7 @@ protected:
 
 private:
     network::zeromq::socket::Raw& to_rescan_;
+    network::zeromq::socket::Raw& to_scan_;
     std::optional<Bip32Index> last_indexed_;
 
     virtual auto need_index(const std::optional<Bip32Index>& current)

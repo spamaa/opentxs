@@ -7,8 +7,8 @@
 
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
-#include <cstddef>
 #include <chrono>
+#include <cstddef>
 #include <functional>
 
 namespace opentxs

@@ -8,8 +8,8 @@
 #include <memory>
 #include <utility>
 
-#include "ottest/fixtures/blockchain/HeaderOracle.hpp"
 #include "internal/blockchain/node/HeaderOracle.hpp"
+#include "ottest/fixtures/blockchain/HeaderOracle.hpp"
 
 ot::Vector<std::unique_ptr<bb::Header>> headers_btc_{};
 ot::Vector<std::unique_ptr<bb::Header>> headers_bch_{};
