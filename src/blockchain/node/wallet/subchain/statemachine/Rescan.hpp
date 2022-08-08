@@ -12,6 +12,7 @@
 #include <optional>
 
 #include "blockchain/node/wallet/subchain/statemachine/Job.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
@@ -41,6 +42,8 @@ namespace wallet
 {
 class SubchainStateData;
 }  // namespace wallet
+
+class HeaderOracle;
 }  // namespace node
 }  // namespace blockchain
 
@@ -63,10 +66,6 @@ namespace opentxs::blockchain::node::wallet
 class Rescan::Imp final : public statemachine::Job
 {
 public:
-    auto ProcessReorg(
-        const Lock& headerOracleLock,
-        const block::Position& parent) noexcept -> void final;
-
     Imp(const boost::shared_ptr<const SubchainStateData>& parent,
         const network::zeromq::BatchID batch,
         allocator_type alloc) noexcept;
@@ -99,7 +98,12 @@ private:
     auto adjust_last_scanned(
         const std::optional<block::Position>& highestClean) noexcept -> void;
     auto do_process_update(Message&& msg) noexcept -> void final;
-    auto do_startup() noexcept -> void final;
+    auto do_reorg(
+        const node::HeaderOracle& oracle,
+        const Lock& oracleLock,
+        Reorg::Params& params) noexcept -> bool final;
+    auto do_startup_internal() noexcept -> void final;
+    auto forward_to_next(Message&& msg) noexcept -> void final;
     auto process_clean(const Set<ScanStatus>& clean) noexcept -> void;
     auto process_dirty(const Set<block::Position>& dirty) noexcept -> void;
     auto process_do_rescan(Message&& in) noexcept -> void final;

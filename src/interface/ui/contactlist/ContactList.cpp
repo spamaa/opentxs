@@ -10,6 +10,7 @@
 #include <atomic>
 #include <future>
 #include <memory>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -54,7 +55,7 @@ ContactList::ContactList(
     const identifier::Nym& nymID,
     const SimpleCallback& cb) noexcept
     : ContactListList(api, nymID, cb, false)
-    , Worker(api, {})
+    , Worker(api, {}, "ui::ContactList")
     , owner_contact_id_(api_.Contacts().ContactID(nymID))
 {
     OT_ASSERT(false == owner_contact_id_.empty());

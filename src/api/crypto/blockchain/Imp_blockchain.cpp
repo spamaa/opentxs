@@ -22,7 +22,6 @@
 #include "internal/api/crypto/blockchain/BalanceOracle.hpp"
 #include "internal/api/network/Blockchain.hpp"
 #include "internal/blockchain/bitcoin/block/Transaction.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
@@ -536,8 +535,7 @@ auto BlockchainImp::Unconfirm(
     auto lock = Lock{lock_};
 
     if (auto tx = load_transaction(lock, txid); tx) {
-        static const auto null =
-            make_blank<opentxs::blockchain::block::Position>::value(api_);
+        static const auto null = opentxs::blockchain::block::Position{};
         tx->Internal().SetMinedPosition(null);
         const auto& db = api_.Network().Blockchain().Internal().Database();
 

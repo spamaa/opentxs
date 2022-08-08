@@ -14,11 +14,13 @@
 #include <mutex>
 #include <optional>
 #include <utility>
+#include <variant>
 
 #include "Proto.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/database/Types.hpp"
+#include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -93,7 +95,7 @@ public:
         -> bool;
     auto HaveCheckpoint() const noexcept -> bool;
     auto HeaderExists(const block::Hash& hash) const noexcept -> bool;
-    void import_genesis(const blockchain::Type type) const noexcept;
+    auto import_genesis(const blockchain::Type type) const noexcept -> void;
     auto IsSibling(const block::Hash& hash) const noexcept -> bool;
     // Throws std::out_of_range if the header does not exist
     auto LoadHeader(const block::Hash& hash) const
@@ -121,11 +123,21 @@ public:
         const blockchain::Type type) noexcept;
 
 private:
+    using TipData = block::Position;
+    using ReorgData = std::pair<block::Position, block::Position>;
+    using LastUpdate = std::variant<std::monostate, TipData, ReorgData>;
+
+    class IsSameReorg;
+    class IsSameTip;
+
     const api::Session& api_;
     const node::Manager& network_;
     const common::Database& common_;
     const storage::lmdb::LMDB& lmdb_;
     mutable std::mutex lock_;
+    network::zeromq::socket::Raw publish_tip_internal_;
+    network::zeromq::socket::Raw publish_tip_;
+    LastUpdate last_update_;
 
     auto best() const noexcept -> block::Position;
     auto best(const Lock& lock) const noexcept -> block::Position;

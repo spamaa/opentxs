@@ -8,7 +8,6 @@
 #include "blockchain/node/wallet/subchain/NotificationStateData.hpp"  // IWYU pragma: associated
 
 #include <HDPath.pb.h>
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -25,6 +24,7 @@
 #include "internal/api/crypto/Blockchain.hpp"
 #include "internal/api/session/Session.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
+#include "internal/blockchain/node/wallet/subchain/statemachine/Index.hpp"
 #include "internal/core/PaymentCode.hpp"
 #include "internal/util/BoostPMR.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -40,7 +40,6 @@
 #include "opentxs/blockchain/bitcoin/block/Outputs.hpp"
 #include "opentxs/blockchain/bitcoin/block/Script.hpp"
 #include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
-#include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/crypto/Notification.hpp"
 #include "opentxs/blockchain/crypto/PaymentCode.hpp"
 #include "opentxs/blockchain/crypto/Subchain.hpp"  // IWYU pragma: keep
@@ -57,27 +56,23 @@
 namespace opentxs::blockchain::node::wallet
 {
 NotificationStateData::NotificationStateData(
-    const api::Session& api,
-    const node::Manager& node,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
-    const cfilter::Type filter,
-    const crypto::Subchain subchain,
-    const network::zeromq::BatchID batch,
-    const std::string_view parent,
-    const opentxs::PaymentCode& code,
+    Reorg& reorg,
     const crypto::Notification& subaccount,
+    const opentxs::PaymentCode& code,
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
+    crypto::Subchain subchain,
+    std::string_view fromParent,
+    network::zeromq::BatchID batch,
     allocator_type alloc) noexcept
     : SubchainStateData(
-          api,
-          node,
-          db,
-          mempool,
+          reorg,
           subaccount,
-          filter,
-          subchain,
-          batch,
-          parent,
+          std::move(api),
+          std::move(node),
+          std::move(subchain),
+          std::move(fromParent),
+          std::move(batch),
           std::move(alloc))
     , path_(subaccount.InternalNotification().Path())
     , pc_display_(code.asBase58(), get_allocator())
@@ -97,9 +92,10 @@ auto NotificationStateData::CheckCache(const std::size_t, FinishedCallback cb)
     }
 }
 
-auto NotificationStateData::do_startup() noexcept -> void
+auto NotificationStateData::do_startup() noexcept -> bool
 {
-    SubchainStateData::do_startup();
+    if (SubchainStateData::do_startup()) { return true; }
+
     auto reason =
         api_.Factory().PasswordPrompt("Verifying / updating contact data");
     auto mNym = api_.Wallet().mutable_Nym(owner_, reason);
@@ -110,13 +106,14 @@ auto NotificationStateData::do_startup() noexcept -> void
     if (existing != expected) {
         mNym.AddPaymentCode(expected, type, existing.empty(), true, reason);
     }
+
+    return false;
 }
 
 auto NotificationStateData::get_index(
-    const boost::shared_ptr<const SubchainStateData>& me) const noexcept
-    -> Index
+    const boost::shared_ptr<const SubchainStateData>& me) const noexcept -> void
 {
-    return Index::NotificationFactory(me, *code_.lock_shared());
+    wallet::Index{Index::NotificationFactory(me, *code_.lock_shared())}.Init();
 }
 
 auto NotificationStateData::handle_confirmed_matches(
@@ -301,4 +298,6 @@ auto NotificationStateData::work() noexcept -> bool
 
     return again;
 }
+
+NotificationStateData::~NotificationStateData() = default;
 }  // namespace opentxs::blockchain::node::wallet

@@ -98,10 +98,12 @@ MessageProcessor::Imp::Imp(
     , server_(server)
     , reason_(reason)
     , running_(true)
-    , zmq_handle_(api_.Network().ZeroMQ().Internal().MakeBatch({
-          zmq::socket::Type::Router,  // NOTE frontend_
-          zmq::socket::Type::Pull,    // NOTE notification_
-      }))
+    , zmq_handle_(api_.Network().ZeroMQ().Internal().MakeBatch(
+          {
+              zmq::socket::Type::Router,  // NOTE frontend_
+              zmq::socket::Type::Pull,    // NOTE notification_
+          },
+          "server::MessageProcessor"))
     , zmq_batch_(zmq_handle_.batch_)
     , frontend_([&]() -> auto& {
         auto& out = zmq_batch_.sockets_.at(0);
@@ -145,8 +147,7 @@ MessageProcessor::Imp::Imp(
                  m.Internal().Prepend(id);
                  cb.Process(std::move(m));
              }},
-        },
-        "MessageProcessor frontend");
+        });
 
     OT_ASSERT(nullptr != zmq_thread_);
 
@@ -433,7 +434,8 @@ auto MessageProcessor::Imp::process_internal(zmq::Message&& message) noexcept
 
     if (drop) { return; }
 
-    const auto sent = frontend_.SendExternal(std::move(message));
+    const auto sent =
+        frontend_.SendExternal(std::move(message), __FILE__, __LINE__);
 
     if (sent) {
         LogTrace()(OT_PRETTY_CLASS())("Reply message delivered.").Flush();
@@ -571,21 +573,24 @@ auto MessageProcessor::Imp::process_notification(
     }
 
     const auto reply = api_.Factory().InternalSession().Data(serialized);
-    const auto sent = frontend_.SendExternal([&] {
-        auto out = zmq::Message{};
-        out.AddFrame(data.first);
-        out.StartBody();
+    const auto sent = frontend_.SendExternal(
+        [&] {
+            auto out = zmq::Message{};
+            out.AddFrame(data.first);
+            out.StartBody();
 
-        if (data.second) {
-            out.AddFrame(reply);
-            out.AddFrame();
-        } else {
-            out.AddFrame(WorkType::OTXPush);
-            out.AddFrame(reply);
-        }
+            if (data.second) {
+                out.AddFrame(reply);
+                out.AddFrame();
+            } else {
+                out.AddFrame(WorkType::OTXPush);
+                out.AddFrame(reply);
+            }
 
-        return out;
-    }());
+            return out;
+        }(),
+        __FILE__,
+        __LINE__);
 
     if (sent) {
         LogVerbose()(OT_PRETTY_CLASS())("Push notification for ")(

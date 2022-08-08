@@ -6,15 +6,14 @@
 target_sources(
   opentxs-common
   PRIVATE
-    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/Factory.hpp"
     "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/FeeOracle.hpp"
-    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/FeeSource.hpp"
-    "BTC.cpp"
+    "Actor.cpp"
+    "Actor.hpp"
     "FeeOracle.cpp"
-    "FeeOracle.hpp"
-    "FeeSource.cpp"
-    "FeeSource.hpp"
+    "Shared.cpp"
+    "Shared.hpp"
 )
 target_include_directories(
   opentxs-common SYSTEM PRIVATE "${opentxs_SOURCE_DIR}/deps/cs_libguarded/src"
 )
+target_link_libraries(opentxs-common PRIVATE Boost::headers)

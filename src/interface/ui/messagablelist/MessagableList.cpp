@@ -10,6 +10,7 @@
 #include <atomic>
 #include <future>
 #include <memory>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -50,7 +51,7 @@ MessagableList::MessagableList(
     const identifier::Nym& nymID,
     const SimpleCallback& cb) noexcept
     : MessagableListList(api, nymID, cb, false)
-    , Worker(api, {})
+    , Worker(api, {}, "ui::MessagableList")
     , owner_contact_id_(api_.Contacts().ContactID(nymID))
 {
     init_executor(

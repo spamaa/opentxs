@@ -17,4 +17,6 @@ TEST_F(Test_HeaderOracle, receive_headers_out_of_order_batch)
     EXPECT_TRUE(verify_post_state(post_state_5_));
     EXPECT_TRUE(verify_siblings(siblings_5_));
 }
+
+TEST_F(Test_HeaderOracle, shutdown) { Shutdown(); }
 }  // namespace ottest

@@ -25,7 +25,6 @@
 #include <utility>
 
 #include "1_Internal.hpp"
-#include "blockchain/node/wallet/Wallet.hpp"
 #include "blockchain/node/wallet/subchain/DeterministicStateData.hpp"
 #include "blockchain/node/wallet/subchain/SubchainStateData.hpp"
 #include "core/Worker.hpp"

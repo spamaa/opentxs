@@ -644,8 +644,8 @@ auto Asio::send_notification(const ReadView notify) const noexcept -> void
         }
         ();
         LogTrace()(OT_PRETTY_CLASS())("notifying ")(endpoint).Flush();
-        const auto rc =
-            socket.lock()->Send(MakeWork(OT_ZMQ_STATE_MACHINE_SIGNAL));
+        const auto rc = socket.lock()->Send(
+            MakeWork(OT_ZMQ_STATE_MACHINE_SIGNAL), __FILE__, __LINE__);
 
         if (false == rc) {
             throw std::runtime_error{"Failed to send notification"};

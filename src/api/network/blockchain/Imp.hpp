@@ -171,9 +171,9 @@ struct BlockchainImp final : public Blockchain::Imp {
     auto PublishStartup(
         const opentxs::blockchain::Type chain,
         OTZMQWorkType type) const noexcept -> bool final;
-    auto Reorg() const noexcept -> const zmq::socket::Publish& final
+    auto ReorgEndpoint() const noexcept -> std::string_view final
     {
-        return reorg_;
+        return reorg_endpoint_;
     }
     auto ReportProgress(
         const Chain chain,
@@ -222,14 +222,17 @@ private:
     const api::Session& api_;
     const api::crypto::Blockchain* crypto_;
     std::unique_ptr<opentxs::blockchain::database::common::Database> db_;
-    const UnallocatedCString block_available_endpoint_;
-    const UnallocatedCString block_queue_endpoint_;
+    const CString block_available_endpoint_;
+    const CString block_queue_endpoint_;
+    const CString reorg_endpoint_;
     opentxs::network::zeromq::internal::Handle handle_;
     opentxs::network::zeromq::internal::Batch& batch_;
     opentxs::network::zeromq::socket::Raw& block_available_out_;
     opentxs::network::zeromq::socket::Raw& block_queue_out_;
+    opentxs::network::zeromq::socket::Raw& reorg_out_;
     opentxs::network::zeromq::socket::Raw& block_available_in_;
     opentxs::network::zeromq::socket::Raw& block_queue_in_;
+    opentxs::network::zeromq::socket::Raw& reorg_in_;
     opentxs::network::zeromq::internal::Thread* thread_;
     // TODO move the rest of these publish sockets into the batch. Giving out
     // references to these sockets can cause shutdown race conditions
@@ -237,7 +240,6 @@ private:
     OTZMQPublishSocket chain_state_publisher_;
     OTZMQPublishSocket connected_peer_updates_;
     OTZMQPublishSocket new_filters_;
-    OTZMQPublishSocket reorg_;
     OTZMQPublishSocket sync_updates_;
     OTZMQPublishSocket mempool_;
     blockchain::StartupPublisher startup_publisher_;

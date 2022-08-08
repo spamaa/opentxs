@@ -121,9 +121,9 @@ BalanceOracle::Imp::Imp(
 
 auto BalanceOracle::Imp::do_shutdown() noexcept -> void { api_.reset(); }
 
-auto BalanceOracle::Imp::do_startup() noexcept -> void
+auto BalanceOracle::Imp::do_startup() noexcept -> bool
 {
-    if (api_->Internal().ShuttingDown()) { shutdown_actor(); }
+    return api_->Internal().ShuttingDown();
 }
 
 auto BalanceOracle::Imp::make_message(
@@ -154,14 +154,24 @@ auto BalanceOracle::Imp::notify_subscribers(
     const Chain chain) noexcept -> void
 {
     const auto& log = LogTrace();
-    publish_.Send(make_message(
-        {}, nullptr, chain, balance, WorkType::BlockchainWalletUpdated));
+    publish_.Send(
+        make_message(
+            {}, nullptr, chain, balance, WorkType::BlockchainWalletUpdated),
+        __FILE__,
+        __LINE__);
 
     for (const auto& id : recipients) {
         log(OT_PRETTY_CLASS())("notifying connection ")
             .asHex(id)(" for ")(print(chain))(" balance update");
-        router_.Send(make_message(
-            id.Bytes(), nullptr, chain, balance, WorkType::BlockchainBalance));
+        router_.Send(
+            make_message(
+                id.Bytes(),
+                nullptr,
+                chain,
+                balance,
+                WorkType::BlockchainBalance),
+            __FILE__,
+            __LINE__);
     }
 }
 
@@ -172,15 +182,25 @@ auto BalanceOracle::Imp::notify_subscribers(
     const Chain chain) noexcept -> void
 {
     const auto& log = LogTrace();
-    publish_.Send(make_message(
-        {}, &owner, chain, balance, WorkType::BlockchainWalletUpdated));
+    publish_.Send(
+        make_message(
+            {}, &owner, chain, balance, WorkType::BlockchainWalletUpdated),
+        __FILE__,
+        __LINE__);
 
     for (const auto& id : recipients) {
         log(OT_PRETTY_CLASS())("notifying connection ")
             .asHex(id)(" for ")(print(chain))(" balance update for nym ")(
                 owner);
-        router_.Send(make_message(
-            id.Bytes(), &owner, chain, balance, WorkType::BlockchainBalance));
+        router_.Send(
+            make_message(
+                id.Bytes(),
+                &owner,
+                chain,
+                balance,
+                WorkType::BlockchainBalance),
+            __FILE__,
+            __LINE__);
     }
 }
 
@@ -235,17 +255,20 @@ auto BalanceOracle::Imp::process_registration(Message&& in) noexcept -> void
     }();
     const auto chain = chainFrame.as<Chain>();
     const auto postcondition = ScopeGuard{[&]() {
-        router_.Send([&] {
-            auto work = opentxs::network::zeromq::tagged_reply_to_message(
-                in, WorkType::BlockchainBalance);
-            work.AddFrame(chainFrame);
-            output.first.Serialize(work.AppendBytes());
-            output.second.Serialize(work.AppendBytes());
+        router_.Send(
+            [&] {
+                auto work = opentxs::network::zeromq::tagged_reply_to_message(
+                    in, WorkType::BlockchainBalance);
+                work.AddFrame(chainFrame);
+                output.first.Serialize(work.AppendBytes());
+                output.second.Serialize(work.AppendBytes());
 
-            if (haveNym) { work.AddFrame(nym); }
+                if (haveNym) { work.AddFrame(nym); }
 
-            return work;
-        }());
+                return work;
+            }(),
+            __FILE__,
+            __LINE__);
     }};
     const auto unsupported =
         (0 == opentxs::blockchain::SupportedChains().count(chain)) &&

@@ -64,7 +64,6 @@ public:
     {
         signal_startup(me);
     }
-    auto Shutdown() noexcept -> void { signal_shutdown(); }
 
     Imp(std::shared_ptr<const api::Session> api,
         std::string_view endpoint,
@@ -96,7 +95,7 @@ private:
         const WorkType type) const noexcept -> Message;
 
     auto do_shutdown() noexcept -> void;
-    auto do_startup() noexcept -> void;
+    auto do_startup() noexcept -> bool;
     auto notify_subscribers(
         const Subscribers& recipients,
         const Balance& balance,

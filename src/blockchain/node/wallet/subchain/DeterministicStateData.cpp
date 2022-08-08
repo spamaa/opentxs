@@ -7,7 +7,6 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "blockchain/node/wallet/subchain/DeterministicStateData.hpp"  // IWYU pragma: associated
 
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <algorithm>
 #include <chrono>
 #include <functional>
@@ -20,6 +19,7 @@
 
 #include "blockchain/node/wallet/subchain/statemachine/ElementCache.hpp"
 #include "internal/blockchain/bitcoin/block/Transaction.hpp"
+#include "internal/blockchain/node/wallet/subchain/statemachine/Index.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/session/Crypto.hpp"
@@ -30,7 +30,6 @@
 #include "opentxs/blockchain/bitcoin/block/Outputs.hpp"
 #include "opentxs/blockchain/bitcoin/block/Script.hpp"
 #include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
-#include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/crypto/Deterministic.hpp"
@@ -51,26 +50,22 @@
 namespace opentxs::blockchain::node::wallet
 {
 DeterministicStateData::DeterministicStateData(
-    const api::Session& api,
-    const node::Manager& node,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
+    Reorg& reorg,
     const crypto::Deterministic& subaccount,
-    const cfilter::Type filter,
-    const crypto::Subchain subchain,
-    const network::zeromq::BatchID batch,
-    const std::string_view parent,
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
+    crypto::Subchain subchain,
+    std::string_view fromParent,
+    network::zeromq::BatchID batch,
     allocator_type alloc) noexcept
     : SubchainStateData(
-          api,
-          node,
-          db,
-          mempool,
+          reorg,
           subaccount,
-          filter,
-          subchain,
-          batch,
-          parent,
+          std::move(api),
+          std::move(node),
+          std::move(subchain),
+          std::move(fromParent),
+          std::move(batch),
           std::move(alloc))
     , deterministic_(subaccount)
     , cache_(Clock::now(), get_allocator())
@@ -132,10 +127,9 @@ auto DeterministicStateData::flush_cache(
 }
 
 auto DeterministicStateData::get_index(
-    const boost::shared_ptr<const SubchainStateData>& me) const noexcept
-    -> Index
+    const boost::shared_ptr<const SubchainStateData>& me) const noexcept -> void
 {
-    return Index::DeterministicFactory(me, *this);
+    wallet::Index{Index::DeterministicFactory(me, *this)}.Init();
 }
 
 auto DeterministicStateData::handle_confirmed_matches(
@@ -375,4 +369,6 @@ auto DeterministicStateData::process(
         }
     }
 }
+
+DeterministicStateData::~DeterministicStateData() = default;
 }  // namespace opentxs::blockchain::node::wallet

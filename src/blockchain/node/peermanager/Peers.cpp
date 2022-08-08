@@ -101,7 +101,8 @@ Peers::Peers(
     , minimum_peers_([&]() -> std::size_t {
         static const auto test = api.Factory().DataFromHex("0x7f000002");
 
-        if (default_peer_ == test) { return 1_uz; }
+        if (default_peer_ == test) { return 0_uz; }
+        if (api_.GetOptions().TestMode()) { return 0_uz; }
 
         return config_.PeerTarget(chain_);
     }())
@@ -289,7 +290,8 @@ auto Peers::Disconnect(const int id) noexcept -> void
         const auto address = [&] {
             auto& [address, socket] = it->second;
             auto out{address};
-            socket.SendDeferred(MakeWork(WorkType::Shutdown));
+            socket.SendDeferred(
+                MakeWork(WorkType::Shutdown), __FILE__, __LINE__);
             peers_.erase(it);
 
             return out;
@@ -681,7 +683,7 @@ auto Peers::Shutdown() noexcept -> void
 
     for (auto& [id, data] : peers_) {
         auto& [address, socket] = data;
-        socket.SendDeferred(MakeWork(WorkType::Shutdown));
+        socket.SendDeferred(MakeWork(WorkType::Shutdown), __FILE__, __LINE__);
     }
 
     peers_.clear();

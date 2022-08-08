@@ -19,6 +19,7 @@
 #include "api/session/base/Scheduler.hpp"
 #include "api/session/base/Storage.hpp"
 #include "api/session/base/ZMQ.hpp"
+#include "core/Shutdown.hpp"
 #include "internal/api/session/Session.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/Version.hpp"
@@ -170,6 +171,7 @@ public:
 
 protected:
     std::unique_ptr<network::Network> network_;
+    opentxs::internal::ShutdownSender shutdown_sender_;
     std::unique_ptr<api::session::Wallet> wallet_;
 
 private:

@@ -114,4 +114,6 @@ TEST_F(Test_HeaderOracle, basic_reorg)
         EXPECT_TRUE(gotException);
     }
 }
+
+TEST_F(Test_HeaderOracle, shutdown) { Shutdown(); }
 }  // namespace ottest

@@ -3,9 +3,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"                           // IWYU pragma: associated
-#include "1_Internal.hpp"                         // IWYU pragma: associated
-#include "blockchain/node/blockoracle/Cache.hpp"  // IWYU pragma: associated
+#include "0_stdafx.hpp"    // IWYU pragma: associated
+#include "1_Internal.hpp"  // IWYU pragma: associated
+#include "blockchain/node/blockoracle/cache/Shared.hpp"  // IWYU pragma: associated
 
 #include <algorithm>
 #include <chrono>
@@ -15,11 +15,17 @@
 #include <type_traits>
 #include <utility>
 
+#include "blockchain/node/blockoracle/BlockBatch.hpp"
 #include "internal/api/network/Blockchain.hpp"
 #include "internal/blockchain/database/Block.hpp"
+#include "internal/blockchain/database/Database.hpp"
 #include "internal/blockchain/node/Config.hpp"
+#include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Job.hpp"
 #include "internal/blockchain/node/Manager.hpp"
+#include "internal/blockchain/node/Types.hpp"
+#include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
+#include "internal/blockchain/node/blockoracle/Types.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
@@ -30,6 +36,8 @@
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/block/Block.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
+#include "opentxs/blockchain/block/Header.hpp"
+#include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
@@ -40,30 +48,27 @@
 #include "opentxs/network/zeromq/message/Message.tpp"
 #include "opentxs/network/zeromq/socket/SocketType.hpp"
 #include "opentxs/util/BlockchainProfile.hpp"
-#include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
+#include "opentxs/util/Time.hpp"
 #include "opentxs/util/WorkType.hpp"
-#include "util/ByteLiterals.hpp"
+#include "util/ScopeGuard.hpp"
+#include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::blockoracle
 {
-const std::size_t Cache::cache_limit_{8_mib};
-const std::chrono::seconds Cache::download_timeout_{60};
-
-Cache::Cache(
+Cache::Shared::Data::Data(
     const api::Session& api,
     const node::Manager& node,
-    const internal::Config& config,
-    database::Block& db,
-    const blockchain::Type chain,
+    network::zeromq::BatchID batchID,
     allocator_type alloc) noexcept
     : api_(api)
     , node_(node)
-    , db_(db)
-    , chain_(chain)
+    , db_(node_.Internal().DB())
+    , batch_id_(std::move(batchID))
+    , chain_(node_.Internal().Chain())
     , save_blocks_([&] {
-        switch (config.profile_) {
+        switch (node_.Internal().GetConfig().profile_) {
             case BlockchainProfile::mobile: {
 
                 return false;
@@ -75,11 +80,11 @@ Cache::Cache(
                 return true;
             }
             default: {
-                OT_FAIL;
+                LogAbort()(OT_PRETTY_CLASS())("invalid profile").Abort();
             }
         }
     }())
-    , peer_target_(config.PeerTarget(chain_))
+    , peer_target_(node_.Internal().GetConfig().PeerTarget(chain_))
     , block_available_([&] {
         using Type = opentxs::network::zeromq::socket::Type;
         auto out = api.Network().ZeroMQ().Internal().RawSocket(Type::Push);
@@ -102,34 +107,81 @@ Cache::Cache(
 
         return out;
     }())
+    , job_ready_([&] {
+        using Type = opentxs::network::zeromq::socket::Type;
+        auto out = api.Network().ZeroMQ().Internal().RawSocket(Type::Publish);
+        const auto rc =
+            out.Connect(node_.Internal()
+                            .Endpoints()
+                            .block_cache_job_ready_publish_.c_str());
+
+        OT_ASSERT(rc);
+
+        return out;
+    }())
+    , to_actor_([&] {
+        using Type = opentxs::network::zeromq::socket::Type;
+        auto out = api.Network().ZeroMQ().Internal().RawSocket(Type::Push);
+        const auto rc =
+            out.Connect(node_.Internal().Endpoints().block_cache_pull_.c_str());
+
+        OT_ASSERT(rc);
+
+        return out;
+    }())
     , pending_(alloc)
     , queue_(alloc)
     , batch_index_(alloc)
-    , hash_index_(alloc)
-    , hash_cache_(alloc)
+    , block_id_to_batch_id_(alloc)
+    , queued_block_index_(alloc)
     , mem_(cache_limit_, alloc)
     , running_(true)
 {
 }
 
-auto Cache::DownloadQueue() const noexcept -> std::size_t
+auto Cache::Shared::Data::check_consistency() const noexcept -> void
 {
-    return queue_.size() + hash_index_.size();
+    check_consistency(
+        queued_block_index_.size(),
+        block_id_to_batch_id_.size(),
+        queue_.size());
 }
 
-auto Cache::FinishBatch(const BatchID id) noexcept -> void
+auto Cache::Shared::Data::check_consistency(
+    std::size_t total,
+    std::size_t assigned,
+    std::size_t waiting) const noexcept -> void
+{
+    if (total != (waiting + assigned)) {
+        LogConsole()(PrintStackTrace()).Flush();
+        LogAbort()(OT_PRETTY_CLASS())("instance ")(api_.Instance())(
+            " queued block count (")(
+            total)(") does not match sum of downloading (")(
+            assigned)(") and waiting (")(waiting)(")")
+            .Abort();
+    }
+}
+
+auto Cache::Shared::Data::DownloadQueue() const noexcept -> std::size_t
+{
+    return queued_block_index_.size();
+}
+
+auto Cache::Shared::Data::FinishBatch(const BatchID id) noexcept -> void
 {
     if (auto i = batch_index_.find(id); batch_index_.end() != i) {
         const auto& [original, remaining] = i->second;
 
-        if (const auto count = remaining.size(); 0u < count) {
+        if (const auto count = remaining.size(); 0_uz < count) {
             LogTrace()(OT_PRETTY_CLASS())("batch")(id)(" cancelled with ")(
                 count)(" of ")(original)(" hashes not downloaded")
                 .Flush();
         }
 
         for (const auto& hash : remaining) {
-            hash_index_.erase(hash);
+            OT_ASSERT(0_uz < queued_block_index_.count(hash));
+
+            block_id_to_batch_id_.erase(hash);
             queue_.emplace_front(hash);
         }
 
@@ -141,7 +193,7 @@ auto Cache::FinishBatch(const BatchID id) noexcept -> void
     publish_download_queue();
 }
 
-auto Cache::GetBatch(allocator_type alloc) noexcept
+auto Cache::Shared::Data::GetBatch(allocator_type alloc) noexcept
     -> std::pair<BatchID, Vector<block::Hash>>
 {
     // TODO define max in Params
@@ -174,22 +226,53 @@ auto Cache::GetBatch(allocator_type alloc) noexcept
     const auto& batchID = out.first;
     auto& hashes = out.second;
     hashes.reserve(target);
-    auto& [count, index] = batch_index_[batchID];
-    count = target;
+    auto [i, rc] = batch_index_.try_emplace(
+        batchID, target, Set<block::Hash>{get_allocator()});
+
+    OT_ASSERT(rc);
+
+    auto& [count, index] = i->second;
 
     while (hashes.size() < target) {
         const auto& hash = queue_.front();
+
+        // TODO c++20 use contains
+        OT_ASSERT(0_uz < queued_block_index_.count(hash));
+
         hashes.emplace_back(hash);
         index.emplace(hash);
-        hash_index_.emplace(hash, batchID);
+        const auto [j, added] =
+            block_id_to_batch_id_.try_emplace(hash, batchID);
+
+        if (false == added) {
+            LogAbort()(OT_PRETTY_CLASS())("block ")
+                .asHex(hash)(" already assigned to batch ")(j->second)
+                .Abort();
+        }
+
         queue_.pop_front();
-        hash_cache_.erase(hash);
     }
+
+    OT_ASSERT(out.second.size() <= block_id_to_batch_id_.size());
+
+    check_consistency();
 
     return out;
 }
 
-auto Cache::ProcessBlockRequests(network::zeromq::Message&& in) noexcept -> void
+auto Cache::Shared::Data::get_allocator() const noexcept -> allocator_type
+{
+    return pending_.get_allocator();
+}
+
+auto Cache::Shared::Data::notify_batch_available() noexcept -> void
+{
+    job_ready_.SendDeferred(
+        MakeWork(OT_ZMQ_BLOCK_BATCH_JOB_AVAILABLE), __FILE__, __LINE__);
+}
+
+auto Cache::Shared::Data::ProcessBlockRequests(
+    network::zeromq::Message&& in) noexcept -> void
 {
     if (false == running_) { return; }
 
@@ -210,62 +293,67 @@ auto Cache::ProcessBlockRequests(network::zeromq::Message&& in) noexcept -> void
     publish_download_queue();
 }
 
-auto Cache::publish(const block::Hash& block) noexcept -> void
+auto Cache::Shared::Data::publish(const block::Hash& block) noexcept -> void
 {
-    block_available_.SendDeferred([&] {
-        auto work =
-            network::zeromq::tagged_message(WorkType::BlockchainBlockAvailable);
-        work.AddFrame(chain_);
-        work.AddFrame(block);
+    block_available_.SendDeferred(
+        [&] {
+            auto work = network::zeromq::tagged_message(
+                WorkType::BlockchainBlockAvailable);
+            work.AddFrame(chain_);
+            work.AddFrame(block);
 
-        return work;
-    }());
+            return work;
+        }(),
+        __FILE__,
+        __LINE__);
 }
 
-auto Cache::publish_download_queue() noexcept -> void
+auto Cache::Shared::Data::publish_download_queue() noexcept -> void
 {
     const auto waiting = queue_.size();
-    const auto assigned = hash_index_.size();
-    const auto total = waiting + assigned;
+    const auto assigned = block_id_to_batch_id_.size();
+    const auto total = queued_block_index_.size();
+    check_consistency(total, assigned, waiting);
     LogTrace()(OT_PRETTY_CLASS())(total)(" in download queue: ")(
-        waiting)(" waiting / ")(assigned)(" assigned")
+        waiting)(" waiting / ")(assigned)(" downloading")
         .Flush();
-    cache_size_publisher_.SendDeferred([&] {
-        auto work = network::zeromq::tagged_message(
-            WorkType::BlockchainBlockDownloadQueue);
-        work.AddFrame(chain_);
-        work.AddFrame(total);
+    cache_size_publisher_.SendDeferred(
+        [&] {
+            auto work = network::zeromq::tagged_message(
+                WorkType::BlockchainBlockDownloadQueue);
+            work.AddFrame(chain_);
+            work.AddFrame(total);
 
-        return work;
-    }());
+            return work;
+        }(),
+        __FILE__,
+        __LINE__);
 }
 
-auto Cache::queue_hash(const block::Hash& hash) noexcept -> void
+auto Cache::Shared::Data::queue_hash(const block::Hash& hash) noexcept -> void
 {
-    if (0u < hash_cache_.count(hash)) { return; }
-    if (0u < hash_index_.count(hash)) { return; }
+    // TODO c++20 use contains
+    if (0_uz < queued_block_index_.count(hash)) { return; }
     if (db_.BlockExists(hash)) { return; }
 
+    queued_block_index_.emplace(hash);
     queue_.emplace_back(hash);
+    check_consistency();
 }
 
-auto Cache::ReceiveBlock(const network::zeromq::Frame& in) noexcept -> void
-{
-    ReceiveBlock(in.Bytes());
-}
-
-auto Cache::ReceiveBlock(const std::string_view in) noexcept -> void
+auto Cache::Shared::Data::ReceiveBlock(const std::string_view in) noexcept
+    -> void
 {
     ReceiveBlock(api_.Factory().BitcoinBlock(chain_, in));
 }
 
-auto Cache::ReceiveBlock(
-    std::shared_ptr<const bitcoin::block::Block> in) noexcept -> void
+auto Cache::Shared::Data::ReceiveBlock(
+    std::shared_ptr<const bitcoin::block::Block> in) noexcept -> bool
 {
     if (false == in.operator bool()) {
         LogError()(OT_PRETTY_CLASS())("Invalid block").Flush();
 
-        return;
+        return false;
     }
 
     const auto& block = *in;
@@ -277,6 +365,18 @@ auto Cache::ReceiveBlock(
     }
 
     auto id = block::Hash{block.ID()};
+
+    if (false == node_.HeaderOracle().Exists(id)) {
+        // TODO submit directly to header oracle
+        node_.Internal().Track([&] {
+            using Task = opentxs::blockchain::node::ManagerJobs;
+            auto work = MakeWork(Task::SubmitBlockHeader);
+            block.Header().Serialize(work.AppendBytes(), false);
+
+            return work;
+        }());
+    }
+
     auto future = [&]() -> BitcoinBlockResult {
         if (auto pending = pending_.find(id); pending_.end() == pending) {
             auto promise = Promise{};
@@ -284,7 +384,7 @@ auto Cache::ReceiveBlock(
 
             return promise.get_future();
         } else {
-            auto& [time, promise, future, queued] = pending->second;
+            auto& [promise, future] = pending->second;
             promise.set_value(std::move(in));
             auto out{future};
             pending_.erase(pending);
@@ -298,18 +398,59 @@ auto Cache::ReceiveBlock(
     publish_download_queue();
     LogVerbose()(OT_PRETTY_CLASS())("Cached block ").asHex(id).Flush();
     mem_.push(std::move(id), std::move(future));
+
+    return true;
 }
 
-auto Cache::receive_block(const block::Hash& id) noexcept -> void
+auto Cache::Shared::Data::receive_block(const block::Hash& id) noexcept -> void
 {
-    if (auto i = hash_index_.find(id); hash_index_.end() != i) {
-        const auto batch = i->second;
-        batch_index_.at(batch).second.erase(id);
-        hash_index_.erase(i);
+    auto& index = block_id_to_batch_id_;
+
+    if (auto i = index.find(id); index.end() != i) {
+        const auto& batch = i->second;
+        index.erase(i);
+        LogTrace()(OT_PRETTY_CLASS())(" block ")
+            .asHex(id)(" was assigned to batch ")(batch)
+            .Flush();
+        auto count = batch_index_.at(i->second).second.erase(id);
+
+        OT_ASSERT(1_uz == count);
+
+        count = queued_block_index_.erase(id);
+
+        OT_ASSERT(1_uz == count);
+    } else {
+        LogTrace()(OT_PRETTY_CLASS())(" block ")
+            .asHex(id)(" was not assigned to any batches")
+            .Flush();
     }
+
+    if (0_uz < queued_block_index_.count(id)) {
+        LogTrace()(OT_PRETTY_CLASS())("somehow received block ")
+            .asHex(id)(" before requesting it")
+            .Flush();
+        queued_block_index_.erase(id);
+
+        for (auto i = queue_.begin(); i != queue_.end();) {
+            const auto& hash = *i;
+
+            if (id == hash) {
+                i = queue_.erase(i);
+
+                break;
+            } else {
+                ++i;
+            }
+        }
+    }
+
+    OT_ASSERT(0_uz == queued_block_index_.count(id));
+
+    check_consistency();
 }
 
-auto Cache::Request(const block::Hash& block) noexcept -> BitcoinBlockResult
+auto Cache::Shared::Data::Request(const block::Hash& block) noexcept
+    -> BitcoinBlockResult
 {
     const auto output = Request(Vector<block::Hash>{block});
 
@@ -318,14 +459,14 @@ auto Cache::Request(const block::Hash& block) noexcept -> BitcoinBlockResult
     return output.at(0);
 }
 
-auto Cache::Request(const Vector<block::Hash>& hashes) noexcept
+auto Cache::Shared::Data::Request(const Vector<block::Hash>& hashes) noexcept
     -> BitcoinBlockResults
 {
+    auto alloc = get_allocator();
     auto output = BitcoinBlockResults{};
     output.reserve(hashes.size());
-    auto ready = UnallocatedVector<const block::Hash*>{};
-    auto download =
-        UnallocatedMap<block::Hash, BitcoinBlockResults::iterator>{};
+    auto ready = Vector<const block::Hash*>{alloc};
+    auto download = Map<block::Hash, BitcoinBlockResults::iterator>{alloc};
 
     if (false == running_) {
         std::for_each(hashes.begin(), hashes.end(), [&](const auto&) {
@@ -354,6 +495,7 @@ auto Cache::Request(const Vector<block::Hash>& hashes) noexcept
             log(OT_PRETTY_CLASS())(" block is cached in memory. Found in ")(
                 std::chrono::nanoseconds{mem - start})
                 .Flush();
+            receive_block(block);
 
             continue;
         }
@@ -362,7 +504,7 @@ auto Cache::Request(const Vector<block::Hash>& hashes) noexcept
             auto it = pending_.find(block);
 
             if (pending_.end() != it) {
-                const auto& [time, promise, future, queued] = it->second;
+                const auto& [promise, future] = it->second;
                 output.emplace_back(future);
                 found = true;
             }
@@ -398,6 +540,7 @@ auto Cache::Request(const Vector<block::Hash>& hashes) noexcept
                 " block is already downloaded. Loaded from storage in ")(
                 std::chrono::nanoseconds{disk - pending})
                 .Flush();
+            receive_block(block);
 
             continue;
         }
@@ -415,31 +558,18 @@ auto Cache::Request(const Vector<block::Hash>& hashes) noexcept
     OT_ASSERT(output.size() == hashes.size());
 
     if (0 < download.size()) {
-        auto blockList = UnallocatedVector<ReadView>{};
-        std::transform(
-            std::begin(download),
-            std::end(download),
-            std::back_inserter(blockList),
-            [](const auto& in) -> auto{
-                const auto& [key, value] = in;
-
-                return key.Bytes();
-            });
-        LogVerbose()(OT_PRETTY_CLASS())("Downloading ")(blockList.size())(
+        LogVerbose()(OT_PRETTY_CLASS())("Downloading ")(download.size())(
             " blocks from peers")
             .Flush();
-        // TODO broadcast a signal which will notify active Peer objects to
-        // check for work
 
         for (auto& [hash, futureOut] : download) {
             queue_hash(hash);
-            auto& [time, promise, future, queued] = pending_[hash];
-            time = Clock::now();
+            auto& [promise, future] = pending_[hash];
             future = promise.get_future();
             *futureOut = future;
-            queued = true;
         }
 
+        notify_batch_available();
         publish_download_queue();
     }
 
@@ -448,14 +578,14 @@ auto Cache::Request(const Vector<block::Hash>& hashes) noexcept
     return output;
 }
 
-auto Cache::Shutdown() noexcept -> void
+auto Cache::Shared::Data::Shutdown() noexcept -> void
 {
     if (running_) {
         running_ = false;
         mem_.clear();
 
         for (auto& [hash, item] : pending_) {
-            auto& [time, promise, future, queued] = item;
+            auto& [promise, future] = item;
             promise.set_value(nullptr);
         }
 
@@ -464,39 +594,90 @@ auto Cache::Shutdown() noexcept -> void
     }
 }
 
-auto Cache::StateMachine() noexcept -> bool
+auto Cache::Shared::Data::StateMachine() noexcept -> bool
 {
-    if (false == running_) { return false; }
+    for (const auto& [id, data] : pending_) {
+        // TODO c++20 use contains
+        if (0_uz < queued_block_index_.count(id)) { continue; }
 
-    LogVerbose()(OT_PRETTY_CLASS())(print(chain_))(" download queue contains ")(
-        pending_.size())(" blocks.")
-        .Flush();
-    auto blockList = UnallocatedVector<ReadView>{};
-    blockList.reserve(pending_.size());
-
-    for (auto& [hash, item] : pending_) {
-        auto& [time, promise, future, queued] = item;
-        const auto now = Clock::now();
-        namespace c = std::chrono;
-        const auto elapsed = std::chrono::nanoseconds{now - time};
-        const auto timeout = download_timeout_ <= elapsed;
-
-        if (timeout || (false == queued)) {
-            LogVerbose()(OT_PRETTY_CLASS())("Requesting ")(print(chain_))(
-                " block ")(hash.asHex())(" from peers")
-                .Flush();
-            blockList.emplace_back(hash.Bytes());
-            queued = true;
-            time = now;
-        } else {
-            LogVerbose()(OT_PRETTY_CLASS())(elapsed)(" elapsed waiting for ")(
-                print(chain_))(" block ")(hash.asHex())
-                .Flush();
-        }
+        queue_hash(id);
     }
 
-    if (0 < blockList.size()) { node_.Internal().RequestBlocks(blockList); }
+    if (0_uz < DownloadQueue()) {
+        notify_batch_available();
 
-    return 0 < pending_.size();
+        return true;
+    }
+
+    return false;
 }
+
+auto Cache::Shared::Data::trigger() const noexcept -> void
+{
+    to_actor_.SendDeferred(
+        MakeWork(CacheJob::statemachine), __FILE__, __LINE__);
+}
+
+Cache::Shared::Data::~Data() { Shutdown(); }
+}  // namespace opentxs::blockchain::node::blockoracle
+
+namespace opentxs::blockchain::node::blockoracle
+{
+Cache::Shared::Shared(
+    const api::Session& api,
+    const node::Manager& node,
+    network::zeromq::BatchID batchID,
+    allocator_type alloc) noexcept
+    : data_(api, node, std::move(batchID), std::move(alloc))
+{
+}
+
+auto Cache::Shared::DownloadQueue() const noexcept -> std::size_t
+{
+    return data_.lock_shared()->DownloadQueue();
+}
+
+auto Cache::Shared::get_allocator() const noexcept -> allocator_type
+{
+    return data_.lock_shared()->get_allocator();
+}
+
+auto Cache::Shared::GetBlockBatch(
+    boost::shared_ptr<Shared> me,
+    alloc::Default alloc) noexcept -> node::internal::BlockBatch
+{
+    auto pmr = alloc::PMR<node::internal::BlockBatch::Imp>{alloc};
+    auto [id, hashes] = data_.lock()->GetBatch(alloc);
+    const auto batchID{id};  // TODO c++20 lambda capture structured binding
+    auto* imp = pmr.allocate(1_uz);
+    pmr.construct(
+        imp,
+        id,
+        std::move(hashes),
+        [me](const auto bytes) { me->data_.lock()->ReceiveBlock(bytes); },
+        std::make_shared<ScopeGuard>(
+            [me, batchID] { me->data_.lock()->FinishBatch(batchID); }));
+
+    return imp;
+}
+
+auto Cache::Shared::ReceiveBlock(
+    std::shared_ptr<const bitcoin::block::Block> in) noexcept -> bool
+{
+    return data_.lock()->ReceiveBlock(std::move(in));
+}
+
+auto Cache::Shared::Request(const block::Hash& block) noexcept
+    -> BitcoinBlockResult
+{
+    return data_.lock()->Request(block);
+}
+
+auto Cache::Shared::Request(const Vector<block::Hash>& hashes) noexcept
+    -> BitcoinBlockResults
+{
+    return data_.lock()->Request(hashes);
+}
+
+Cache::Shared::~Shared() = default;
 }  // namespace opentxs::blockchain::node::blockoracle

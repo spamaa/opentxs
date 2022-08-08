@@ -103,12 +103,6 @@ public:
     virtual auto Mempool() const noexcept -> const internal::Mempool& = 0;
     virtual auto PeerManager() const noexcept
         -> const internal::PeerManager& = 0;
-    virtual auto Reorg() const noexcept
-        -> const network::zeromq::socket::Publish& = 0;
-    virtual auto RequestBlock(const block::Hash& block) const noexcept
-        -> bool = 0;
-    virtual auto RequestBlocks(
-        const UnallocatedVector<ReadView>& hashes) const noexcept -> bool = 0;
     virtual auto ShuttingDown() const noexcept -> bool = 0;
     // NOTE workaround to prevent compiler from reordering instructions in a way
     // that causes shutdown use-after-free crashes. This can be removed

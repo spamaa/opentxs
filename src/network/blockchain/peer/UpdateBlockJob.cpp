@@ -7,6 +7,7 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "network/blockchain/peer/UpdateBlockJob.hpp"  // IWYU pragma: associated
 
+#include "internal/util/P0330.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/node/BlockOracle.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
@@ -35,7 +36,7 @@ auto Peer::Imp::UpdateBlockJob::operator()(
 {
     job.Submit(data_);
 
-    return {true, (0u == job.Remaining())};
+    return {true, (0_uz == job.Remaining())};
 }
 
 auto Peer::Imp::UpdateBlockJob::operator()(

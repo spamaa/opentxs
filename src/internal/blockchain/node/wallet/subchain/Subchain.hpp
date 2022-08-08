@@ -6,12 +6,6 @@
 #pragma once
 
 #include <boost/smart_ptr/shared_ptr.hpp>
-#include <atomic>
-#include <memory>
-
-#include "internal/blockchain/node/wallet/Types.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
-#include "util/LMDB.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -50,18 +44,8 @@ namespace opentxs::blockchain::node::wallet
 class Subchain
 {
 public:
-    using State = JobState;
-
-    [[nodiscard]] virtual auto ChangeState(
-        const State state,
-        StateSequence reorg) noexcept -> bool = 0;
     virtual auto Init(boost::shared_ptr<SubchainStateData> me) noexcept
         -> void = 0;
-    virtual auto ProcessReorg(
-        const Lock& headerOracleLock,
-        storage::lmdb::LMDB::Transaction& tx,
-        std::atomic_int& errors,
-        const block::Position& ancestor) noexcept -> void = 0;
 
     Subchain(const Subchain&) = delete;
     Subchain(Subchain&&) = delete;

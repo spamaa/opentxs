@@ -82,8 +82,7 @@ public:
     virtual auto PublishStartup(
         const opentxs::blockchain::Type chain,
         OTZMQWorkType type) const noexcept -> bool = 0;
-    virtual auto Reorg() const noexcept
-        -> const opentxs::network::zeromq::socket::Publish& = 0;
+    virtual auto ReorgEndpoint() const noexcept -> std::string_view = 0;
     virtual auto ReportProgress(
         const opentxs::blockchain::Type chain,
         const opentxs::blockchain::block::Height current,

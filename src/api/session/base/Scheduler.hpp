@@ -43,19 +43,19 @@ public:
     const api::Context& parent_;
     Flag& running_;
 
-    auto Cancel(const int task) const -> bool final
+    auto Cancel(const TaskID task) const -> bool final
     {
         return parent_.Cancel(task);
     }
-    auto Reschedule(const int task, const std::chrono::seconds& interval) const
-        -> bool final
+    auto Reschedule(const TaskID task, const std::chrono::seconds& interval)
+        const -> bool final
     {
         return parent_.Reschedule(task, interval);
     }
     auto Schedule(
         const std::chrono::seconds& interval,
         const PeriodicTask& task,
-        const std::chrono::seconds& last) const -> int final
+        const std::chrono::seconds& last) const -> TaskID final
     {
         return parent_.Schedule(interval, task, last);
     }

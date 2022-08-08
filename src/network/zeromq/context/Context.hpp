@@ -89,6 +89,8 @@ class Context final : virtual public internal::Context
 public:
     operator void*() const noexcept final;
 
+    auto ActiveBatches(alloc::Default alloc = {}) const noexcept
+        -> CString final;
     auto Alloc(BatchID id) const noexcept -> alloc::Resource* final;
     auto BelongsToThreadPool(const std::thread::id) const noexcept
         -> bool final;
@@ -97,10 +99,12 @@ public:
         const socket::Direction direction,
         const std::string_view threadname = {}) const noexcept
         -> OTZMQDealerSocket final;
-    auto MakeBatch(Vector<socket::Type>&& types) const noexcept
-        -> internal::Handle final;
-    auto MakeBatch(const BatchID preallocated, Vector<socket::Type>&& types)
+    auto MakeBatch(Vector<socket::Type>&& types, std::string_view name)
         const noexcept -> internal::Handle final;
+    auto MakeBatch(
+        const BatchID preallocated,
+        Vector<socket::Type>&& types,
+        std::string_view name) const noexcept -> internal::Handle final;
     auto Modify(SocketID id, ModifyCallback cb) const noexcept -> void final;
     auto PairEventListener(
         const PairEventCallback& callback,
@@ -160,10 +164,7 @@ public:
         const socket::Direction direction,
         const std::string_view threadname = {}) const noexcept
         -> OTZMQRouterSocket final;
-    auto Start(
-        BatchID id,
-        StartArgs&& sockets,
-        const std::string_view threadname) const noexcept
+    auto Start(BatchID id, StartArgs&& sockets) const noexcept
         -> internal::Thread* final;
     auto Stop(BatchID id) const noexcept -> void final;
     auto SubscribeSocket(

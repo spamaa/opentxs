@@ -178,14 +178,15 @@ auto HeaderOracle::AddCheckpoint(
 auto HeaderOracle::AddHeader(std::unique_ptr<block::Header> header) noexcept
     -> bool
 {
-    auto headers = UnallocatedVector<std::unique_ptr<block::Header>>{};
+    // TODO allocator
+    auto headers = Vector<std::unique_ptr<block::Header>>{};
     headers.emplace_back(std::move(header));
 
     return AddHeaders(headers);
 }
 
 auto HeaderOracle::AddHeaders(
-    UnallocatedVector<std::unique_ptr<block::Header>>& headers) noexcept -> bool
+    Vector<std::unique_ptr<block::Header>>& headers) noexcept -> bool
 {
     if (0 == headers.size()) { return false; }
 
@@ -736,6 +737,22 @@ auto HeaderOracle::evaluate_candidate(
     const block::Header& candidate) noexcept -> bool
 {
     return candidate.Work() > current.Work();
+}
+
+auto HeaderOracle::Execute(Vector<ReorgTask>&& jobs) const noexcept -> bool
+{
+    auto lock = Lock{lock_};
+
+    for (auto& job : jobs) {
+        if (false == std::invoke(job, *this, lock)) { return false; }
+    }
+
+    return true;
+}
+
+auto HeaderOracle::Exists(const block::Hash& hash) const noexcept -> bool
+{
+    return database_.HeaderExists(hash);
 }
 
 auto HeaderOracle::GetDefaultCheckpoint() const noexcept -> CheckpointData

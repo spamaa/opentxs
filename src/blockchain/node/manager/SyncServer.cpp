@@ -18,7 +18,6 @@
 #include <tuple>
 #include <utility>
 
-#include "internal/api/session/Endpoints.hpp"
 #include "internal/blockchain/database/Sync.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/HeaderOracle.hpp"
@@ -27,7 +26,6 @@
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Signals.hpp"
 #include "opentxs/api/network/Network.hpp"
-#include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
@@ -80,7 +78,7 @@ SyncServer::SyncServer(
           "sync server",
           2000,
           1000)
-    , SyncWorker(api, 20ms)
+    , SyncWorker(api, 20ms, "blockchain::node::SyncServer")
     , db_(db)
     , header_(header)
     , filter_(filter)
@@ -96,8 +94,7 @@ SyncServer::SyncServer(
 {
     init_executor(
         {UnallocatedCString(endpoints.shutdown_publish_.c_str()),
-         UnallocatedCString{
-             api_.Endpoints().Internal().BlockchainFilterUpdated(chain_)}});
+         UnallocatedCString{endpoints.new_filter_publish_}});
     ::zmq_setsockopt(socket_.get(), ZMQ_LINGER, &linger_, sizeof(linger_));
     ::zmq_connect(socket_.get(), endpoint_.c_str());
 }
@@ -214,20 +211,21 @@ auto SyncServer::process_position(const zmq::Message& in) noexcept -> void
 
 auto SyncServer::process_position(const Position& pos) noexcept -> void
 {
-    LogTrace()(OT_PRETTY_CLASS())(__func__)(": processing block ")(pos).Flush();
+    const auto& log = LogTrace();
+    log(OT_PRETTY_CLASS())("processing block ")(pos).Flush();
 
     try {
         auto current = known();
         auto hashes = header_.Ancestors(current, pos, 2000);
-        LogTrace()(OT_PRETTY_CLASS())(__func__)(
-            ": current position best known position is block ")(current)
+        log(OT_PRETTY_CLASS())(
+            "current position best known position is block ")(current)
             .Flush();
 
         OT_ASSERT(0 < hashes.size());
 
         if (1 == hashes.size()) {
-            LogTrace()(OT_PRETTY_CLASS())(__func__)(
-                ": current position matches incoming block ")(pos)
+            log(OT_PRETTY_CLASS())("current position matches incoming block ")(
+                pos)
                 .Flush();
 
             return;
@@ -246,12 +244,10 @@ auto SyncServer::process_position(const Position& pos) noexcept -> void
             const auto& last = hashes.back();
 
             if (first.height_ <= current.height_) {
-                LogTrace()(OT_PRETTY_CLASS())(__func__)(": reorg detected")
-                    .Flush();
+                log(OT_PRETTY_CLASS())("reorg detected").Flush();
             }
 
-            LogTrace()(OT_PRETTY_CLASS())(__func__)(
-                ": scheduling download starting from block ")(
+            log(OT_PRETTY_CLASS())("scheduling download starting from block ")(
                 first)(" until block ")(last)
                 .Flush();
         }
@@ -303,7 +299,7 @@ auto SyncServer::process_zmq(const Lock& lock) noexcept -> void
             OTSocket::send_message(lock, socket_.get(), std::move(out));
         }
     } catch (const std::exception& e) {
-        LogError()(OT_PRETTY_CLASS())(__func__)(": ")(e.what()).Flush();
+        LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
     }
 }
 
@@ -366,14 +362,14 @@ auto SyncServer::queue_processing(DownloadedData&& data) noexcept -> void
                 reader(filterBytes));
             task->process(1);
         } catch (const std::exception& e) {
-            LogError()(OT_PRETTY_CLASS())(__func__)(": ")(e.what()).Flush();
+            LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
             task->redownload();
             break;
         }
     }
 
     if (previousFilterHeader.empty() || (0 == items.size())) {
-        LogError()(OT_PRETTY_CLASS())(__func__)(": missing data").Flush();
+        LogError()(OT_PRETTY_CLASS())("missing data").Flush();
 
         return;
     }
@@ -462,8 +458,7 @@ auto SyncServer::zmq_thread() noexcept -> void
 
         if (0 > events) {
             const auto error = ::zmq_errno();
-            LogError()(OT_PRETTY_CLASS())(__func__)(": ")(::zmq_strerror(error))
-                .Flush();
+            LogError()(OT_PRETTY_CLASS())(::zmq_strerror(error)).Flush();
 
             continue;
         } else if (0 == events) {

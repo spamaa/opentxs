@@ -39,7 +39,10 @@ auto print(Job job) noexcept -> std::string_view
             {Job::Register, "Register"sv},
             {Job::Request, "Request"sv},
             {Job::Processed, "Processed"sv},
+            {Job::ReorgInternal, "ReorgInternal"sv},
+            {Job::NewHeaderTip, "NewHeaderTip"sv},
             {Job::Init, "Init"sv},
+            {Job::NewCFilterTip, "NewCFilterTip"sv},
             {Job::StateMachine, "StateMachine"sv},
         };
 

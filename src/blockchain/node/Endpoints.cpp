@@ -7,17 +7,57 @@
 #include "1_Internal.hpp"                          // IWYU pragma: associated
 #include "internal/blockchain/node/Endpoints.hpp"  // IWYU pragma: associated
 
+#include <utility>
+
 #include "opentxs/network/zeromq/ZeroMQ.hpp"
 
 namespace opentxs::blockchain::node
 {
 Endpoints::Endpoints(allocator_type alloc) noexcept
-    : block_fetcher_job_ready_publish_(
+    : block_cache_pull_(network::zeromq::MakeArbitraryInproc(alloc))
+    , block_cache_job_ready_publish_(
           network::zeromq::MakeArbitraryInproc(alloc))
+    , block_fetcher_job_ready_publish_(
+          network::zeromq::MakeArbitraryInproc(alloc))
+    , block_fetcher_pull_(network::zeromq::MakeArbitraryInproc(alloc))
+    , block_oracle_pull_(network::zeromq::MakeArbitraryInproc(alloc))
+    , fee_oracle_pull_(network::zeromq::MakeArbitraryInproc(alloc))
     , filter_oracle_reindex_publish_(
           network::zeromq::MakeArbitraryInproc(alloc))
+    , new_filter_publish_(network::zeromq::MakeArbitraryInproc(alloc))
+    , new_header_publish_(network::zeromq::MakeArbitraryInproc(alloc))
     , p2p_requestor_pair_(network::zeromq::MakeArbitraryInproc(alloc))
     , shutdown_publish_(network::zeromq::MakeArbitraryInproc(alloc))
+    , wallet_pull_(network::zeromq::MakeArbitraryInproc(alloc))
+    , wallet_to_accounts_push_(network::zeromq::MakeArbitraryInproc(alloc))
+{
+}
+
+Endpoints::Endpoints(Endpoints&& rhs, allocator_type alloc) noexcept
+    : block_cache_pull_(std::move(rhs.block_cache_pull_), alloc)
+    , block_cache_job_ready_publish_(
+          std::move(rhs.block_cache_job_ready_publish_),
+          alloc)
+    , block_fetcher_job_ready_publish_(
+          std::move(rhs.block_fetcher_job_ready_publish_),
+          alloc)
+    , block_fetcher_pull_(std::move(rhs.block_fetcher_pull_), alloc)
+    , block_oracle_pull_(std::move(rhs.block_oracle_pull_), alloc)
+    , fee_oracle_pull_(std::move(rhs.fee_oracle_pull_), alloc)
+    , filter_oracle_reindex_publish_(
+          std::move(rhs.filter_oracle_reindex_publish_),
+          alloc)
+    , new_filter_publish_(std::move(rhs.new_filter_publish_), alloc)
+    , new_header_publish_(std::move(rhs.new_header_publish_), alloc)
+    , p2p_requestor_pair_(std::move(rhs.p2p_requestor_pair_), alloc)
+    , shutdown_publish_(std::move(rhs.shutdown_publish_), alloc)
+    , wallet_pull_(std::move(rhs.wallet_pull_), alloc)
+    , wallet_to_accounts_push_(std::move(rhs.wallet_to_accounts_push_), alloc)
+{
+}
+
+Endpoints::Endpoints(Endpoints&& rhs) noexcept
+    : Endpoints(std::move(rhs), rhs.get_allocator())
 {
 }
 }  // namespace opentxs::blockchain::node

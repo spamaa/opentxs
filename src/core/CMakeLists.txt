@@ -55,11 +55,18 @@ set(cxx-install-headers
 target_link_libraries(
   opentxs-common
   PRIVATE
+    Boost::headers
     ZLIB::ZLIB
     opentxs-core-otprotob
     unofficial-sodium::sodium
 )
-target_link_libraries(opentxs PUBLIC ZLIB::ZLIB unofficial-sodium::sodium)
+target_link_libraries(
+  opentxs
+  PUBLIC
+    Boost::system
+    ZLIB::ZLIB
+    unofficial-sodium::sodium
+)
 target_sources(opentxs-common PRIVATE ${cxx-install-headers})
 
 if(OPENTXS_STANDALONE)

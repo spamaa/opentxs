@@ -55,15 +55,30 @@ public:
      *
      *  This function aborts if the message can not be sent.
      */
-    auto Send(Message&& msg) noexcept -> bool;
+    // TODO c++20 std::source_location
+    auto Send(
+        Message&& msg,
+        const char* file,
+        int line,
+        bool silent = false) noexcept -> bool;
     /** Send to a recipient without ZMQ_DONTWAIT
      */
-    auto SendDeferred(Message&& msg) noexcept -> bool;
+    // TODO c++20 std::source_location
+    auto SendDeferred(
+        Message&& msg,
+        const char* file,
+        int line,
+        bool silent = false) noexcept -> bool;
     /** Send to a remote recipient
      *
      *  This function returns false if the message can not be sent.
      */
-    auto SendExternal(Message&& msg) noexcept -> bool;
+    // TODO c++20 std::source_location
+    auto SendExternal(
+        Message&& msg,
+        const char* file,
+        int line,
+        bool silent = false) noexcept -> bool;
     auto SetExposedUntrusted() noexcept -> bool;
     auto SetIncomingHWM(int value) noexcept -> bool;
     auto SetLinger(int value) noexcept -> bool;
@@ -79,6 +94,7 @@ public:
     auto swap(Raw& other) noexcept -> void;
     auto Unbind(const char* endpoint) noexcept -> bool;
     auto UnbindAll() noexcept -> bool;
+    auto WaitForSend() noexcept -> bool;
 
     Raw(Imp* imp) noexcept;
     Raw() = delete;

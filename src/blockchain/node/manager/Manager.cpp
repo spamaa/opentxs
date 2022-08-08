@@ -31,7 +31,6 @@
 #include "internal/api/crypto/Blockchain.hpp"
 #include "internal/api/network/Asio.hpp"
 #include "internal/api/network/Blockchain.hpp"
-#include "internal/api/session/Endpoints.hpp"
 #include "internal/api/session/Session.hpp"
 #include "internal/blockchain/Blockchain.hpp"
 #include "internal/blockchain/Params.hpp"
@@ -42,20 +41,24 @@
 #include "internal/blockchain/node/PeerManager.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/Wallet.hpp"
+#include "internal/blockchain/node/blockoracle/Types.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/p2p/Requestor.hpp"
+#include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #include "internal/core/Factory.hpp"
 #include "internal/core/PaymentCode.hpp"
 #include "internal/identity/Nym.hpp"
 #include "internal/network/p2p/Factory.hpp"
+#include "internal/network/p2p/Types.hpp"
+#include "internal/network/zeromq/socket/Pipeline.hpp"
+#include "internal/network/zeromq/socket/Raw.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Contacts.hpp"
 #include "opentxs/api/session/Crypto.hpp"
-#include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Wallet.hpp"
@@ -64,12 +67,10 @@
 #include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
-#include "opentxs/blockchain/block/Outpoint.hpp"
 #include "opentxs/blockchain/crypto/AddressStyle.hpp"
 #include "opentxs/blockchain/crypto/Element.hpp"
 #include "opentxs/blockchain/crypto/PaymentCode.hpp"
 #include "opentxs/blockchain/crypto/Subchain.hpp"
-#include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/blockchain/node/FilterOracle.hpp"
 #include "opentxs/blockchain/node/SendResult.hpp"
 #include "opentxs/blockchain/node/Types.hpp"
@@ -92,6 +93,8 @@
 #include "opentxs/network/zeromq/message/FrameIterator.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
+#include "opentxs/network/zeromq/socket/SocketType.hpp"
+#include "opentxs/network/zeromq/socket/Types.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
@@ -105,112 +108,40 @@ constexpr auto proposal_version_ = VersionNumber{1};
 constexpr auto notification_version_ = VersionNumber{1};
 constexpr auto output_version_ = VersionNumber{1};
 
-struct NullWallet final : public node::internal::Wallet {
-    const api::Session& api_;
-
-    auto ConstructTransaction(
-        const proto::BlockchainTransactionProposal&,
-        std::promise<SendOutcome>&& promise) const noexcept -> void final
-    {
-        static const auto blank = api_.Factory().Data();
-        promise.set_value({SendResult::UnspecifiedError, blank});
-    }
-    auto FeeEstimate() const noexcept -> std::optional<Amount> final
-    {
-        return {};
-    }
-    auto GetBalance() const noexcept -> Balance final { return {}; }
-    auto GetBalance(const identifier::Nym&) const noexcept -> Balance final
-    {
-        return {};
-    }
-    auto GetBalance(const identifier::Nym&, const identifier::Generic&)
-        const noexcept -> Balance final
-    {
-        return {};
-    }
-    auto GetBalance(const crypto::Key&) const noexcept -> Balance final
-    {
-        return {};
-    }
-    auto GetOutputs(alloc::Default alloc) const noexcept -> Vector<UTXO> final
-    {
-        return Vector<UTXO>{alloc};
-    }
-    auto GetOutputs(TxoState, alloc::Default alloc) const noexcept
-        -> Vector<UTXO> final
-    {
-        return Vector<UTXO>{alloc};
-    }
-    auto GetOutputs(const identifier::Nym&, alloc::Default alloc) const noexcept
-        -> Vector<UTXO> final
-    {
-        return Vector<UTXO>{alloc};
-    }
-    auto GetOutputs(const identifier::Nym&, TxoState, alloc::Default alloc)
-        const noexcept -> Vector<UTXO> final
-    {
-        return Vector<UTXO>{alloc};
-    }
-    auto GetOutputs(
-        const identifier::Nym&,
-        const identifier::Generic&,
-        alloc::Default alloc) const noexcept -> Vector<UTXO> final
-    {
-        return Vector<UTXO>{alloc};
-    }
-    auto GetOutputs(
-        const identifier::Nym&,
-        const identifier::Generic&,
-        TxoState,
-        alloc::Default alloc) const noexcept -> Vector<UTXO> final
-    {
-        return Vector<UTXO>{alloc};
-    }
-    auto GetOutputs(const crypto::Key&, TxoState, alloc::Default alloc)
-        const noexcept -> Vector<UTXO> final
-    {
-        return Vector<UTXO>{alloc};
-    }
-    auto GetTags(const block::Outpoint& output) const noexcept
-        -> UnallocatedSet<TxoTag> final
-    {
-        return {};
-    }
-    auto Height() const noexcept -> block::Height final { return {}; }
-    auto StartRescan() const noexcept -> bool final { return {}; }
-
-    auto Init() noexcept -> void final {}
-    auto Shutdown() noexcept -> std::shared_future<void> final
-    {
-        auto promise = std::promise<void>{};
-        promise.set_value();
-
-        return promise.get_future();
-    }
-
-    NullWallet(const api::Session& api)
-        : api_(api)
-    {
-    }
-    NullWallet(const NullWallet&) = delete;
-    NullWallet(NullWallet&&) = delete;
-    auto operator=(const NullWallet&) -> NullWallet& = delete;
-    auto operator=(NullWallet&&) -> NullWallet& = delete;
-
-    ~NullWallet() final = default;
-};
-
 Base::Base(
     const api::Session& api,
     const Type type,
     const node::internal::Config& config,
     std::string_view seednode,
-    std::string_view syncEndpoint) noexcept
-    : Worker(api, 0s)
+    std::string_view syncEndpoint,
+    node::Endpoints endpoints) noexcept
+    : Worker(
+          api,
+          0s,
+          "blockchain::node::Manager",
+          {},
+          {},
+          {},
+          {
+              {network::zeromq::socket::Type::Push,
+               {
+                   {endpoints.block_oracle_pull_,
+                    network::zeromq::socket::Direction::Connect},
+               }},
+              {network::zeromq::socket::Type::Push,
+               {
+                   {endpoints.block_cache_pull_,
+                    network::zeromq::socket::Direction::Connect},
+               }},
+              {network::zeromq::socket::Type::Push,
+               {
+                   {endpoints.wallet_pull_,
+                    network::zeromq::socket::Direction::Connect},
+               }},
+          })
     , chain_(type)
     , config_(config)
-    , endpoints_(alloc::Default{})  // TODO allocator
+    , endpoints_(std::move(endpoints))
     , filter_type_([&] {
         switch (config_.profile_) {
             case BlockchainProfile::mobile:
@@ -228,7 +159,13 @@ Base::Base(
             }
         }
     }())
-    , shutdown_sender_(api.Network().ZeroMQ(), endpoints_.shutdown_publish_)
+    , shutdown_sender_(
+          api.Network().Asio(),
+          api.Network().ZeroMQ(),
+          endpoints_.shutdown_publish_,
+          CString{print(chain_)}
+              .append(" on api instance ")
+              .append(std::to_string(api_.Instance())))
     , database_p_(factory::BlockchainDatabase(
           api,
           *this,
@@ -264,21 +201,14 @@ Base::Base(
           chain_,
           seednode,
           endpoints_))
-    , wallet_p_([&]() -> std::unique_ptr<blockchain::node::Wallet> {
-        if (config_.disable_wallet_) {
-
-            return std::make_unique<NullWallet>(api);
-        } else {
-
-            return factory::BlockchainWallet(
-                api, *this, *database_p_, mempool_, chain_, endpoints_);
-        }
-    }())
     , database_(*database_p_)
     , filters_(*filter_p_)
     , header_(*header_p_)
     , peer_(*peer_p_)
-    , wallet_(*wallet_p_)
+    , wallet_()
+    , to_block_oracle_(pipeline_.Internal().ExtraSocket(0))
+    , to_block_cache_(pipeline_.Internal().ExtraSocket(1))
+    , to_wallet_(pipeline_.Internal().ExtraSocket(2))
     , start_(Clock::now())
     , sync_endpoint_(syncEndpoint)
     , sync_server_([&] {
@@ -301,8 +231,6 @@ Base::Base(
         switch (config_.profile_) {
             case BlockchainProfile::mobile:
             case BlockchainProfile::desktop: {
-                p2p::Requestor{api_.Internal().GetShared(), chain_, endpoints_}
-                    .Start();
 
                 return true;
             }
@@ -341,11 +269,9 @@ Base::Base(
     OT_ASSERT(filter_p_);
     OT_ASSERT(header_p_);
     OT_ASSERT(peer_p_);
-    OT_ASSERT(wallet_p_);
 
     header_.Internal().Init();
-    init_executor({UnallocatedCString{
-        api_.Endpoints().Internal().BlockchainFilterUpdated(chain_)}});
+    init_executor({UnallocatedCString{endpoints_.new_filter_publish_}});
     LogVerbose()(config_.Print()).Flush();  // TODO allocator
 
     for (const auto& addr : api_.GetOptions().BlockchainBindIpv4()) {
@@ -421,6 +347,23 @@ Base::Base(
     }
 }
 
+Base::Base(
+    const api::Session& api,
+    const Type type,
+    const node::internal::Config& config,
+    std::string_view seednode,
+    std::string_view syncEndpoint) noexcept
+    : Base(
+          api,
+          type,
+          config,
+          seednode,
+          syncEndpoint,
+          alloc::Default{}  // TODO allocator
+      )
+{
+}
+
 auto Base::AddBlock(const std::shared_ptr<const bitcoin::block::Block> pBlock)
     const noexcept -> bool
 {
@@ -432,31 +375,12 @@ auto Base::AddBlock(const std::shared_ptr<const bitcoin::block::Block> pBlock)
     }
 
     const auto& block = *pBlock;
-
-    try {
-        const auto bytes = [&] {
-            auto output = Space{};
-
-            if (false == block.Serialize(writer(output))) {
-                throw std::runtime_error("Serialization error");
-            }
-
-            return output;
-        }();
-        block_.SubmitBlock(reader(bytes));
-    } catch (...) {
-        LogError()(OT_PRETTY_CLASS())("failed to serialize ")(print(chain_))(
-            " block")
-            .Flush();
-
-        return false;
-    }
-
     const auto& id = block.ID();
 
-    if (std::future_status::ready != block_.LoadBitcoin(id).wait_for(60s)) {
-        LogError()(OT_PRETTY_CLASS())("failed to load ")(print(chain_))(
-            " block")
+    if (false == block_.SubmitBlock(pBlock)) {
+        LogError()(OT_PRETTY_CLASS())("failed to save ")(print(chain_))(
+            " block ")
+            .asHex(id)
             .Flush();
 
         return false;
@@ -470,7 +394,7 @@ auto Base::AddBlock(const std::shared_ptr<const bitcoin::block::Block> pBlock)
         return false;
     }
 
-    if (false == header_.AddHeader(block.Header().clone())) {
+    if (false == header_.Internal().AddHeader(block.Header().clone())) {
         LogError()(OT_PRETTY_CLASS())("failed to process ")(print(chain_))(
             " header")
             .Flush();
@@ -648,7 +572,6 @@ auto Base::init() noexcept -> void
             .Flush();
     }
 
-    notify_sync_client();
     trigger();
     reset_heartbeat();
 }
@@ -722,7 +645,7 @@ auto Base::notify_sync_client() const noexcept -> void
     if (have_p2p_requestor_) {
         sync_socket_->Send([this] {
             const auto tip = filters_.FilterTip(filters_.DefaultType());
-            auto msg = MakeWork(OTZMQWorkType{OT_ZMQ_INTERNAL_SIGNAL + 2});
+            auto msg = MakeWork(network::p2p::Job::Processed);
             msg.AddFrame(tip.height_);
             msg.AddFrame(tip.hash_);
 
@@ -791,7 +714,8 @@ auto Base::pipeline(zmq::Message&& in) noexcept -> void
             process_send_to_payment_code(std::move(in));
         } break;
         case ManagerJobs::StartWallet: {
-            wallet_.Internal().Init();
+            to_wallet_.SendDeferred(
+                MakeWork(wallet::WalletJobs::start_wallet), __FILE__, __LINE__);
         } break;
         case ManagerJobs::FilterUpdate: {
             process_filter_update(std::move(in));
@@ -818,7 +742,15 @@ auto Base::process_block(network::zeromq::Message&& in) noexcept -> void
     }
 
     header_.Internal().SubmitBlock(body.at(1).Bytes());
-    block_.SubmitBlock(body.at(1).Bytes());
+    to_block_cache_.SendDeferred(
+        [&] {
+            auto out = MakeWork(blockoracle::CacheJob::process_block);
+            out.AddFrame(std::move(body.at(1)));
+
+            return out;
+        }(),
+        __FILE__,
+        __LINE__);
 }
 
 auto Base::process_filter_update(network::zeromq::Message&& in) noexcept -> void
@@ -879,13 +811,14 @@ auto Base::process_header(network::zeromq::Message&& in) noexcept -> void
         promise = promiseFrame.as<int>();
     }
 
-    auto headers = UnallocatedVector<std::unique_ptr<block::Header>>{};
+    // TODO allocator
+    auto headers = Vector<std::unique_ptr<block::Header>>{};
 
     for (const auto& header : input) {
         headers.emplace_back(instantiate_header(header));
     }
 
-    if (false == headers.empty()) { header_.AddHeaders(headers); }
+    if (false == headers.empty()) { header_.Internal().AddHeaders(headers); }
 
     work_promises_.clear(promise);
 }
@@ -1163,26 +1096,6 @@ auto Base::Profile() const noexcept -> BlockchainProfile
     return config_.profile_;
 }
 
-auto Base::Reorg() const noexcept -> const network::zeromq::socket::Publish&
-{
-    return api_.Network().Blockchain().Internal().Reorg();
-}
-
-auto Base::RequestBlock(const block::Hash& block) const noexcept -> bool
-{
-    if (false == running_.load()) { return false; }
-
-    return peer_.RequestBlock(block);
-}
-
-auto Base::RequestBlocks(
-    const UnallocatedVector<ReadView>& hashes) const noexcept -> bool
-{
-    if (false == running_.load()) { return false; }
-
-    return peer_.RequestBlocks(hashes);
-}
-
 auto Base::reset_heartbeat() noexcept -> void
 {
     static constexpr auto interval = 5s;
@@ -1250,7 +1163,6 @@ auto Base::shutdown(std::promise<void>& promise) noexcept -> void
         self_.lock()->reset();
         pipeline_.Close();
         shutdown_sender_.Activate();
-        wallet_.Internal().Shutdown();
 
         if (sync_server_) { sync_server_->Shutdown(); }
 
@@ -1260,7 +1172,6 @@ auto Base::shutdown(std::promise<void>& promise) noexcept -> void
 
         peer_.Shutdown();
         filters_.Internal().Shutdown();
-        block_.Shutdown();
         shutdown_sender_.Close();
         promise.set_value();
     }
@@ -1285,16 +1196,23 @@ auto Base::Start(std::shared_ptr<const node::Manager> me) noexcept -> void
 
         return out;
     }();
+    *(self_.lock()) = ptr;
 
-    *(self_.lock()) = std::move(me);
+    if (have_p2p_requestor_) {
+        p2p::Requestor{api_.Internal().GetShared(), ptr}.Init();
+    }
+
     block_.Start(api_.Internal().GetShared(), ptr);
     init_promise_.set_value();
     peer_.Start();
+    wallet_.Internal().Init(api_.Internal().GetShared(), ptr);
 }
 
 auto Base::StartWallet() noexcept -> void
 {
-    pipeline_.Push(MakeWork(ManagerJobs::StartWallet));
+    if (false == config_.disable_wallet_) {
+        pipeline_.Push(MakeWork(ManagerJobs::StartWallet));
+    }
 }
 
 auto Base::state_machine() noexcept -> bool
@@ -1451,7 +1369,8 @@ auto Base::state_machine_headers() noexcept -> void
 
 auto Base::state_transition_blocks() noexcept -> void
 {
-    block_.Init();
+    to_block_oracle_.SendDeferred(
+        MakeWork(blockoracle::Job::start_downloader), __FILE__, __LINE__);
     state_.store(State::UpdatingBlocks);
 }
 

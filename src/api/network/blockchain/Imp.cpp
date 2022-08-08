@@ -55,22 +55,26 @@ BlockchainImp::BlockchainImp(
     , db_(nullptr)
     , block_available_endpoint_(opentxs::network::zeromq::MakeArbitraryInproc())
     , block_queue_endpoint_(opentxs::network::zeromq::MakeArbitraryInproc())
-    , handle_(zmq.Internal().MakeBatch([&] {
-        using Type = opentxs::network::zeromq::socket::Type;
-        auto out = Vector<Type>{};
-        out.emplace_back(Type::Publish);  // NOTE block_available_out_
-        out.emplace_back(Type::Publish);  // NOTE block_queue_out_
-        out.emplace_back(Type::Pull);     // NOTE block_available_in_
-        out.emplace_back(Type::Pull);     // NOTE block_queue_in_
+    , reorg_endpoint_(opentxs::network::zeromq::MakeArbitraryInproc())
+    , handle_(zmq.Internal().MakeBatch(
+          [&] {
+              using Type = opentxs::network::zeromq::socket::Type;
+              auto out = Vector<Type>{};
+              out.emplace_back(Type::Publish);  // NOTE block_available_out_
+              out.emplace_back(Type::Publish);  // NOTE block_queue_out_
+              out.emplace_back(Type::Publish);  // NOTE reorg_out_
+              out.emplace_back(Type::Pull);     // NOTE block_available_in_
+              out.emplace_back(Type::Pull);     // NOTE block_queue_in_
+              out.emplace_back(Type::Pull);     // NOTE reorg_in_
 
-        return out;
-    }()))
+              return out;
+          }(),
+          "api::network::Blockchain"))
     , batch_(handle_.batch_)
     , block_available_out_([&]() -> auto& {
         auto& socket = batch_.sockets_.at(0);
-        const auto endpoint =
-            UnallocatedCString{endpoints.BlockchainBlockAvailable()};
-        const auto rc = socket.Bind(endpoint.c_str());
+        const auto rc =
+            socket.Bind(endpoints.BlockchainBlockAvailable().data());
 
         OT_ASSERT(rc);
 
@@ -78,16 +82,23 @@ BlockchainImp::BlockchainImp(
     }())
     , block_queue_out_([&]() -> auto& {
         auto& socket = batch_.sockets_.at(1);
-        const auto endpoint =
-            UnallocatedCString{endpoints.BlockchainBlockDownloadQueue()};
-        const auto rc = socket.Bind(endpoint.c_str());
+        const auto rc =
+            socket.Bind(endpoints.BlockchainBlockDownloadQueue().data());
+
+        OT_ASSERT(rc);
+
+        return socket;
+    }())
+    , reorg_out_([&]() -> auto& {
+        auto& socket = batch_.sockets_.at(2);
+        const auto rc = socket.Bind(endpoints.BlockchainReorg().data());
 
         OT_ASSERT(rc);
 
         return socket;
     }())
     , block_available_in_([&]() -> auto& {
-        auto& socket = batch_.sockets_.at(2);
+        auto& socket = batch_.sockets_.at(3);
         const auto rc = socket.Bind(block_available_endpoint_.c_str());
 
         OT_ASSERT(rc);
@@ -95,8 +106,16 @@ BlockchainImp::BlockchainImp(
         return socket;
     }())
     , block_queue_in_([&]() -> auto& {
-        auto& socket = batch_.sockets_.at(3);
+        auto& socket = batch_.sockets_.at(4);
         const auto rc = socket.Bind(block_queue_endpoint_.c_str());
+
+        OT_ASSERT(rc);
+
+        return socket;
+    }())
+    , reorg_in_([&]() -> auto& {
+        auto& socket = batch_.sockets_.at(5);
+        const auto rc = socket.Bind(reorg_endpoint_.c_str());
 
         OT_ASSERT(rc);
 
@@ -108,15 +127,19 @@ BlockchainImp::BlockchainImp(
               {block_available_in_.ID(),
                &block_available_in_,
                [socket = &block_available_out_](auto&& m) {
-                   socket->SendDeferred(std::move(m));
+                   socket->SendDeferred(std::move(m), __FILE__, __LINE__);
                }},
               {block_queue_in_.ID(),
                &block_queue_in_,
                [socket = &block_queue_out_](auto&& m) {
-                   socket->SendDeferred(std::move(m));
+                   socket->SendDeferred(std::move(m), __FILE__, __LINE__);
                }},
-          },
-          "Blockchain"))
+              {reorg_in_.ID(),
+               &reorg_in_,
+               [socket = &reorg_out_](auto&& m) {
+                   socket->SendDeferred(std::move(m), __FILE__, __LINE__);
+               }},
+          }))
     , active_peer_updates_([&] {
         auto out = zmq.PublishSocket();
         const auto listen = out->Start(endpoints.BlockchainPeer().data());
@@ -145,14 +168,6 @@ BlockchainImp::BlockchainImp(
     , new_filters_([&] {
         auto out = zmq.PublishSocket();
         const auto listen = out->Start(endpoints.BlockchainNewFilter().data());
-
-        OT_ASSERT(listen);
-
-        return out;
-    }())
-    , reorg_([&] {
-        auto out = zmq.PublishSocket();
-        const auto listen = out->Start(endpoints.BlockchainReorg().data());
 
         OT_ASSERT(listen);
 

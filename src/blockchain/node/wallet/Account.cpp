@@ -16,13 +16,15 @@
 #include <utility>
 
 #include "blockchain/node/wallet/subchain/NotificationStateData.hpp"
-#include "blockchain/node/wallet/subchain/SubchainStateData.hpp"
 #include "internal/api/crypto/Blockchain.hpp"
 #include "internal/api/session/Wallet.hpp"
-#include "internal/blockchain/node/wallet/subchain/Subchain.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
+#include "internal/blockchain/database/Database.hpp"
+#include "internal/blockchain/node/Manager.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
+#include "internal/util/Timer.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Crypto.hpp"
@@ -31,8 +33,6 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/api/session/Wallet.hpp"
 #include "opentxs/blockchain/Types.hpp"
-#include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
-#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/crypto/Account.hpp"
 #include "opentxs/blockchain/crypto/Deterministic.hpp"
 #include "opentxs/blockchain/crypto/HD.hpp"
@@ -68,6 +68,7 @@ auto print(AccountJobs job) noexcept -> std::string_view
             {Job::subaccount, "subaccount"},
             {Job::prepare_reorg, "prepare_reorg"},
             {Job::rescan, "rescan"},
+            {Job::finish_reorg, "finish_reorg"},
             {Job::init, "init"},
             {Job::key, "key"},
             {Job::prepare_shutdown, "prepare_shutdown"},
@@ -76,11 +77,9 @@ auto print(AccountJobs job) noexcept -> std::string_view
 
         return map.at(job);
     } catch (...) {
-        LogError()(__FUNCTION__)("invalid AccountJobs: ")(
+        LogAbort()(__FUNCTION__)("invalid AccountJobs: ")(
             static_cast<OTZMQWorkType>(job))
-            .Flush();
-
-        OT_FAIL;
+            .Abort();
     }
 }
 }  // namespace opentxs::blockchain::node::wallet
@@ -88,26 +87,23 @@ auto print(AccountJobs job) noexcept -> std::string_view
 namespace opentxs::blockchain::node::wallet
 {
 Account::Imp::Imp(
-    const api::Session& api,
+    Reorg& reorg,
     const crypto::Account& account,
-    const node::Manager& node,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
-    const network::zeromq::BatchID batch,
-    const Type chain,
-    const cfilter::Type filter,
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
     CString&& fromParent,
+    network::zeromq::BatchID batch,
     allocator_type alloc) noexcept
     : Actor(
-          api,
+          *api,
           LogTrace(),
           [&] {
               using namespace std::literals;
 
               return CString{alloc}
-                  .append(print(chain))
+                  .append(print(node->Internal().Chain()))
                   .append(" account for "sv)
-                  .append(account.NymID().asBase58(api.Crypto()));
+                  .append(account.NymID().asBase58(api->Crypto()));
           }(),
           0ms,
           batch,
@@ -115,21 +111,22 @@ Account::Imp::Imp(
           {
               {fromParent, Direction::Connect},
               {CString{
-                   api.Crypto().Blockchain().Internal().KeyEndpoint(),
+                   api->Crypto().Blockchain().Internal().KeyEndpoint(),
                    alloc},
                Direction::Connect},
-              {CString{api.Endpoints().BlockchainAccountCreated(), alloc},
+              {CString{api->Endpoints().BlockchainAccountCreated(), alloc},
                Direction::Connect},
           })
-    , api_(api)
+    , api_p_(std::move(api))
+    , node_p_(std::move(node))
+    , api_(*api_p_)
     , account_(account)
-    , node_(node)
-    , db_(db)
-    , mempool_(mempool)
-    , chain_(chain)
+    , node_(*node_p_)
+    , db_(node_.Internal().DB())
+    , mempool_(node_.Internal().Mempool())
+    , chain_(node_.Internal().Chain())
     , filter_type_(node_.FilterOracle().DefaultType())
     , from_parent_(std::move(fromParent))
-    , pending_state_(State::normal)
     , state_(State::normal)
     , reorgs_(alloc)
     , notification_(alloc)
@@ -137,72 +134,55 @@ Account::Imp::Imp(
     , external_(alloc)
     , outgoing_(alloc)
     , incoming_(alloc)
+    , reorg_(reorg.GetSlave(pipeline_, name_, alloc))
 {
 }
 
 Account::Imp::Imp(
-    const api::Session& api,
+    Reorg& reorg,
     const crypto::Account& account,
-    const node::Manager& node,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
-    const network::zeromq::BatchID batch,
-    const Type chain,
-    const cfilter::Type filter,
-    const std::string_view fromParent,
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
+    std::string_view fromParent,
+    network::zeromq::BatchID batch,
     allocator_type alloc) noexcept
-    : Imp(api,
+    : Imp(reorg,
           account,
-          node,
-          db,
-          mempool,
-          batch,
-          chain,
-          filter,
+          std::move(api),
+          std::move(node),
           CString{fromParent, alloc},
+          std::move(batch),
           alloc)
 {
 }
 
-auto Account::Imp::ChangeState(const State state, StateSequence reorg) noexcept
-    -> bool
+auto Account::Imp::check(
+    const crypto::Deterministic& subaccount,
+    const crypto::Subchain subchain,
+    SubchainsIDs& set) noexcept -> void
 {
-    if (auto old = pending_state_.exchange(state); old == state) {
+    const auto [it, added] = set.emplace(subaccount.ID());
 
-        return true;
-    }
-
-    auto lock = lock_for_reorg(name_, reorg_lock_);
-    auto output{false};
-
-    switch (state) {
-        case State::normal: {
-            if (State::reorg != state_) { break; }
-
-            output = transition_state_normal();
-        } break;
-        case State::reorg: {
-            if (State::shutdown == state_) { break; }
-
-            output = transition_state_reorg(reorg);
-        } break;
-        case State::shutdown: {
-            if (State::reorg == state_) { break; }
-
-            output = transition_state_shutdown();
-        } break;
-        default: {
-            OT_FAIL;
-        }
-    }
-
-    if (false == output) {
-        LogError()(OT_PRETTY_CLASS())(name_)(" failed to change state from ")(
-            print(state_))(" to ")(print(state))
+    if (added) {
+        log_("Instantiating ")(name_)(" subaccount ")(subaccount.ID())(" ")(
+            print(subchain))(" subchain for ")(subaccount.Parent().NymID())
             .Flush();
-    }
+        const auto& asio = api_.Network().ZeroMQ().Internal();
+        const auto batchID = asio.PreallocateBatch();
+        auto ptr = boost::allocate_shared<DeterministicStateData>(
+            alloc::PMR<DeterministicStateData>{asio.Alloc(batchID)},
+            reorg_,
+            subaccount,
+            api_p_,
+            node_p_,
+            subchain,
+            from_parent_,
+            batchID);
 
-    return output;
+        OT_ASSERT(ptr);
+
+        ptr->Init(ptr);
+    }
 }
 
 auto Account::Imp::check_hd(const identifier::Generic& id) noexcept -> void
@@ -212,8 +192,8 @@ auto Account::Imp::check_hd(const identifier::Generic& id) noexcept -> void
 
 auto Account::Imp::check_hd(const crypto::HD& subaccount) noexcept -> void
 {
-    get(subaccount, crypto::Subchain::Internal, internal_);
-    get(subaccount, crypto::Subchain::External, external_);
+    check(subaccount, crypto::Subchain::Internal, internal_);
+    check(subaccount, crypto::Subchain::External, external_);
 }
 
 auto Account::Imp::check_notification(const identifier::Generic& id) noexcept
@@ -225,35 +205,29 @@ auto Account::Imp::check_notification(const identifier::Generic& id) noexcept
 auto Account::Imp::check_notification(
     const crypto::Notification& subaccount) noexcept -> void
 {
-    auto& map = notification_;
+    const auto [it, added] = notification_.emplace(subaccount.ID());
 
-    if (0u < map.count(subaccount.ID())) { return; }
-
-    const auto& code = subaccount.LocalPaymentCode();
-    log_("Initializing payment code ")(code.asBase58())(" on ")(name_).Flush();
-    const auto& asio = api_.Network().ZeroMQ().Internal();
-    const auto batchID = asio.PreallocateBatch();
-    auto [it, added] = map.try_emplace(
-        subaccount.ID(),
-        boost::allocate_shared<NotificationStateData>(
+    if (added) {
+        const auto& code = subaccount.LocalPaymentCode();
+        log_("Initializing payment code ")(code.asBase58())(" on ")(name_)
+            .Flush();
+        const auto& asio = api_.Network().ZeroMQ().Internal();
+        const auto batchID = asio.PreallocateBatch();
+        auto ptr = boost::allocate_shared<NotificationStateData>(
             alloc::PMR<NotificationStateData>{asio.Alloc(batchID)},
-            api_,
-            node_,
-            db_,
-            mempool_,
-            filter_type_,
-            crypto::Subchain::NotificationV3,
-            batchID,
-            from_parent_,
+            reorg_,
+            subaccount,
             code,
-            subaccount));
-    auto& ptr = it->second;
+            api_p_,
+            node_p_,
+            crypto::Subchain::NotificationV3,
+            from_parent_,
+            batchID);
 
-    OT_ASSERT(ptr);
+        OT_ASSERT(ptr);
 
-    auto& subchain = *ptr;
-
-    if (added) { subchain.Init(ptr); }
+        ptr->Init(ptr);
+    }
 }
 
 auto Account::Imp::check_pc(const identifier::Generic& id) noexcept -> void
@@ -264,44 +238,37 @@ auto Account::Imp::check_pc(const identifier::Generic& id) noexcept -> void
 auto Account::Imp::check_pc(const crypto::PaymentCode& subaccount) noexcept
     -> void
 {
-    get(subaccount, crypto::Subchain::Outgoing, outgoing_);
-    get(subaccount, crypto::Subchain::Incoming, incoming_);
+    check(subaccount, crypto::Subchain::Outgoing, outgoing_);
+    check(subaccount, crypto::Subchain::Incoming, incoming_);
 }
 
-auto Account::Imp::clear_children() noexcept -> void
+auto Account::Imp::do_reorg(
+    const node::HeaderOracle& oracle,
+    const Lock& oracleLock,
+    Reorg::Params& params) noexcept -> bool
 {
-    const auto cb = [](auto& value) {
-        auto rc = value.second->ChangeState(Subchain::State::shutdown, {});
+    // NOTE no action necessary
 
-        OT_ASSERT(rc);
-    };
-    for_each(cb);
-    notification_.clear();
-    internal_.clear();
-    external_.clear();
-    outgoing_.clear();
-    incoming_.clear();
+    return true;
 }
 
-auto Account::Imp::do_shutdown() noexcept -> void { clear_children(); }
-
-auto Account::Imp::do_startup() noexcept -> void
+auto Account::Imp::do_shutdown() noexcept -> void
 {
+    state_ = State::shutdown;
+    reorg_.Stop();
+    node_p_.reset();
+    api_p_.reset();
+}
+
+auto Account::Imp::do_startup() noexcept -> bool
+{
+    if (Reorg::State::shutdown == reorg_.Start()) { return true; }
+
     api_.Wallet().Internal().PublishNym(account_.NymID());
     scan_subchains();
     index_nym(account_.NymID());
-}
 
-auto Account::Imp::get(
-    const crypto::Deterministic& subaccount,
-    const crypto::Subchain subchain,
-    Subchains& map) noexcept -> Subchain&
-{
-    auto it = map.find(subaccount.ID());
-
-    if (map.end() != it) { return *(it->second); }
-
-    return instantiate(subaccount, subchain, map);
+    return false;
 }
 
 auto Account::Imp::index_nym(const identifier::Nym& id) noexcept -> void
@@ -316,40 +283,6 @@ auto Account::Imp::Init(boost::shared_ptr<Imp> me) noexcept -> void
     signal_startup(me);
 }
 
-auto Account::Imp::instantiate(
-    const crypto::Deterministic& subaccount,
-    const crypto::Subchain subchain,
-    Subchains& map) noexcept -> Subchain&
-{
-    log_("Instantiating ")(name_)(" subaccount ")(subaccount.ID())(" ")(
-        print(subchain))(" subchain for ")(subaccount.Parent().NymID())
-        .Flush();
-    const auto& asio = api_.Network().ZeroMQ().Internal();
-    const auto batchID = asio.PreallocateBatch();
-    auto [it, added] = map.try_emplace(
-        subaccount.ID(),
-        boost::allocate_shared<DeterministicStateData>(
-            alloc::PMR<DeterministicStateData>{asio.Alloc(batchID)},
-            api_,
-            node_,
-            db_,
-            mempool_,
-            subaccount,
-            filter_type_,
-            subchain,
-            batchID,
-            from_parent_));
-    auto& ptr = it->second;
-
-    OT_ASSERT(ptr);
-
-    auto& output = *ptr;
-
-    if (added) { output.Init(ptr); }
-
-    return output;
-}
-
 auto Account::Imp::pipeline(const Work work, Message&& msg) noexcept -> void
 {
     switch (state_) {
@@ -359,11 +292,14 @@ auto Account::Imp::pipeline(const Work work, Message&& msg) noexcept -> void
         case State::reorg: {
             state_reorg(work, std::move(msg));
         } break;
+        case State::pre_shutdown: {
+            state_pre_shutdown(work, std::move(msg));
+        } break;
         case State::shutdown: {
-            shutdown_actor();
+            // NOTE do nothing
         } break;
         default: {
-            OT_FAIL;
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": invalid state").Abort();
         }
     }
 }
@@ -432,21 +368,10 @@ auto Account::Imp::process_subaccount(
             check_pc(id);
         } break;
         default: {
-
-            OT_FAIL;
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": invalid subaccount type")
+                .Abort();
         }
     }
-}
-
-auto Account::Imp::ProcessReorg(
-    const Lock& headerOracleLock,
-    storage::lmdb::LMDB::Transaction& tx,
-    std::atomic_int& errors,
-    const block::Position& parent) noexcept -> void
-{
-    for_each([&](auto& item) {
-        item.second->ProcessReorg(headerOracleLock, tx, errors, parent);
-    });
 }
 
 auto Account::Imp::scan_subchains() noexcept -> void
@@ -461,9 +386,6 @@ auto Account::Imp::scan_subchains() noexcept -> void
 auto Account::Imp::state_normal(const Work work, Message&& msg) noexcept -> void
 {
     switch (work) {
-        case Work::shutdown: {
-            shutdown_actor();
-        } break;
         case Work::subaccount: {
             process_subaccount(std::move(msg));
         } break;
@@ -480,17 +402,50 @@ auto Account::Imp::state_normal(const Work work, Message&& msg) noexcept -> void
             process_key(std::move(msg));
         } break;
         case Work::prepare_shutdown: {
-            transition_state_shutdown();
+            transition_state_pre_shutdown();
         } break;
         case Work::statemachine: {
             do_work();
         } break;
+        case Work::shutdown:
+        case Work::finish_reorg: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+                print(work))(" message")
+                .Abort();
+        }
         default: {
-            LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))
-                .Flush();
+                .Abort();
+        }
+    }
+}
 
-            OT_FAIL;
+auto Account::Imp::state_pre_shutdown(const Work work, Message&& msg) noexcept
+    -> void
+{
+    switch (work) {
+        case Work::shutdown: {
+            shutdown_actor();
+        } break;
+        case Work::subaccount:
+        case Work::rescan:
+        case Work::key:
+        case Work::statemachine: {
+            // NOTE ignore message
+        } break;
+        case Work::prepare_reorg:
+        case Work::finish_reorg:
+        case Work::init:
+        case Work::prepare_shutdown: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+                print(work))(" message")
+                .Abort();
+        }
+        default: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
+                static_cast<OTZMQWorkType>(work))
+                .Abort();
         }
     }
 }
@@ -505,98 +460,77 @@ auto Account::Imp::state_reorg(const Work work, Message&& msg) noexcept -> void
         case Work::statemachine: {
             defer(std::move(msg));
         } break;
+        case Work::finish_reorg: {
+            transition_state_normal();
+        } break;
         case Work::shutdown:
         case Work::prepare_shutdown:
         case Work::init: {
-            LogError()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
                 print(work))(" message")
-                .Flush();
-
-            OT_FAIL;
+                .Abort();
         }
         default: {
-            LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))
-                .Flush();
-
-            OT_FAIL;
+                .Abort();
         }
     }
 }
 
-auto Account::Imp::transition_state_normal() noexcept -> bool
+auto Account::Imp::transition_state_normal() noexcept -> void
 {
     disable_automatic_processing_ = false;
-    const auto cb = [](auto& value) {
-        auto rc = value.second->ChangeState(Subchain::State::normal, {});
-
-        OT_ASSERT(rc);
-    };
-    for_each(cb);
     state_ = State::normal;
     log_(OT_PRETTY_CLASS())(name_)(" transitioned to normal state ").Flush();
     trigger();
-
-    return true;
 }
 
-auto Account::Imp::transition_state_reorg(StateSequence id) noexcept -> bool
+auto Account::Imp::transition_state_pre_shutdown() noexcept -> void
 {
-    OT_ASSERT(0u < id);
+    reorg_.AcknowledgeShutdown();
+    state_ = State::pre_shutdown;
+    log_(OT_PRETTY_CLASS())(name_)(": transitioned to pre_shutdown state")
+        .Flush();
+}
 
-    auto success{true};
+auto Account::Imp::transition_state_reorg(StateSequence id) noexcept -> void
+{
+    OT_ASSERT(0_uz < id);
 
-    if (0u == reorgs_.count(id)) {
-        const auto cb = [&](auto& value) {
-            success &= value.second->ChangeState(Subchain::State::reorg, id);
-        };
-        for_each(cb);
-
-        if (false == success) { return false; }
-
+    if (0_uz == reorgs_.count(id)) {
         reorgs_.emplace(id);
         disable_automatic_processing_ = true;
         state_ = State::reorg;
         log_(OT_PRETTY_CLASS())(name_)(" ready to process reorg ")(id).Flush();
+        reorg_.AcknowledgePrepareReorg(
+            [this](const auto& header, const auto& lock, auto& params) {
+                return do_reorg(header, lock, params);
+            });
     } else {
-        log_(OT_PRETTY_CLASS())(name_)(" reorg ")(id)(" already handled")
-            .Flush();
+        LogAbort()(OT_PRETTY_CLASS())(name_)(" reorg ")(id)(" already handled")
+            .Abort();
     }
-
-    return true;
-}
-
-auto Account::Imp::transition_state_shutdown() noexcept -> bool
-{
-    clear_children();
-    state_ = State::shutdown;
-    log_(OT_PRETTY_CLASS())(name_)(" transitioned to shutdown state ").Flush();
-    signal_shutdown();
-
-    return true;
-}
-
-auto Account::Imp::VerifyState(const State state) const noexcept -> void
-{
-    OT_ASSERT(state == state_);
 }
 
 auto Account::Imp::work() noexcept -> bool { return false; }
+
+Account::Imp::~Imp() = default;
 }  // namespace opentxs::blockchain::node::wallet
 
 namespace opentxs::blockchain::node::wallet
 {
 Account::Account(
-    const api::Session& api,
+    Reorg& reorg,
     const crypto::Account& account,
-    const node::Manager& node,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
-    const Type chain,
-    const cfilter::Type filter,
-    const std::string_view shutdown) noexcept
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node,
+    std::string_view fromParent) noexcept
     : imp_([&] {
-        const auto& asio = api.Network().ZeroMQ().Internal();
+        OT_ASSERT(api);
+        OT_ASSERT(node);
+
+        const auto& asio = api->Network().ZeroMQ().Internal();
         const auto batchID = asio.PreallocateBatch();
         // TODO the version of libc++ present in android ndk 23.0.7599858
         // has a broken std::allocate_shared function so we're using
@@ -604,50 +538,23 @@ Account::Account(
 
         return boost::allocate_shared<Imp>(
             alloc::PMR<Imp>{asio.Alloc(batchID)},
-            api,
+            reorg,
             account,
-            node,
-            db,
-            mempool,
-            batchID,
-            chain,
-            filter,
-            shutdown);
+            std::move(api),
+            std::move(node),
+            fromParent,
+            batchID);
     }())
+{
+}
+
+auto Account::Init() noexcept -> void
 {
     OT_ASSERT(imp_);
 
     imp_->Init(imp_);
+    imp_.reset();
 }
 
-Account::Account(Account&& rhs) noexcept
-    : imp_(std::move(rhs.imp_))
-{
-    OT_ASSERT(imp_);
-}
-
-auto Account::ProcessReorg(
-    const Lock& headerOracleLock,
-    storage::lmdb::LMDB::Transaction& tx,
-    std::atomic_int& errors,
-    const block::Position& parent) noexcept -> void
-{
-    imp_->ProcessReorg(headerOracleLock, tx, errors, parent);
-}
-
-auto Account::ChangeState(const State state, StateSequence reorg) noexcept
-    -> bool
-{
-    return imp_->ChangeState(state, reorg);
-}
-
-auto Account::VerifyState(const State state) const noexcept -> void
-{
-    imp_->VerifyState(state);
-}
-
-Account::~Account()
-{
-    if (imp_) { imp_->Shutdown(); }
-}
+Account::~Account() = default;
 }  // namespace opentxs::blockchain::node::wallet

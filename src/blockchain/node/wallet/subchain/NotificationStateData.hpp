@@ -103,6 +103,7 @@ namespace wallet
 {
 class Accounts;
 class Progress;
+class Reorg;
 class Rescan;
 class Scan;
 }  // namespace wallet
@@ -139,16 +140,14 @@ class NotificationStateData final : public SubchainStateData
 {
 public:
     NotificationStateData(
-        const api::Session& api,
-        const node::Manager& node,
-        database::Wallet& db,
-        const node::internal::Mempool& mempool,
-        const cfilter::Type filter,
-        const crypto::Subchain subchain,
-        const network::zeromq::BatchID batch,
-        const std::string_view parent,
-        const opentxs::PaymentCode& code,
+        Reorg& reorg,
         const crypto::Notification& subaccount,
+        const opentxs::PaymentCode& code,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        crypto::Subchain subchain,
+        std::string_view fromParent,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept;
     NotificationStateData() = delete;
     NotificationStateData(const NotificationStateData&) = delete;
@@ -157,7 +156,7 @@ public:
         -> NotificationStateData& = delete;
     auto operator=(NotificationStateData&&) -> NotificationStateData& = delete;
 
-    ~NotificationStateData() final = default;
+    ~NotificationStateData() final;
 
 private:
     using PaymentCode =
@@ -172,9 +171,9 @@ private:
 
     auto CheckCache(const std::size_t outstanding, FinishedCallback cb)
         const noexcept -> void final;
-    auto do_startup() noexcept -> void final;
+    auto do_startup() noexcept -> bool final;
     auto get_index(const boost::shared_ptr<const SubchainStateData>& me)
-        const noexcept -> Index final;
+        const noexcept -> void final;
     auto handle_confirmed_matches(
         const bitcoin::block::Block& block,
         const block::Position& position,

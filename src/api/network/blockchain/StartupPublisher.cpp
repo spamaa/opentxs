@@ -30,19 +30,22 @@ StartupPublisher::StartupPublisher(
     const api::session::Endpoints& endpoints,
     const opentxs::network::zeromq::Context& zmq) noexcept
     : zmq_(zmq.Internal())
-    , handle_(zmq_.Internal().MakeBatch([] {
-        using Type = opentxs::network::zeromq::socket::Type;
-        auto out = Vector<Type>{
-            Type::Publish,
-            Type::Pull,
-        };
+    , handle_(zmq_.Internal().MakeBatch(
+          [] {
+              using Type = opentxs::network::zeromq::socket::Type;
+              auto out = Vector<Type>{
+                  Type::Publish,
+                  Type::Pull,
+              };
 
-        return out;
-    }()))
+              return out;
+          }(),
+          "api::network::blockchain::StartupPublisher"))
     , batch_([&]() -> auto& {
         auto& out = handle_.batch_;
-        out.listen_callbacks_.emplace_back(Callback::Factory(
-            [this](auto&& in) { publish_.Send(std::move(in)); }));
+        out.listen_callbacks_.emplace_back(Callback::Factory([this](auto&& in) {
+            publish_.Send(std::move(in), __FILE__, __LINE__);
+        }));
 
         return out;
     }())
@@ -71,8 +74,7 @@ StartupPublisher::StartupPublisher(
               {pull_.ID(),
                &pull_,
                [&cb = cb_](auto&& m) { cb.Process(std::move(m)); }},
-          },
-          "StartupPublisher"))
+          }))
 {
     OT_ASSERT(nullptr != thread_);
 

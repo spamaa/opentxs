@@ -9,8 +9,9 @@
 #include <utility>
 
 #include "ottest/fixtures/blockchain/HeaderOracle.hpp"
+#include "internal/blockchain/node/HeaderOracle.hpp"
 
-ot::UnallocatedVector<std::unique_ptr<bb::Header>> headers_{};
+ot::Vector<std::unique_ptr<bb::Header>> headers_{};
 
 namespace ottest
 {
@@ -35,7 +36,7 @@ TEST_F(Test_HeaderOracle_btc, stage_headers)
 
 TEST_F(Test_HeaderOracle_btc, receive)
 {
-    EXPECT_TRUE(header_oracle_.AddHeaders(headers_));
+    EXPECT_TRUE(header_oracle_.Internal().AddHeaders(headers_));
 
     const auto [height, hash] = header_oracle_.BestChain();
 
@@ -49,4 +50,6 @@ TEST_F(Test_HeaderOracle_btc, receive)
 
     EXPECT_EQ(expectedWork, header->Work()->Decimal());
 }
+
+TEST_F(Test_HeaderOracle_btc, shutdown) { Shutdown(); }
 }  // namespace ottest

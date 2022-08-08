@@ -91,7 +91,7 @@ Contacts::Contacts(const api::session::Client& api)
     , publisher_(api_.Network().ZeroMQ().PublishSocket())
     , pipeline_(api_.Network().ZeroMQ().Internal().Pipeline(
           [this](auto&& in) { pipeline(std::move(in)); },
-          "Contacts",
+          "api::session::Contacts",
           {{CString{api_.Endpoints().NymCreated()},
             opentxs::network::zeromq::socket::Direction::Connect},
            {CString{api_.Endpoints().NymDownload()},

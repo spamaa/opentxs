@@ -3,57 +3,51 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// IWYU pragma: no_include <boost/smart_ptr/detail/operator_bool.hpp>
-
 #include "0_stdafx.hpp"    // IWYU pragma: associated
 #include "1_Internal.hpp"  // IWYU pragma: associated
-#include "blockchain/node/blockoracle/BlockFetcher.hpp"  // IWYU pragma: associated
+#include "blockchain/node/blockoracle/blockfetcher/Actor.hpp"  // IWYU pragma: associated
 
-#include <boost/smart_ptr/make_shared.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <chrono>
-#include <exception>
+#include <cstddef>
 #include <iterator>
 #include <memory>
 #include <optional>
-#include <sstream>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
-#include "blockchain/node/blockoracle/BlockBatch.hpp"
+#include "blockchain/node/blockoracle/blockfetcher/Shared.hpp"
 #include "internal/api/session/Endpoints.hpp"
 #include "internal/api/session/Session.hpp"
 #include "internal/blockchain/database/Block.hpp"
 #include "internal/blockchain/database/Database.hpp"
-#include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
+#include "internal/blockchain/node/Job.hpp"
 #include "internal/blockchain/node/Manager.hpp"
-#include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
-#include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
-#include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/bitcoin/block/Block.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
+#include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
-#include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/socket/SocketType.hpp"
 #include "opentxs/network/zeromq/socket/Types.hpp"
-#include "opentxs/util/Allocator.hpp"
+#include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
@@ -62,72 +56,13 @@
 
 namespace opentxs::blockchain::node::blockoracle
 {
-auto print(BlockFetcherJob job) noexcept -> std::string_view
-{
-    using namespace std::literals;
-
-    try {
-        using Job = BlockFetcherJob;
-        static const auto map = Map<Job, std::string_view>{
-            {Job::shutdown, "shutdown"sv},
-            {Job::header, "header"sv},
-            {Job::reorg, "reorg"sv},
-            {Job::block_received, "block_received"sv},
-            {Job::batch_finished, "batch_finished"sv},
-            {Job::init, "init"sv},
-            {Job::statemachine, "statemachine"sv},
-        };
-
-        return map.at(job);
-    } catch (...) {
-        LogError()(__FUNCTION__)("invalid BlockFetcherJob: ")(
-            static_cast<OTZMQWorkType>(job))
-            .Flush();
-
-        OT_FAIL;
-    }
-}
-}  // namespace opentxs::blockchain::node::blockoracle
-
-namespace opentxs::blockchain::node::blockoracle
-{
-BlockFetcher::Shared::Data::Data(allocator_type alloc) noexcept
-    : tip_()
-    , queue_()
-    , blocks_(alloc)
-    , job_index_(alloc)
-{
-}
-
-auto BlockFetcher::Shared::Data::get_allocator() const noexcept
-    -> allocator_type
-{
-    return job_index_.get_allocator();
-}
-}  // namespace opentxs::blockchain::node::blockoracle
-
-namespace opentxs::blockchain::node::blockoracle
-{
-BlockFetcher::Shared::Shared(allocator_type alloc) noexcept
-    : data_(std::move(alloc))
-{
-}
-
-auto BlockFetcher::Shared::get_allocator() const noexcept -> allocator_type
-{
-    return data_.lock()->get_allocator();
-}
-}  // namespace opentxs::blockchain::node::blockoracle
-
-namespace opentxs::blockchain::node::blockoracle
-{
-BlockFetcher::Imp::Imp(
+BlockFetcher::Actor::Actor(
     std::shared_ptr<const api::Session> api,
     std::shared_ptr<const node::Manager> node,
     boost::shared_ptr<Shared> shared,
     network::zeromq::BatchID batchID,
     allocator_type alloc) noexcept
-    : Actor(
+    : opentxs::Actor<BlockFetcher::Actor, BlockFetcherJob>(
           *api,
           LogTrace(),
           [&] {
@@ -149,13 +84,18 @@ BlockFetcher::Imp::Imp(
               out.emplace_back(
                   CString{api->Endpoints().Shutdown(), alloc}, Dir::Connect);
               out.emplace_back(
-                  CString{
-                      node->Internal().Endpoints().shutdown_publish_, alloc},
-                  Dir::Connect);
+                  node->Internal().Endpoints().shutdown_publish_, Dir::Connect);
 
               return out;
           }(),
-          {},
+          [&] {
+              using Dir = network::zeromq::socket::Direction;
+              auto out = network::zeromq::EndpointArgs{alloc};
+              out.emplace_back(
+                  node->Internal().Endpoints().block_fetcher_pull_, Dir::Bind);
+
+              return out;
+          }(),
           {},
           [&] {
               auto out = Vector<network::zeromq::SocketData>{alloc};
@@ -165,10 +105,9 @@ BlockFetcher::Imp::Imp(
               out.emplace_back(std::make_pair<Socket, Args>(
                   Socket::Publish,
                   {
-                      {{node->Internal()
-                            .Endpoints()
-                            .block_fetcher_job_ready_publish_,
-                        alloc},
+                      {node->Internal()
+                           .Endpoints()
+                           .block_fetcher_job_ready_publish_,
                        Dir::Bind},
                   }));
               out.emplace_back(std::make_pair<Socket, Args>(
@@ -193,13 +132,11 @@ BlockFetcher::Imp::Imp(
     , job_ready_(pipeline_.Internal().ExtraSocket(0))
     , tip_updated_(pipeline_.Internal().ExtraSocket(1))
     , chain_(node_.Internal().Chain())
-    , peer_target_(node_.Internal().GetConfig().PeerTarget(chain_))
     , data_(shared_->data_)
-    , self_()
 {
 }
 
-auto BlockFetcher::Imp::broadcast_tip(const block::Position& tip) noexcept
+auto BlockFetcher::Actor::broadcast_tip(const block::Position& tip) noexcept
     -> void
 {
     log_(OT_PRETTY_CLASS())(name_)(": block tip updated to ")(tip).Flush();
@@ -207,69 +144,72 @@ auto BlockFetcher::Imp::broadcast_tip(const block::Position& tip) noexcept
 
     OT_ASSERT(saved);
 
-    tip_updated_.SendDeferred([&] {
-        auto msg = MakeWork(OT_ZMQ_NEW_FULL_BLOCK_SIGNAL);
-        msg.AddFrame(tip.height_);
-        msg.AddFrame(tip.hash_);
+    tip_updated_.SendDeferred(
+        [&] {
+            auto msg = MakeWork(OT_ZMQ_NEW_FULL_BLOCK_SIGNAL);
+            msg.AddFrame(tip.height_);
+            msg.AddFrame(tip.hash_);
 
-        return msg;
-    }());
+            return msg;
+        }(),
+        __FILE__,
+        __LINE__);
 }
 
-auto BlockFetcher::Imp::do_shutdown() noexcept -> void
+auto BlockFetcher::Actor::do_shutdown() noexcept -> void
 {
-    self_.reset();
     node_p_.reset();
     api_p_.reset();
 }
 
-auto BlockFetcher::Imp::do_startup() noexcept -> void
+auto BlockFetcher::Actor::do_startup() noexcept -> bool
 {
     if ((api_.Internal().ShuttingDown()) || (node_.Internal().ShuttingDown())) {
-        shutdown_actor();
-    } else {
-        {
-            auto handle = data_.lock();
-            auto& tip = handle->tip_;
-            tip = db_.BlockTip();
-            const auto original = tip;
+        return true;
+    }
 
-            OT_ASSERT(0 <= tip.height_);
+    {
+        auto handle = data_.lock();
+        auto& tip = handle->tip_;
+        tip = db_.BlockTip();
+        const auto original = tip;
 
-            if (auto r = header_oracle_.CalculateReorg(tip);
-                false == r.empty()) {
-                const auto& last = r.back();
+        OT_ASSERT(0 <= tip.height_);
 
-                OT_ASSERT(0 < last.height_);
+        if (auto r = header_oracle_.CalculateReorg(tip); false == r.empty()) {
+            const auto& last = r.back();
 
-                const auto header = header_oracle_.LoadHeader(last.hash_);
+            OT_ASSERT(0 < last.height_);
 
-                OT_ASSERT(header);
+            const auto header = header_oracle_.LoadHeader(last.hash_);
 
-                tip = {last.height_ - 1, header->ParentHash()};
-            }
+            OT_ASSERT(header);
 
-            while (tip.height_ > 0) {
-                if (auto block = db_.BlockLoadBitcoin(tip.hash_); block) {
-
-                    break;
-                } else {
-
-                    tip = header_oracle_.GetPosition(tip.height_ - 1);
-                }
-            }
-
-            if (original != tip) { broadcast_tip(tip); }
-
-            log_(OT_PRETTY_CLASS())(": best downloaded full block is ")(tip)
-                .Flush();
+            tip = {last.height_ - 1, header->ParentHash()};
         }
 
-        do_work();
+        while (tip.height_ > 0) {
+            if (auto block = db_.BlockLoadBitcoin(tip.hash_); block) {
+
+                break;
+            } else {
+
+                tip = header_oracle_.GetPosition(tip.height_ - 1);
+            }
+        }
+
+        if (original != tip) { broadcast_tip(tip); }
+
+        log_(OT_PRETTY_CLASS())(": best downloaded full block is ")(tip)
+            .Flush();
     }
+
+    do_work();
+
+    return false;
 }
 
-auto BlockFetcher::Imp::erase_obsolete(
+auto BlockFetcher::Actor::erase_obsolete(
     const block::Position& after,
     Shared::Data& data) noexcept -> void
 {
@@ -298,90 +238,7 @@ auto BlockFetcher::Imp::erase_obsolete(
     }
 }
 
-auto BlockFetcher::Imp::GetJob(allocator_type pmr) const noexcept
-    -> internal::BlockBatch
-{
-    OT_ASSERT(self_);
-
-    using Imp = internal::BlockBatch::Imp;
-    auto alloc = alloc::PMR<Imp>{pmr};
-    auto* imp = alloc.allocate(1_uz);
-    const auto id = download::next_job();
-    auto hashes = [&] {
-        // TODO define max in Params
-        static constexpr auto max = 50000_uz;
-        static constexpr auto min = 10_uz;
-        auto handle = data_.lock();
-        auto& data = *handle;
-        auto& queue = data.queue_;
-        auto& blocks = data.blocks_;
-        const auto count = download::batch_size(queue, peer_target_, max, min);
-
-        OT_ASSERT(blocks.size() >= count);
-        OT_ASSERT(count <= queue);
-
-        auto& index = data.job_index_[id];
-        auto out = Vector<block::Hash>{pmr};
-        out.reserve(count);
-        auto i = blocks.begin();
-
-        while (out.size() < count) {
-            auto cur = i++;
-            auto& [height, val] = *cur;
-            auto& [hash, job, status] = val;
-
-            if (Status::pending == status) {
-                --queue;
-                job = id;
-                status = Status::downloading;
-                --data.queue_;
-                out.emplace_back(hash);
-                index.emplace(hash, cur);
-            }
-        }
-
-        return out;
-    }();
-
-    if (hashes.empty()) {
-
-        return {};
-    } else {
-        auto download = [me = self_, id](const auto bytes) {
-            me->pipeline_.Push([bytes, id] {
-                auto msg = MakeWork(Work::block_received);
-                msg.AddFrame(id);
-                msg.AddFrame(bytes.data(), bytes.size());
-
-                return msg;
-            }());
-        };
-        auto finished = [me = self_, id] {
-            me->pipeline_.Push([id] {
-                auto msg = MakeWork(Work::batch_finished);
-                msg.AddFrame(id);
-
-                return msg;
-            }());
-        };
-        alloc.construct(
-            imp,
-            id,
-            std::move(hashes),
-            download,
-            std::make_shared<ScopeGuard>(finished));
-
-        return imp;
-    }
-}
-
-auto BlockFetcher::Imp::Init(boost::shared_ptr<Imp> self) noexcept -> void
-{
-    self_ = std::move(self);
-    signal_startup(self_);
-}
-
-auto BlockFetcher::Imp::pipeline(const Work work, Message&& msg) noexcept
+auto BlockFetcher::Actor::pipeline(const Work work, Message&& msg) noexcept
     -> void
 {
     switch (work) {
@@ -414,7 +271,7 @@ auto BlockFetcher::Imp::pipeline(const Work work, Message&& msg) noexcept
     }
 }
 
-auto BlockFetcher::Imp::process_batch_finished(Message&& msg) noexcept -> void
+auto BlockFetcher::Actor::process_batch_finished(Message&& msg) noexcept -> void
 {
     auto body = msg.Body();
 
@@ -439,7 +296,7 @@ auto BlockFetcher::Imp::process_batch_finished(Message&& msg) noexcept -> void
     update_tip(*handle);
 }
 
-auto BlockFetcher::Imp::process_block_received(Message&& msg) noexcept -> void
+auto BlockFetcher::Actor::process_block_received(Message&& msg) noexcept -> void
 {
     auto body = msg.Body();
 
@@ -475,7 +332,7 @@ auto BlockFetcher::Imp::process_block_received(Message&& msg) noexcept -> void
     }
 }
 
-auto BlockFetcher::Imp::process_reorg(Message&& msg) noexcept -> void
+auto BlockFetcher::Actor::process_reorg(Message&& msg) noexcept -> void
 {
     const auto body = msg.Body();
 
@@ -507,7 +364,7 @@ auto BlockFetcher::Imp::process_reorg(Message&& msg) noexcept -> void
     do_work();
 }
 
-auto BlockFetcher::Imp::update_tip(Shared::Data& data) noexcept -> void
+auto BlockFetcher::Actor::update_tip(Shared::Data& data) noexcept -> void
 {
     auto& tip = data.tip_;
     auto& blocks = data.blocks_;
@@ -546,7 +403,7 @@ auto BlockFetcher::Imp::update_tip(Shared::Data& data) noexcept -> void
     }
 }
 
-auto BlockFetcher::Imp::work() noexcept -> bool
+auto BlockFetcher::Actor::work() noexcept -> bool
 {
     log_(OT_PRETTY_CLASS())(name_)(": checking for new blocks").Flush();
     auto handle = data_.lock();
@@ -568,7 +425,8 @@ auto BlockFetcher::Imp::work() noexcept -> bool
             log_(OT_PRETTY_CLASS())(name_)(
                 ": notifying listeners about new block download jobs")
                 .Flush();
-            job_ready_.SendDeferred(MakeWork(OT_ZMQ_BLOCK_FETCH_JOB_AVAILABLE));
+            job_ready_.SendDeferred(
+                MakeWork(OT_ZMQ_BLOCK_FETCH_JOB_AVAILABLE), __FILE__, __LINE__);
         }
     }};
     auto newBlocks = [&] {
@@ -623,111 +481,5 @@ auto BlockFetcher::Imp::work() noexcept -> bool
     return false;
 }
 
-BlockFetcher::Imp::~Imp() = default;
-}  // namespace opentxs::blockchain::node::blockoracle
-
-namespace opentxs::blockchain::node::blockoracle
-{
-BlockFetcher::BlockFetcher(
-    std::shared_ptr<const api::Session> api,
-    std::shared_ptr<const node::Manager> node,
-    network::zeromq::BatchID batchID,
-    allocator_type alloc) noexcept
-    : shared_(boost::allocate_shared<Shared>(alloc::PMR<Shared>{alloc}))
-    , actor_(boost::allocate_shared<Imp>(
-          alloc::PMR<Imp>{alloc},
-          std::move(api),
-          std::move(node),
-          shared_,
-          batchID))
-{
-    // TODO the version of libc++ present in android ndk 23.0.7599858 has a
-    // broken std::allocate_shared function so we're using boost::shared_ptr
-    // instead of std::shared_ptr
-
-    OT_ASSERT(shared_);
-    OT_ASSERT(actor_);
-}
-
-BlockFetcher::BlockFetcher(
-    std::shared_ptr<const api::Session> api,
-    std::shared_ptr<const node::Manager> node,
-    network::zeromq::BatchID batchID) noexcept
-    : BlockFetcher(
-          api,
-          node,
-          batchID,
-          api->Network().ZeroMQ().Internal().Alloc(batchID))
-{
-}
-
-BlockFetcher::BlockFetcher(
-    std::shared_ptr<const api::Session> api,
-    std::shared_ptr<const node::Manager> node) noexcept
-    : BlockFetcher(
-          api,
-          node,
-          api->Network().ZeroMQ().Internal().PreallocateBatch())
-{
-}
-
-BlockFetcher::BlockFetcher(const BlockFetcher& rhs) noexcept
-    : shared_(rhs.shared_)
-    , actor_(rhs.actor_)
-{
-    OT_ASSERT(shared_);
-    OT_ASSERT(actor_);
-}
-
-BlockFetcher::BlockFetcher(BlockFetcher&& rhs) noexcept
-    : shared_(std::move(rhs.shared_))
-    , actor_(std::move(rhs.actor_))
-{
-    OT_ASSERT(shared_);
-    OT_ASSERT(actor_);
-}
-
-auto BlockFetcher::operator=(const BlockFetcher& rhs) noexcept -> BlockFetcher&
-{
-    if (this != std::addressof(rhs)) {
-        shared_ = rhs.shared_;
-        actor_ = rhs.actor_;
-    }
-
-    return *this;
-}
-
-auto BlockFetcher::operator=(BlockFetcher&& rhs) noexcept -> BlockFetcher&
-{
-    using std::swap;
-    swap(shared_, rhs.shared_);
-    swap(actor_, rhs.actor_);
-
-    return *this;
-}
-
-auto BlockFetcher::get_allocator() const noexcept -> allocator_type
-{
-    OT_ASSERT(actor_);
-
-    return actor_->get_allocator();
-}
-
-auto BlockFetcher::GetJob(allocator_type alloc) const noexcept
-    -> internal::BlockBatch
-{
-    OT_ASSERT(actor_);
-
-    return actor_->GetJob(alloc);
-}
-
-auto BlockFetcher::Init() noexcept -> void
-{
-    OT_ASSERT(actor_);
-
-    actor_->Init(actor_);
-    actor_.reset();
-}
-
-BlockFetcher::~BlockFetcher() = default;
+BlockFetcher::Actor::~Actor() = default;
 }  // namespace opentxs::blockchain::node::blockoracle

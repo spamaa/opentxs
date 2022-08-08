@@ -51,15 +51,6 @@ Endpoints::Endpoints(const int instance) noexcept
 
         return out;
     }())
-    , blockchain_filter_updated_([] {
-        auto out = BlockchainMap{};
-
-        for (const auto& chain : opentxs::blockchain::DefinedChains()) {
-            out.emplace(chain, opentxs::network::zeromq::MakeArbitraryInproc());
-        }
-
-        return out;
-    }())
     , blockchain_mempool_(build_inproc_path("blockchain/mempool", version_1_))
     , blockchain_new_filter_(build_inproc_path("blockchain/filter", version_1_))
     , blockchain_peer_(build_inproc_path("blockchain/peer/active", version_1_))
@@ -165,12 +156,6 @@ auto Endpoints::BlockchainBlockUpdated(
     const opentxs::blockchain::Type chain) const noexcept -> std::string_view
 {
     return blockchain_block_updated_.at(chain);
-}
-
-auto Endpoints::BlockchainFilterUpdated(
-    const opentxs::blockchain::Type chain) const noexcept -> std::string_view
-{
-    return blockchain_filter_updated_.at(chain);
 }
 
 auto Endpoints::BlockchainMempool() const noexcept -> std::string_view

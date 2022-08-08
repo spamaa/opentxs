@@ -11,6 +11,7 @@
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 
 #include "blockchain/node/filteroracle/FilterDownloader.hpp"
@@ -61,7 +62,10 @@ FilterOracle::HeaderDownloader::HeaderDownloader(
           "cfheader",
           20000,
           10000)
-    , HeaderWorker(api, 20ms)
+    , HeaderWorker(
+          api,
+          20ms,
+          "blockchain::node::FilterOracle::HeaderDownloader")
     , db_(db)
     , header_(header)
     , node_(node)

@@ -53,7 +53,7 @@ BlockchainSelection::BlockchainSelection(
     const ui::Blockchains type,
     const SimpleCallback& cb) noexcept
     : BlockchainSelectionList(api, {}, cb, false)
-    , Worker(api, {})
+    , Worker(api, {}, "ui::BlockchainSelection")
     , filter_(filter(type))
     , chain_state_([&] {
         auto out = UnallocatedMap<blockchain::Type, bool>{};

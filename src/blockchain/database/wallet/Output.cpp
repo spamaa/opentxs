@@ -1287,27 +1287,33 @@ private:
     }
     auto publish_balance(const OutputCache& cache) const noexcept -> void
     {
-        to_balance_oracle_.lock()->Send([&] {
-            const auto balance = get_balance(cache);
-            auto out = MakeWork(OT_ZMQ_BALANCE_ORACLE_SUBMIT);
-            out.AddFrame(chain_);
-            out.AddFrame(balance.first);
-            out.AddFrame(balance.second);
-
-            return out;
-        }());
-
-        for (const auto& data : get_balances(cache)) {
-            to_balance_oracle_.lock()->Send([&] {
-                const auto& [nym, balance] = data;  // TODO c++20
+        to_balance_oracle_.lock()->SendDeferred(
+            [&] {
+                const auto balance = get_balance(cache);
                 auto out = MakeWork(OT_ZMQ_BALANCE_ORACLE_SUBMIT);
                 out.AddFrame(chain_);
                 out.AddFrame(balance.first);
                 out.AddFrame(balance.second);
-                out.AddFrame(nym);
 
                 return out;
-            }());
+            }(),
+            __FILE__,
+            __LINE__);
+
+        for (const auto& data : get_balances(cache)) {
+            to_balance_oracle_.lock()->SendDeferred(
+                [&] {
+                    const auto& [nym, balance] = data;  // TODO c++20
+                    auto out = MakeWork(OT_ZMQ_BALANCE_ORACLE_SUBMIT);
+                    out.AddFrame(chain_);
+                    out.AddFrame(balance.first);
+                    out.AddFrame(balance.second);
+                    out.AddFrame(nym);
+
+                    return out;
+                }(),
+                __FILE__,
+                __LINE__);
         }
     }
     [[nodiscard]] auto translate(Vector<UTXO>&& outputs) const noexcept

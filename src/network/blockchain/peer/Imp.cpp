@@ -11,7 +11,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <mutex>
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
@@ -32,6 +31,7 @@
 #include "internal/blockchain/p2p/P2P.hpp"
 #include "internal/network/blockchain/ConnectionManager.hpp"
 #include "internal/network/blockchain/Types.hpp"
+#include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
 #include "network/blockchain/peer/HasJob.hpp"
@@ -59,7 +59,7 @@
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
-#include "opentxs/network/zeromq/socket/Types.hpp"
+#include "opentxs/network/zeromq/socket/SocketType.hpp"  // IWYU pragma: keep
 #include "opentxs/util/BlockchainProfile.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/WorkType.hpp"
@@ -85,12 +85,9 @@ auto print(PeerJob job) noexcept -> std::string_view
             {Job::sendresult, "sendresult"sv},
             {Job::p2p, "p2p"sv},
             {Job::getheaders, "getheaders"sv},
-            {Job::getblock, "getblock"sv},
             {Job::broadcasttx, "broadcasttx"sv},
             {Job::jobavailablecfheaders, "jobavailablecfheaders"sv},
             {Job::jobavailablecfilters, "jobavailablecfilters"sv},
-            {Job::jobavailableblock, "jobavailableblock"sv},
-            {Job::jobavailableblockbatch, "jobavailableblockbatch"sv},
             {Job::dealerconnected, "dealerconnected"sv},
             {Job::jobtimeout, "jobtimeout"sv},
             {Job::needpeers, "needpeers"sv},
@@ -99,6 +96,8 @@ auto print(PeerJob job) noexcept -> std::string_view
             {Job::needping, "needping"sv},
             {Job::body, "body"sv},
             {Job::header, "header"sv},
+            {Job::jobavailableblock, "jobavailableblock"sv},
+            {Job::jobavailableblockbatch, "jobavailableblockbatch"sv},
             {Job::heartbeat, "heartbeat"sv},
             {Job::block, "block"sv},
             {Job::init, "init"sv},
@@ -183,14 +182,37 @@ Peer::Imp::Imp(
           0ms,
           batch,
           alloc,
-          {
-              {CString{endpoints.shutdown_publish_, alloc}, Direction::Connect},
-              {CString{api->Endpoints().BlockchainReorg(), alloc},
-               Direction::Connect},
-          },
-          {
-              {CString{fromParent, alloc}, Direction::Connect},
-          })
+          [&] {
+              auto sub = network::zeromq::EndpointArgs{alloc};
+              sub.emplace_back(api->Endpoints().Shutdown(), Direction::Connect);
+              sub.emplace_back(
+                  network->Internal().Endpoints().shutdown_publish_,
+                  Direction::Connect);
+              sub.emplace_back(
+                  api->Endpoints().BlockchainReorg(), Direction::Connect);
+
+              return sub;
+          }(),
+          [&] {
+              auto pull = network::zeromq::EndpointArgs{alloc};
+              pull.emplace_back(fromParent, Direction::Connect);
+
+              return pull;
+          }(),
+          {},
+          [&] {
+              auto out = Vector<network::zeromq::SocketData>{alloc};
+              out.emplace_back(SocketType::Push, [&] {
+                  auto extra = Vector<network::zeromq::EndpointArg>{alloc};
+                  extra.emplace_back(
+                      network->Internal().Endpoints().block_cache_pull_,
+                      Direction::Connect);
+
+                  return extra;
+              }());
+
+              return out;
+          }())
     , api_p_(api)
     , network_p_(network)
     , api_(*api_p_)
@@ -211,6 +233,7 @@ Peer::Imp::Imp(
         }
     }())
     , database_(network_.Internal().DB())
+    , to_block_cache_(pipeline_.Internal().ExtraSocket(0))
     , id_(peerID)
     , untrusted_connection_id_(pipeline_.ConnectionIDDealer())
     , ping_interval_(std::move(pingInterval))
@@ -296,12 +319,12 @@ auto Peer::Imp::check_jobs() noexcept -> void
             fJob.id_)
             .Flush();
         job_ = std::move(fJob);
-    } else if (auto bBatch = block.GetBlockBatch(); bBatch) {
+    } else if (auto bBatch = block.GetBlockBatch(get_allocator()); bBatch) {
         log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(bBatch))(" ")(
             bBatch.ID())
             .Flush();
         job_ = std::move(bBatch);
-    } else if (auto bJob = block.GetBlockJob(); bBatch) {
+    } else if (auto bJob = block.GetBlockJob(get_allocator()); bBatch) {
         log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(bJob))(" ")(
             bJob.ID())
             .Flush();
@@ -317,11 +340,11 @@ auto Peer::Imp::check_jobs() noexcept -> void
 auto Peer::Imp::check_positions() noexcept -> void
 {
     if (false == is_caught_up_) {
-        is_caught_up_ = local_position_ == remote_position_;
+        is_caught_up_ = local_position_ >= remote_position_;
 
         if (is_caught_up_) {
-            log_(OT_PRETTY_CLASS())(name_)(
-                ": local and remote tip positions match: ")(local_position_)
+            log_(OT_PRETTY_CLASS())(name_)(": local tip ")(
+                local_position_)(" caught up to remote tip: ")(remote_position_)
                 .Flush();
         }
     }
@@ -394,12 +417,11 @@ auto Peer::Imp::do_shutdown() noexcept -> void
     api_p_.reset();
 }
 
-auto Peer::Imp::do_startup() noexcept -> void
+auto Peer::Imp::do_startup() noexcept -> bool
 {
     if (api_.Internal().ShuttingDown() || network_.Internal().ShuttingDown()) {
-        shutdown_actor();
 
-        return;
+        return true;
     }
 
     update_local_position(header_oracle_.BestChain());
@@ -410,6 +432,8 @@ auto Peer::Imp::do_startup() noexcept -> void
     } else {
         connect();
     }
+
+    return false;
 }
 
 auto Peer::Imp::finish_job(bool shutdown) noexcept -> void
@@ -567,12 +591,9 @@ auto Peer::Imp::is_allowed_state(Work work) const noexcept -> bool
                 case Work::sendresult:
                 case Work::p2p:
                 case Work::getheaders:
-                case Work::getblock:
                 case Work::broadcasttx:
                 case Work::jobavailablecfheaders:
                 case Work::jobavailablecfilters:
-                case Work::jobavailableblock:
-                case Work::jobavailableblockbatch:
                 case Work::jobtimeout:
                 case Work::needpeers:
                 case Work::statetimeout:
@@ -580,6 +601,8 @@ auto Peer::Imp::is_allowed_state(Work work) const noexcept -> bool
                 case Work::needping:
                 case Work::body:
                 case Work::header:
+                case Work::jobavailableblock:
+                case Work::jobavailableblockbatch:
                 case Work::heartbeat:
                 case Work::block: {
 
@@ -658,9 +681,6 @@ auto Peer::Imp::pipeline_trusted(
         case Work::getheaders: {
             process_getheaders(std::move(msg));
         } break;
-        case Work::getblock: {
-            process_getblock(std::move(msg));
-        } break;
         case Work::broadcasttx: {
             process_broadcasttx(std::move(msg));
         } break;
@@ -669,12 +689,6 @@ auto Peer::Imp::pipeline_trusted(
         } break;
         case Work::jobavailablecfilters: {
             process_jobavailablecfilters(std::move(msg));
-        } break;
-        case Work::jobavailableblock: {
-            process_jobavailableblock(std::move(msg));
-        } break;
-        case Work::jobavailableblockbatch: {
-            process_jobavailableblockbatch(std::move(msg));
         } break;
         case Work::dealerconnected: {
             process_dealerconnected(std::move(msg));
@@ -696,6 +710,12 @@ auto Peer::Imp::pipeline_trusted(
         } break;
         case Work::block: {
             process_block(std::move(msg));
+        } break;
+        case Work::jobavailableblock: {
+            process_jobavailableblock(std::move(msg));
+        } break;
+        case Work::jobavailableblockbatch: {
+            process_jobavailableblockbatch(std::move(msg));
         } break;
         case Work::init: {
             do_init();
@@ -795,6 +815,16 @@ auto Peer::Imp::process_activitytimeout(Message&& msg) noexcept -> void
 
 auto Peer::Imp::process_block(Message&& msg) noexcept -> void
 {
+    const auto body = msg.Body();
+
+    OT_ASSERT(2 < body.size());
+
+    process_block(opentxs::blockchain::block::Hash{body.at(2).Bytes()});
+}
+
+auto Peer::Imp::process_block(opentxs::blockchain::block::Hash&& hash) noexcept
+    -> void
+{
     log_(OT_PRETTY_CLASS())(name_)(": received block oracle update message")
         .Flush();
 
@@ -806,12 +836,6 @@ auto Peer::Imp::process_block(Message&& msg) noexcept -> void
 
         return;
     }
-
-    const auto body = msg.Body();
-
-    OT_ASSERT(2 < body.size());
-
-    auto hash = opentxs::blockchain::block::Hash{body.at(2).Bytes()};
 
     if (auto h = header_oracle_.LoadHeader(hash); false == h.operator bool()) {
         log_(OT_PRETTY_CLASS())(name_)(": block ")
@@ -850,7 +874,9 @@ auto Peer::Imp::process_blockheader(Message&& msg) noexcept -> void
     if (body.at(1).as<decltype(chain_)>() != chain_) { return; }
 
     using Height = opentxs::blockchain::block::Height;
-    update_local_position({body.at(3).as<Height>(), body.at(2).Bytes()});
+    auto hash = opentxs::blockchain::block::Hash{body.at(2).Bytes()};
+    update_local_position({body.at(3).as<Height>(), hash});
+    process_block(std::move(hash));
 }
 
 auto Peer::Imp::process_body(Message&& msg) noexcept -> void
@@ -927,7 +953,7 @@ auto Peer::Imp::process_jobavailableblock(Message&& msg) noexcept -> void
         return;
     }
 
-    auto job = block_oracle_.Internal().GetBlockJob();
+    auto job = block_oracle_.Internal().GetBlockJob(get_allocator());
 
     if (0_uz < job.Remaining()) {
         log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(job))(" ")(
@@ -949,7 +975,7 @@ auto Peer::Imp::process_jobavailableblockbatch(Message&& msg) noexcept -> void
         return;
     }
 
-    auto job = block_oracle_.Internal().GetBlockBatch();
+    auto job = block_oracle_.Internal().GetBlockBatch(get_allocator());
 
     if (0_uz < job.Remaining()) {
         log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(job))(" ")(
@@ -1063,7 +1089,17 @@ auto Peer::Imp::process_reorg(Message&& msg) noexcept -> void
     if (body.at(1).as<decltype(chain_)>() != chain_) { return; }
 
     using Height = opentxs::blockchain::block::Height;
-    update_local_position({body.at(5).as<Height>(), body.at(4).Bytes()});
+    using Hash = opentxs::blockchain::block::Hash;
+    using Position = opentxs::blockchain::block::Position;
+    const auto parent = Position{body.at(3).as<Height>(), body.at(2).Bytes()};
+    auto hash = Hash{body.at(4).Bytes()};
+    auto tip = Position{body.at(5).as<Height>(), hash};
+    auto positions = header_oracle_.Ancestors(parent, tip);
+    update_local_position(std::move(tip));
+
+    for (auto& position : positions) {
+        process_block(std::move(position.hash_));
+    }
 }
 
 auto Peer::Imp::process_sendresult(Message&& msg) noexcept -> void
@@ -1149,16 +1185,6 @@ auto Peer::Imp::set_cfilter_capability(bool value) noexcept -> void
     cfilter_capability_ = value;
 }
 
-auto Peer::Imp::Shutdown() noexcept -> void
-{
-    // WARNING this function must never be called from with this class's
-    // Actor::worker function or else a deadlock will occur. Shutdown must only
-    // be called by a different Actor.
-    auto lock = std::unique_lock<std::timed_mutex>{reorg_lock_};
-    transition_state_shutdown();
-    signal_shutdown();
-}
-
 auto Peer::Imp::transition_state(
     State state,
     std::optional<std::chrono::microseconds> timeout) noexcept -> void
@@ -1200,26 +1226,30 @@ auto Peer::Imp::transition_state_run() noexcept -> void
         return std::make_tuple(network, limited, cfilter, bloom);
     }();
     using Task = opentxs::blockchain::node::PeerManagerJobs;
+    auto& pipeline = pipeline_.Internal();
 
-    pipeline_.SubscribeTo(parent_.Endpoint(Task::Heartbeat));
-    pipeline_.SubscribeTo(api_.Endpoints().BlockchainMempool());
+    pipeline.SubscribeFromThread(parent_.Endpoint(Task::Heartbeat));
+    pipeline.SubscribeFromThread(api_.Endpoints().BlockchainMempool());
 
     if (network || limited || block_header_capability_) {
-        pipeline_.PullFrom(parent_.Endpoint(Task::Getheaders));
-        pipeline_.PullFrom(parent_.Endpoint(Task::Getblock));
-        pipeline_.PullFrom(parent_.Endpoint(Task::BroadcastTransaction));
-        pipeline_.SubscribeTo(parent_.Endpoint(Task::JobAvailableBlock));
-        pipeline_.SubscribeTo(api_.Endpoints().BlockchainBlockDownloadQueue());
-        pipeline_.SubscribeTo(block_oracle_.Internal().Endpoint());
+        pipeline.PullFromThread(parent_.Endpoint(Task::Getheaders));
+        pipeline.PullFromThread(parent_.Endpoint(Task::BroadcastTransaction));
+        pipeline.SubscribeFromThread(
+            network_.Internal().Endpoints().block_cache_job_ready_publish_);
+        pipeline.SubscribeFromThread(
+            api_.Endpoints().BlockchainBlockDownloadQueue());
+        pipeline.SubscribeFromThread(block_oracle_.Internal().Endpoint());
     }
 
     if (cfilter || cfilter_capability_) {
-        pipeline_.SubscribeTo(parent_.Endpoint(Task::JobAvailableCfheaders));
-        pipeline_.SubscribeTo(parent_.Endpoint(Task::JobAvailableCfilters));
+        pipeline.SubscribeFromThread(
+            parent_.Endpoint(Task::JobAvailableCfheaders));
+        pipeline.SubscribeFromThread(
+            parent_.Endpoint(Task::JobAvailableCfilters));
     }
 
     if (BlockchainProfile::server == config_.profile_) {
-        pipeline_.SubscribeTo(
+        pipeline.SubscribeFromThread(
             api_.Endpoints().Internal().BlockchainBlockUpdated(chain_));
     }
 

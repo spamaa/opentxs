@@ -20,15 +20,17 @@
 #include <utility>
 
 #include "internal/api/session/Endpoints.hpp"
+#include "internal/api/session/Session.hpp"
 #include "internal/blockchain/database/Cfilter.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
-#include "internal/blockchain/node/Types.hpp"
+#include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/filteroracle/Types.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/util/Future.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/Timer.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -56,9 +58,7 @@
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
-#include "util/ScopeGuard.hpp"
 
 namespace opentxs::blockchain::node::filteroracle
 {
@@ -218,8 +218,7 @@ auto BlockIndexer::Imp::calculate_next_block() noexcept -> bool
 
     previous_header_ = std::move(current_header_);
     current_header_ = std::move(cfheader);
-    current_position_ = std::move(position);
-    notify_(filter_type_, current_position_);
+    update_current_position(std::move(position));
 
     return current_position_ != best_position_;
 }
@@ -228,24 +227,29 @@ auto BlockIndexer::Imp::do_shutdown() noexcept -> void
 {
     current_header_ = {};
     previous_header_ = {};
-    best_position_ = block::Position{};
-    current_position_ = block::Position{};
+    update_best_position({});
+    update_current_position({});
 }
 
-auto BlockIndexer::Imp::do_startup() noexcept -> void
+auto BlockIndexer::Imp::do_startup() noexcept -> bool
 {
-    best_position_ = node_.BlockOracle().Tip();
+    if ((api_.Internal().ShuttingDown()) || (node_.Internal().ShuttingDown())) {
+        return true;
+    }
+
+    update_best_position(node_.BlockOracle().Tip());
     const auto headerTip = db_.FilterHeaderTip(filter_type_);
     const auto cfilterTip = db_.FilterTip(filter_type_);
-    auto post = ScopeGuard{
-        [&] { update_position(headerTip, cfilterTip, current_position_); }};
     find_best_position(std::min(headerTip, cfilterTip));
+    update_position(headerTip, cfilterTip, current_position_);
+
+    return false;
 }
 
 auto BlockIndexer::Imp::find_best_position(block::Position candidate) noexcept
     -> void
 {
-    static const auto blank = make_blank<block::Height>::value(api_);
+    static const auto blank = block::Height{-1};
     const auto& headerOracle = node_.HeaderOracle();
 
     if (blank == candidate.height_) {
@@ -259,7 +263,7 @@ auto BlockIndexer::Imp::find_best_position(block::Position candidate) noexcept
         current_header_ =
             db_.LoadFilterHeader(filter_type_, candidate.hash_.Bytes());
         previous_header_ = {};
-        current_position_ = std::move(candidate);
+        update_current_position(std::move(candidate));
 
         return;
     } else {
@@ -280,7 +284,7 @@ auto BlockIndexer::Imp::find_best_position(block::Position candidate) noexcept
                 current_header_ =
                     db_.LoadFilterHeader(filter_type_, candidate.hash_.Bytes());
                 previous_header_ = {};
-                current_position_ = std::move(candidate);
+                update_current_position(std::move(candidate));
 
                 return;
             } else {
@@ -292,7 +296,7 @@ auto BlockIndexer::Imp::find_best_position(block::Position candidate) noexcept
                         filter_type_, candidate.hash_.Bytes());
                     previous_header_ =
                         db_.LoadFilterHeader(filter_type_, previous.Bytes());
-                    current_position_ = std::move(candidate);
+                    update_current_position(std::move(candidate));
 
                     return;
                 } else {
@@ -342,7 +346,7 @@ auto BlockIndexer::Imp::process_block(block::Position&& position) noexcept
     -> void
 {
     if (node_.HeaderOracle().IsInBestChain(position)) {
-        best_position_ = std::move(position);
+        update_best_position(std::move(position));
     }
 }
 
@@ -373,7 +377,9 @@ auto BlockIndexer::Imp::process_reorg(network::zeromq::Message&& in) noexcept
 auto BlockIndexer::Imp::process_reorg(block::Position&& commonParent) noexcept
     -> void
 {
-    if (best_position_ > commonParent) { best_position_ = commonParent; }
+    if (best_position_ > commonParent) {
+        update_best_position(block::Position{commonParent});
+    }
 
     if (current_position_ > commonParent) { reset(std::move(commonParent)); }
 }
@@ -381,9 +387,8 @@ auto BlockIndexer::Imp::process_reorg(block::Position&& commonParent) noexcept
 auto BlockIndexer::Imp::reset(block::Position&& to) noexcept -> void
 {
     const auto before = current_position_;
-    auto post =
-        ScopeGuard{[&] { update_position(before, before, current_position_); }};
     find_best_position(std::move(to));
+    update_position(before, before, current_position_);
 }
 
 auto BlockIndexer::Imp::state_normal(const Work work, Message&& msg) noexcept
@@ -428,13 +433,36 @@ auto BlockIndexer::Imp::transition_state_shutdown() noexcept -> void
 {
     state_ = State::shutdown;
     log_(OT_PRETTY_CLASS())(name_)(": transitioned to shutdown state").Flush();
-    signal_shutdown();
+    shutdown_actor();
+}
+
+auto BlockIndexer::Imp::update_best_position(
+    block::Position&& position) noexcept -> void
+{
+    best_position_ = std::move(position);
+    log_(OT_PRETTY_CLASS())(name_)(": best position updated to ")(
+        best_position_)
+        .Flush();
+}
+
+auto BlockIndexer::Imp::update_current_position(
+    block::Position&& position) noexcept -> void
+{
+    update_position(current_position_, current_position_, std::move(position));
 }
 
 auto BlockIndexer::Imp::update_position(
     const block::Position& previousCfheader,
     const block::Position& previousCfilter,
     const block::Position& newTip) noexcept -> void
+{
+    update_position(previousCfheader, previousCfilter, block::Position{newTip});
+}
+
+auto BlockIndexer::Imp::update_position(
+    const block::Position& previousCfheader,
+    const block::Position& previousCfilter,
+    block::Position&& newTip) noexcept -> void
 {
     auto changed{false};
 
@@ -452,12 +480,24 @@ auto BlockIndexer::Imp::update_position(
         OT_ASSERT(rc);
     }
 
-    if (changed) { notify_(filter_type_, newTip); }
+    if (changed) {
+        current_position_ = std::move(newTip);
+        log_(OT_PRETTY_CLASS())(name_)(": current position updated to ")(
+            current_position_)
+            .Flush();
+        notify_(filter_type_, current_position_);
+    }
 }
 
 auto BlockIndexer::Imp::work() noexcept -> bool
 {
-    if (current_position_ == best_position_) { return false; }
+    if (current_position_ == best_position_) {
+        log_(OT_PRETTY_CLASS())(name_)(
+            ": current position matches best position ")(best_position_)
+            .Flush();
+
+        return false;
+    }
 
     return calculate_next_block();
 }

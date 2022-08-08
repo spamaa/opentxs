@@ -40,9 +40,7 @@ PeerManager::Jobs::Jobs(const api::Session& api) noexcept
         listen(map, PeerManagerJobs::Getheaders, getheaders_);
         listen(map, PeerManagerJobs::JobAvailableCfheaders, getcfheaders_);
         listen(map, PeerManagerJobs::JobAvailableCfilters, getcfilters_);
-        listen(map, PeerManagerJobs::JobAvailableBlock, getblocks_);
         listen(map, PeerManagerJobs::Heartbeat, heartbeat_);
-        listen(map, PeerManagerJobs::Getblock, getblock_);
         listen(
             map, PeerManagerJobs::BroadcastTransaction, broadcast_transaction_);
 
@@ -51,10 +49,8 @@ PeerManager::Jobs::Jobs(const api::Session& api) noexcept
     , socket_map_({
           {PeerManagerJobs::Getheaders, &getheaders_.get()},
           {PeerManagerJobs::JobAvailableCfheaders, &getcfheaders_.get()},
-          {PeerManagerJobs::JobAvailableBlock, &getcfilters_.get()},
           {PeerManagerJobs::JobAvailableCfilters, &getblocks_.get()},
           {PeerManagerJobs::Heartbeat, &heartbeat_.get()},
-          {PeerManagerJobs::Getblock, &getblock_.get()},
           {PeerManagerJobs::BroadcastTransaction,
            &broadcast_transaction_.get()},
       })

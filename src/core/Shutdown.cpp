@@ -7,25 +7,35 @@
 #include "1_Internal.hpp"     // IWYU pragma: associated
 #include "core/Shutdown.hpp"  // IWYU pragma: associated
 
+#include <boost/system/error_code.hpp>  // IWYU pragma: keep
 #include <chrono>
 
+#include "internal/api/network/Asio.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "opentxs/api/network/Asio.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
-#include "opentxs/network/zeromq/message/Message.tpp"
 #include "opentxs/util/Container.hpp"
+#include "opentxs/util/Log.hpp"
 #include "opentxs/util/WorkType.hpp"
+#include "util/Work.hpp"
 
 namespace zmq = opentxs::network::zeromq;
 
 namespace opentxs::internal
 {
+using namespace std::literals;
+
 ShutdownSender::ShutdownSender(
+    const api::network::Asio& asio,
     const network::zeromq::Context& zmq,
-    std::string_view endpoint) noexcept
+    std::string_view endpoint,
+    std::string_view name) noexcept
     : endpoint_(endpoint)
+    , name_(name)
     , activated_(false)
     , socket_(zmq.PublishSocket())
+    , repeat_(asio.Internal().GetTimer())
 {
     auto init = socket_->SetTimeouts(1s, 10s, 0s);
 
@@ -36,54 +46,32 @@ ShutdownSender::ShutdownSender(
     OT_ASSERT(init);
 }
 
-auto ShutdownSender::Activate() const noexcept -> void
+auto ShutdownSender::Activate() noexcept -> void
 {
+    LogInsane()(OT_PRETTY_CLASS())(name_).Flush();
     activated_ = true;
     socket_->Send([&] {
-        auto work = network::zeromq::tagged_message(WorkType::Shutdown);
+        auto work = MakeWork(WorkType::Shutdown);
         work.AddFrame("shutdown");
 
         return work;
     }());
+    repeat_.SetRelative(1s);
+    repeat_.Wait([this](const auto& ec) {
+        if (false == ec.operator bool()) { Activate(); }
+    });
 }
 
-auto ShutdownSender::Close() noexcept -> void { socket_->Close(); }
+auto ShutdownSender::Close() noexcept -> void
+{
+    repeat_.Cancel();
+    socket_->Close();
+}
 
 ShutdownSender::~ShutdownSender()
 {
-    Activate();
+    if (false == activated_) { Activate(); }
+
     Close();
-}
-
-ShutdownReceiver::ShutdownReceiver(
-    const network::zeromq::Context& zmq,
-    const Endpoints endpoints,
-    Callback cb) noexcept
-    : promise_()
-    , future_(promise_.get_future())
-    , callback_(zmq::ListenCallback::Factory([cb, this](auto&&) {
-        if (bool(cb)) { cb(this->promise_); }
-    }))
-    , socket_(zmq.SubscribeSocket(callback_, "ShutdownReceiver"))
-{
-    auto init{false};
-
-    for (const auto& endpoint : endpoints) {
-        init = socket_->Start(endpoint);
-
-        OT_ASSERT(init);
-    }
-}
-
-auto ShutdownReceiver::Close() noexcept -> void { socket_->Close(); }
-
-ShutdownReceiver::~ShutdownReceiver()
-{
-    Close();
-
-    try {
-        promise_.set_value();
-    } catch (...) {
-    }
 }
 }  // namespace opentxs::internal

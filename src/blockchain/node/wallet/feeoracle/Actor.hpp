@@ -7,15 +7,20 @@
 
 #pragma once
 
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <cs_deferred_guarded.h>
+#include <exception>
 #include <future>
+#include <memory>
 #include <optional>
 #include <shared_mutex>
 #include <tuple>
 #include <utility>
 
-#include "core/Worker.hpp"
+#include "blockchain/node/wallet/feeoracle/Shared.hpp"
 #include "internal/blockchain/node/wallet/FeeOracle.hpp"
+#include "internal/blockchain/node/wallet/Types.hpp"
+#include "internal/network/zeromq/Types.hpp"
 #include "internal/util/Timer.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/core/Amount.hpp"
@@ -23,6 +28,7 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Time.hpp"
 #include "opentxs/util/WorkType.hpp"
+#include "util/Actor.hpp"
 #include "util/Allocated.hpp"
 #include "util/Work.hpp"
 
@@ -44,6 +50,8 @@ namespace wallet
 {
 class FeeSource;
 }  // namespace wallet
+
+class Manager;
 }  // namespace node
 }  // namespace blockchain
 
@@ -61,44 +69,42 @@ class Timer;
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
-class opentxs::blockchain::node::wallet::FeeOracle::Imp final
-    : public opentxs::implementation::Allocated,
-      public Worker<Imp, api::Session>
+class opentxs::blockchain::node::wallet::FeeOracle::Actor final
+    : public opentxs::Actor<FeeOracle::Actor, FeeOracleJobs>
 {
 public:
-    enum class Work : OTZMQWorkType {
-        shutdown = value(WorkType::Shutdown),
-        update_estimate = OT_ZMQ_INTERNAL_SIGNAL + 0,
-        statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
-    };
+    auto Init(boost::shared_ptr<Actor> me) noexcept -> void
+    {
+        signal_startup(me);
+    }
 
-    const blockchain::Type chain_;
-
-    // Returns satoshis per 1000 bytes
-    auto EstimatedFee() const noexcept -> std::optional<Amount>;
-    auto Shutdown() noexcept -> void;
-
-    Imp(const api::Session& api,
-        const blockchain::Type chain,
-        CString endpoint,
+    Actor(
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        boost::shared_ptr<Shared> shared,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept;
 
-    ~Imp() final;
+    ~Actor() final;
 
 private:
-    friend Worker<Imp, api::Session>;
+    friend opentxs::Actor<FeeOracle::Actor, FeeOracleJobs>;
+
     using Data = Vector<std::pair<Time, Amount>>;
-    using Estimate =
-        libguarded::deferred_guarded<std::optional<Amount>, std::shared_mutex>;
 
+    std::shared_ptr<const api::Session> api_p_;
+    std::shared_ptr<const node::Manager> node_p_;
+    boost::shared_ptr<Shared> shared_p_;
+    const api::Session& api_;
+    const node::Manager& node_;
+    const blockchain::Type chain_;
     Timer timer_;
-    ForwardList<blockchain::node::wallet::FeeSource> sources_;
     Data data_;
-    Estimate output_;
+    Shared::Estimate& output_;
 
-    auto pipeline(network::zeromq::Message&&) noexcept -> void;
+    auto do_shutdown() noexcept -> void;
+    auto do_startup() noexcept -> bool;
+    auto pipeline(const Work work, Message&& msg) noexcept -> void;
     auto process_update(network::zeromq::Message&&) noexcept -> void;
-    auto reset_timer() noexcept -> void;
-    auto state_machine() noexcept -> bool;
-    auto shutdown(std::promise<void>&) noexcept -> void;
+    auto work() noexcept -> bool;
 };

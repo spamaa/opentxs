@@ -29,6 +29,7 @@
 #include "internal/blockchain/node/Mempool.hpp"
 #include "internal/blockchain/node/PeerManager.hpp"
 #include "internal/blockchain/node/Types.hpp"
+#include "internal/blockchain/node/Wallet.hpp"
 #include "internal/blockchain/node/blockoracle/BlockOracle.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/util/Flag.hpp"
@@ -138,6 +139,7 @@ namespace zeromq
 namespace socket
 {
 class Publish;
+class Raw;
 }  // namespace socket
 
 class Message;
@@ -221,11 +223,6 @@ public:
     }
     auto PeerManager() const noexcept -> const internal::PeerManager& final;
     auto Profile() const noexcept -> BlockchainProfile final;
-    auto Reorg() const noexcept
-        -> const network::zeromq::socket::Publish& final;
-    auto RequestBlock(const block::Hash& block) const noexcept -> bool final;
-    auto RequestBlocks(const UnallocatedVector<ReadView>& hashes) const noexcept
-        -> bool final;
     auto SendToAddress(
         const opentxs::identifier::Nym& sender,
         const UnallocatedCString& address,
@@ -284,14 +281,13 @@ protected:
 private:
     std::unique_ptr<node::FilterOracle> filter_p_;
     std::unique_ptr<node::internal::PeerManager> peer_p_;
-    std::unique_ptr<node::Wallet> wallet_p_;
 
 protected:
     blockchain::database::Database& database_;
     node::FilterOracle& filters_;
     node::HeaderOracle& header_;
     node::internal::PeerManager& peer_;
-    node::Wallet& wallet_;
+    node::internal::Wallet wallet_;
 
     // NOTE call init in every final constructor body
     auto init() noexcept -> void;
@@ -372,6 +368,9 @@ private:
     using GuardedSelf =
         libguarded::plain_guarded<std::weak_ptr<const node::Manager>>;
 
+    network::zeromq::socket::Raw& to_block_oracle_;
+    network::zeromq::socket::Raw& to_block_cache_;
+    network::zeromq::socket::Raw& to_wallet_;
     const Time start_;
     const UnallocatedCString sync_endpoint_;
     std::unique_ptr<base::SyncServer> sync_server_;
@@ -417,5 +416,13 @@ private:
     auto state_transition_filters() noexcept -> void;
     auto state_transition_normal() noexcept -> void;
     auto state_transition_sync() noexcept -> void;
+
+    Base(
+        const api::Session& api,
+        const Type type,
+        const node::internal::Config& config,
+        std::string_view seednode,
+        std::string_view syncEndpoint,
+        node::Endpoints endpoints) noexcept;
 };
 }  // namespace opentxs::blockchain::node::implementation

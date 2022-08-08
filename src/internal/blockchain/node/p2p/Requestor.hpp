@@ -10,9 +10,6 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <memory>
 
-#include "opentxs/blockchain/Types.hpp"
-#include "opentxs/util/Container.hpp"
-
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
 {
@@ -25,17 +22,9 @@ class Session;
 
 namespace blockchain
 {
-namespace bitcoin
-{
-namespace block
-{
-class Transaction;
-}  // namespace block
-}  // namespace bitcoin
-
 namespace node
 {
-struct Endpoints;
+class Manager;
 }  // namespace node
 }  // namespace blockchain
 // }  // namespace v1
@@ -47,12 +36,11 @@ namespace opentxs::blockchain::node::p2p
 class Requestor
 {
 public:
-    auto Start() noexcept -> void;
+    auto Init() noexcept -> void;
 
     Requestor(
         std::shared_ptr<const api::Session> api,
-        const Type chain,
-        const Endpoints& endpoints) noexcept;
+        std::shared_ptr<const node::Manager> node) noexcept;
     Requestor() = delete;
     Requestor(const Requestor&) = delete;
     Requestor(Requestor&&) = delete;

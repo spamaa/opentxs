@@ -17,6 +17,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <tuple>
 
 #include "Proto.hpp"
@@ -84,7 +85,7 @@ ActivityThread::ActivityThread(
     const identifier::Generic& threadID,
     const SimpleCallback& cb) noexcept
     : ActivityThreadList(api, nymID, cb, false)
-    , Worker(api, 100ms)
+    , Worker(api, 100ms, "ui::ActivityThread")
     , threadID_(threadID)
     , self_contact_(api.Contacts().NymToContact(primary_id_))
     , contacts_()

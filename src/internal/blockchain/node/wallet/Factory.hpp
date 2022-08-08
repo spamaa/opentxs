@@ -9,11 +9,7 @@
 
 #pragma once
 
-#include <string_view>
-
-#include "opentxs/blockchain/Types.hpp"
-#include "opentxs/util/Allocator.hpp"
-#include "opentxs/util/Container.hpp"
+#include <memory>
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -29,11 +25,7 @@ namespace blockchain
 {
 namespace node
 {
-namespace wallet
-{
-class FeeOracle;
-class FeeSource;
-}  // namespace wallet
+class Manager;
 }  // namespace node
 }  // namespace blockchain
 // }  // namespace v1
@@ -42,19 +34,10 @@ class FeeSource;
 
 namespace opentxs::factory
 {
-auto FeeOracle(
-    const api::Session& api,
-    const blockchain::Type chain,
-    alloc::Default alloc = {}) noexcept -> blockchain::node::wallet::FeeOracle;
 auto FeeSources(
-    const api::Session& api,
-    const blockchain::Type chain,
-    const std::string_view endpoint,
-    alloc::Default alloc = {}) noexcept
-    -> ForwardList<blockchain::node::wallet::FeeSource>;
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const blockchain::node::Manager> node) noexcept -> void;
 auto BTCFeeSources(
-    const api::Session& api,
-    const std::string_view endpoint,
-    alloc::Default alloc = {}) noexcept
-    -> ForwardList<blockchain::node::wallet::FeeSource>;
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const blockchain::node::Manager> node) noexcept -> void;
 }  // namespace opentxs::factory

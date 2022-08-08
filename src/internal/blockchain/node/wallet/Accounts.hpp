@@ -8,9 +8,8 @@
 #pragma once
 
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <memory>
 #include <string_view>
-
-#include "opentxs/blockchain/Types.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -48,17 +47,13 @@ namespace opentxs::blockchain::node::wallet
 class Accounts
 {
 public:
-    auto Rescan() const noexcept -> void;
+    class Imp;
 
     auto Init() noexcept -> void;
-    auto Shutdown() noexcept -> void;
 
     Accounts(
-        const api::Session& api,
-        const node::Manager& node,
-        database::Wallet& db,
-        const node::internal::Mempool& mempool,
-        const Type chain) noexcept;
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node) noexcept;
     Accounts(const Accounts&) = delete;
     Accounts(Accounts&&) = delete;
     auto operator=(const Accounts&) -> Accounts& = delete;
@@ -67,8 +62,6 @@ public:
     ~Accounts();
 
 private:
-    class Imp;
-
     // TODO switch to std::shared_ptr once the android ndk ships a version of
     // libc++ with unfucked pmr / allocate_shared support
     boost::shared_ptr<Imp> imp_;

@@ -3,186 +3,143 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"                       // IWYU pragma: associated
-#include "1_Internal.hpp"                     // IWYU pragma: associated
-#include "blockchain/node/wallet/Wallet.hpp"  // IWYU pragma: associated
+// IWYU pragma: no_include <boost/smart_ptr/detail/operator_bool.hpp>
 
-#include <atomic>
-#include <chrono>
+#include "0_stdafx.hpp"                         // IWYU pragma: associated
+#include "1_Internal.hpp"                       // IWYU pragma: associated
+#include "internal/blockchain/node/Wallet.hpp"  // IWYU pragma: associated
+
+#include <boost/smart_ptr/make_shared.hpp>
 #include <future>
 #include <memory>
-#include <mutex>
 #include <string_view>
 #include <utility>
 
-#include "core/Worker.hpp"
-#include "internal/blockchain/database/Wallet.hpp"
-#include "internal/blockchain/node/Endpoints.hpp"
-#include "internal/blockchain/node/Factory.hpp"
-#include "internal/blockchain/node/wallet/Factory.hpp"
+#include "blockchain/node/wallet/Actor.hpp"
+#include "blockchain/node/wallet/Shared.hpp"
+#include "internal/blockchain/node/Config.hpp"
+#include "internal/blockchain/node/Manager.hpp"
+#include "internal/blockchain/node/wallet/Types.hpp"
+#include "internal/network/zeromq/Context.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/bitcoin/block/Output.hpp"  // IWYU pragma: keep
+#include "opentxs/blockchain/block/Outpoint.hpp"
+#include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/blockchain/node/TxoState.hpp"
+#include "opentxs/core/Amount.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"
-#include "opentxs/network/zeromq/Pipeline.hpp"
-#include "opentxs/network/zeromq/message/Frame.hpp"
-#include "opentxs/network/zeromq/message/FrameSection.hpp"
-#include "opentxs/network/zeromq/message/Message.hpp"
+#include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/util/Log.hpp"
-#include "opentxs/util/Time.hpp"
 #include "opentxs/util/WorkType.hpp"
-
-namespace opentxs::factory
-{
-auto BlockchainWallet(
-    const api::Session& api,
-    const blockchain::node::Manager& parent,
-    blockchain::database::Wallet& db,
-    const blockchain::node::internal::Mempool& mempool,
-    const blockchain::Type chain,
-    const blockchain::node::Endpoints& endpoints)
-    -> std::unique_ptr<blockchain::node::Wallet>
-{
-    using ReturnType = blockchain::node::implementation::Wallet;
-
-    return std::make_unique<ReturnType>(
-        api, parent, db, mempool, chain, endpoints);
-}
-}  // namespace opentxs::factory
 
 namespace opentxs::blockchain::node::wallet
 {
-auto lock_for_reorg(
-    const std::string_view name,
-    std::timed_mutex& mutex) noexcept -> std::unique_lock<std::timed_mutex>
-{
-    auto lock = std::unique_lock<std::timed_mutex>{mutex, std::defer_lock};
-    auto failures{-1};
-
-    while (false == lock.owns_lock()) {
-        if (++failures < 300) {
-            lock.try_lock_for(997ms);
-        } else {
-            LogError()(name)(" state machine is not responding").Flush();
-            lock.try_lock_for(997ms);
-        }
-    }
-
-    return lock;
-}
-
 auto print(WalletJobs job) noexcept -> std::string_view
 {
     try {
         using Job = WalletJobs;
         static const auto map = Map<Job, CString>{
             {Job::shutdown, "shutdown"},
+            {Job::start_wallet, "start_wallet"},
+            {Job::rescan, "rescan"},
             {Job::init, "init"},
             {Job::statemachine, "statemachine"},
         };
 
         return map.at(job);
     } catch (...) {
-        LogError()(__FUNCTION__)("invalid WalletJobs: ")(
+        LogAbort()(__FUNCTION__)("invalid WalletJobs: ")(
             static_cast<OTZMQWorkType>(job))
-            .Flush();
-
-        OT_FAIL;
+            .Abort();
     }
 }
 }  // namespace opentxs::blockchain::node::wallet
 
-namespace opentxs::blockchain::node::implementation
+namespace opentxs::blockchain::node::internal
 {
-Wallet::Wallet(
-    const api::Session& api,
-    const node::Manager& parent,
-    database::Wallet& db,
-    const node::internal::Mempool& mempool,
-    const Type chain,
-    const node::Endpoints& endpoints) noexcept
-    : Worker(api, 10ms)
-    , parent_(parent)
-    , db_(db)
-    , chain_(chain)
-    , fee_oracle_(factory::FeeOracle(api_, chain))
-    , accounts_(api, parent_, db_, mempool, chain_)
-    , proposals_(api, parent_, db_, chain_)
+Wallet::Wallet() noexcept
+    : shared_()
 {
-    init_executor({
-        UnallocatedCString{endpoints.shutdown_publish_.c_str()},
-    });
 }
 
 auto Wallet::ConstructTransaction(
     const proto::BlockchainTransactionProposal& tx,
     std::promise<SendOutcome>&& promise) const noexcept -> void
 {
-    proposals_.Add(tx, std::move(promise));
-    trigger();
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    shared->ConstructTransaction(tx, std::move(promise));
 }
 
-auto Wallet::GetBalance() const noexcept -> Balance { return db_.GetBalance(); }
-
-auto Wallet::GetBalance(const identifier::Nym& owner) const noexcept -> Balance
+auto Wallet::FeeEstimate() const noexcept -> std::optional<Amount>
 {
-    return db_.GetBalance(owner);
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->FeeEstimate();
 }
 
-auto Wallet::GetBalance(
-    const identifier::Nym& owner,
-    const identifier::Generic& node) const noexcept -> Balance
+auto Wallet::GetBalance() const noexcept -> Balance
 {
-    return db_.GetBalance(owner, node);
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetBalance();
 }
 
 auto Wallet::GetBalance(const crypto::Key& key) const noexcept -> Balance
 {
-    return db_.GetBalance(key);
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetBalance(key);
 }
 
-auto Wallet::GetOutputs(alloc::Default alloc) const noexcept -> Vector<UTXO>
+auto Wallet::GetBalance(const identifier::Nym& owner) const noexcept -> Balance
 {
-    return GetOutputs(TxoState::All, alloc);
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetBalance(owner);
+}
+
+auto Wallet::GetBalance(
+    const identifier::Nym& owner,
+    const identifier::Generic& subaccount) const noexcept -> Balance
+{
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetBalance(owner, subaccount);
 }
 
 auto Wallet::GetOutputs(TxoState type, alloc::Default alloc) const noexcept
     -> Vector<UTXO>
 {
-    return db_.GetOutputs(type, alloc);
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetOutputs(std::move(type), std::move(alloc));
 }
 
-auto Wallet::GetOutputs(const identifier::Nym& owner, alloc::Default alloc)
-    const noexcept -> Vector<UTXO>
+auto Wallet::GetOutputs(alloc::Default alloc) const noexcept -> Vector<UTXO>
 {
-    return GetOutputs(owner, TxoState::All, alloc);
-}
+    auto shared{shared_};
 
-auto Wallet::GetOutputs(
-    const identifier::Nym& owner,
-    TxoState type,
-    alloc::Default alloc) const noexcept -> Vector<UTXO>
-{
-    return db_.GetOutputs(owner, type, alloc);
-}
+    OT_ASSERT(shared);
 
-auto Wallet::GetOutputs(
-    const identifier::Nym& owner,
-    const identifier::Generic& subaccount,
-    alloc::Default alloc) const noexcept -> Vector<UTXO>
-{
-    return GetOutputs(owner, subaccount, TxoState::All, alloc);
-}
-
-auto Wallet::GetOutputs(
-    const identifier::Nym& owner,
-    const identifier::Generic& node,
-    TxoState type,
-    alloc::Default alloc) const noexcept -> Vector<UTXO>
-{
-    return db_.GetOutputs(owner, node, type, alloc);
+    return shared->GetOutputs(std::move(alloc));
 }
 
 auto Wallet::GetOutputs(
@@ -190,99 +147,119 @@ auto Wallet::GetOutputs(
     TxoState type,
     alloc::Default alloc) const noexcept -> Vector<UTXO>
 {
-    return db_.GetOutputs(key, type, alloc);
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetOutputs(key, std::move(type), std::move(alloc));
+}
+
+auto Wallet::GetOutputs(
+    const identifier::Nym& owner,
+    TxoState type,
+    alloc::Default alloc) const noexcept -> Vector<UTXO>
+{
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetOutputs(owner, std::move(type), std::move(alloc));
+}
+
+auto Wallet::GetOutputs(const identifier::Nym& owner, alloc::Default alloc)
+    const noexcept -> Vector<UTXO>
+{
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetOutputs(owner, std::move(alloc));
+}
+
+auto Wallet::GetOutputs(
+    const identifier::Nym& owner,
+    const identifier::Generic& subaccount,
+    TxoState type,
+    alloc::Default alloc) const noexcept -> Vector<UTXO>
+{
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetOutputs(
+        owner, subaccount, std::move(type), std::move(alloc));
+}
+
+auto Wallet::GetOutputs(
+    const identifier::Nym& owner,
+    const identifier::Generic& subaccount,
+    alloc::Default alloc) const noexcept -> Vector<UTXO>
+{
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetOutputs(owner, subaccount, std::move(alloc));
 }
 
 auto Wallet::GetTags(const block::Outpoint& output) const noexcept
     -> UnallocatedSet<TxoTag>
 {
-    return db_.GetOutputTags(output);
+    auto shared{shared_};
+
+    OT_ASSERT(shared);
+
+    return shared->GetTags(output);
 }
 
 auto Wallet::Height() const noexcept -> block::Height
 {
-    return db_.GetWalletHeight();
-}
+    auto shared{shared_};
 
-auto Wallet::Init() noexcept -> void
-{
-    accounts_.Init();
-    trigger();
-}
+    OT_ASSERT(shared);
 
-auto Wallet::pipeline(const network::zeromq::Message& in) noexcept -> void
-{
-    if (false == running_.load()) { return; }
-
-    const auto body = in.Body();
-
-    if (1 > body.size()) {
-        LogError()(OT_PRETTY_CLASS())(print(chain_))(": invalid message")
-            .Flush();
-
-        OT_FAIL;
-    }
-
-    const auto work = [&] {
-        try {
-
-            return body.at(0).as<Work>();
-        } catch (...) {
-
-            OT_FAIL;
-        }
-    }();
-    const auto start = Clock::now();
-
-    switch (work) {
-        case Work::shutdown: {
-            shutdown(shutdown_promise_);
-        } break;
-        case Work::statemachine: {
-            do_work();
-        } break;
-        default: {
-            LogError()(OT_PRETTY_CLASS())(print(chain_))(": unhandled type")
-                .Flush();
-
-            OT_FAIL;
-        }
-    }
-
-    static constexpr auto limit = 1s;
-    const auto elapsed = std::chrono::nanoseconds{Clock::now() - start};
-
-    if (elapsed > limit) {
-        LogTrace()(OT_PRETTY_CLASS())(print(chain_))(": spent ")(
-            elapsed)(" processing ")(print(work))(" signal")
-            .Flush();
-    }
-}
-
-auto Wallet::shutdown(std::promise<void>& promise) noexcept -> void
-{
-    if (auto previous = running_.exchange(false); previous) {
-        LogDetail()("Shutting down ")(print(chain_))(" wallet").Flush();
-        accounts_.Shutdown();
-        pipeline_.Close();
-        fee_oracle_.Shutdown();
-        promise.set_value();
-    }
+    return shared->Height();
 }
 
 auto Wallet::StartRescan() const noexcept -> bool
 {
-    accounts_.Rescan();
+    auto shared{shared_};
 
-    return true;
+    OT_ASSERT(shared);
+
+    return shared->StartRescan();
 }
 
-auto Wallet::state_machine() noexcept -> bool
+auto Wallet::Init(
+    std::shared_ptr<const api::Session> api,
+    std::shared_ptr<const node::Manager> node) noexcept -> void
 {
-    if (false == running_.load()) { return false; }
+    OT_ASSERT(api);
+    OT_ASSERT(node);
 
-    return proposals_.Run();
+    if (node->Internal().GetConfig().disable_wallet_) {
+        shared_ = boost::make_shared<Shared>();
+    } else {
+        const auto& asio = api->Network().ZeroMQ().Internal();
+        const auto batchID = asio.PreallocateBatch();
+        // TODO the version of libc++ present in android ndk 23.0.7599858
+        // has a broken std::allocate_shared function so we're using
+        // boost::shared_ptr instead of std::shared_ptr
+        shared_ = boost::make_shared<wallet::Shared>(api, node);
+        auto actor = boost::allocate_shared<Wallet::Actor>(
+            alloc::PMR<Wallet::Actor>{asio.Alloc(batchID)},
+            api,
+            node,
+            shared_,
+            batchID);
+
+        OT_ASSERT(actor);
+
+        actor->Init(actor);
+    }
+
+    OT_ASSERT(shared_);
 }
 
-Wallet::~Wallet() { stop_worker().get(); }
-}  // namespace opentxs::blockchain::node::implementation
+Wallet::~Wallet() = default;
+}  // namespace opentxs::blockchain::node::internal

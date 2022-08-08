@@ -12,6 +12,7 @@
 #include "util/storage/drivers/filesystem/Common.hpp"  // IWYU pragma: associated
 
 extern "C" {
+#include <fcntl.h>
 #include <pwd.h>
 #include <sys/resource.h>
 #include <unistd.h>

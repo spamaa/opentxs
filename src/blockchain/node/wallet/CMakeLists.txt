@@ -4,6 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 add_subdirectory(feeoracle)
+add_subdirectory(feesource)
 add_subdirectory(subchain)
 add_subdirectory(spend)
 
@@ -16,12 +17,22 @@ target_sources(
     "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/Factory.hpp"
     "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/FeeOracle.hpp"
     "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/FeeSource.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/Reorg.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/ReorgMaster.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/ReorgSlave.hpp"
     "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/wallet/Types.hpp"
     "Account.cpp"
     "Account.hpp"
     "Accounts.cpp"
     "Accounts.hpp"
+    "Actor.cpp"
+    "Actor.hpp"
+    "ReorgMaster.cpp"
+    "ReorgMaster.hpp"
+    "ReorgSlave.cpp"
+    "ReorgSlave.hpp"
+    "Shared.cpp"
+    "Shared.hpp"
     "Wallet.cpp"
-    "Wallet.hpp"
 )
 target_link_libraries(opentxs-common PRIVATE Boost::headers)

@@ -5,24 +5,12 @@
 
 #pragma once
 
-#include "internal/blockchain/node/wallet/Types.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
-#include "internal/util/Mutex.hpp"
-#include "opentxs/blockchain/block/Types.hpp"
-
 namespace opentxs::blockchain::node::wallet
 {
 class Job
 {
 public:
-    using State = JobState;
-
-    [[nodiscard]] virtual auto ChangeState(
-        const State state,
-        StateSequence reorg) noexcept -> bool = 0;
-    virtual auto ProcessReorg(
-        const Lock& headerOracleLock,
-        const block::Position& parent) noexcept -> void = 0;
+    virtual auto Init() noexcept -> void = 0;
 
     Job(const Job&) = delete;
     Job(Job&&) = delete;

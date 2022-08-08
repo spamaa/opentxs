@@ -8,8 +8,6 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 
 #include "internal/blockchain/node/wallet/subchain/statemachine/Job.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
-#include "opentxs/blockchain/block/Types.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -35,11 +33,7 @@ namespace opentxs::blockchain::node::wallet
 class Progress final : public Job
 {
 public:
-    auto ChangeState(const State state, StateSequence reorg) noexcept
-        -> bool final;
-    auto ProcessReorg(
-        const Lock& headerOracleLock,
-        const block::Position& parent) noexcept -> void final;
+    auto Init() noexcept -> void final;
 
     Progress(const boost::shared_ptr<const SubchainStateData>& parent) noexcept;
     Progress() = delete;

@@ -88,7 +88,10 @@ public:
               "cfilter",
               20000,
               10000)
-        , FilterWorker(api, 20ms)
+        , FilterWorker(
+              api,
+              20ms,
+              "blockchain::node::FilterOracle::FilterDownloader")
         , db_(db)
         , header_(header)
         , node_(node)

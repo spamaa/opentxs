@@ -27,7 +27,10 @@ enum class Job : OTZMQWorkType {
     Register = OT_ZMQ_INTERNAL_SIGNAL + 0,
     Request = OT_ZMQ_INTERNAL_SIGNAL + 1,
     Processed = OT_ZMQ_INTERNAL_SIGNAL + 2,
+    ReorgInternal = OT_ZMQ_REORG_SIGNAL,
+    NewHeaderTip = OT_ZMQ_NEW_BLOCK_HEADER_SIGNAL,
     Init = OT_ZMQ_INIT_SIGNAL,
+    NewCFilterTip = OT_ZMQ_NEW_FILTER_SIGNAL,
     StateMachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };
 

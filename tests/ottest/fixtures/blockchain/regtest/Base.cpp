@@ -546,7 +546,7 @@ auto Regtest_fixture_base::Mine(
     }
 
     auto output = true;
-    constexpr auto limit = std::chrono::minutes(5);
+    constexpr auto limit = 5min;
     using Status = std::future_status;
 
     for (auto& future : blocks) {

@@ -10,6 +10,7 @@
 #include <atomic>
 #include <future>
 #include <memory>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -51,7 +52,7 @@ PayableList::PayableList(
     const UnitType& currency,
     const SimpleCallback& cb) noexcept
     : PayableListList(api, nymID, cb, false)
-    , Worker(api, {})
+    , Worker(api, {}, "ui::PayableList")
     , owner_contact_id_()  // FIXME wtf
     , currency_(currency)
 {

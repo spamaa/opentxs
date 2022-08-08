@@ -170,9 +170,6 @@ public:
     {
         return peers_.Nonce();
     }
-    auto RequestBlock(const block::Hash& block) const noexcept -> bool final;
-    auto RequestBlocks(const UnallocatedVector<ReadView>& hashes) const noexcept
-        -> bool final;
     auto RequestHeaders() const noexcept -> bool final;
     auto VerifyPeer(const int id, const UnallocatedCString& address)
         const noexcept -> void final;

@@ -57,6 +57,7 @@ namespace opentxs::blockchain::node::wallet
 enum class JobState {
     normal,
     reorg,
+    pre_shutdown,
     shutdown,
 };
 

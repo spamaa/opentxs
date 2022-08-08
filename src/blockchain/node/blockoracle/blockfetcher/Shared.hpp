@@ -8,24 +8,17 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <cs_plain_guarded.h>
 #include <cstddef>
-#include <memory>
 #include <optional>
 #include <tuple>
-#include <vector>
 
 #include "internal/blockchain/node/Job.hpp"
 #include "internal/blockchain/node/blockoracle/BlockFetcher.hpp"
-#include "internal/blockchain/node/blockoracle/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
-#include "opentxs/blockchain/Types.hpp"
+#include "internal/network/zeromq/socket/Raw.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/util/Allocated.hpp"
-#include "opentxs/util/Allocator.hpp"
-#include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
-#include "opentxs/util/Time.hpp"
-#include "util/Actor.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -45,11 +38,6 @@ class Hash;
 class Position;
 }  // namespace block
 
-namespace database
-{
-class Block;
-}  // namespace database
-
 namespace node
 {
 namespace internal
@@ -57,9 +45,7 @@ namespace internal
 class BlockBatch;
 }  // namespace internal
 
-class HeaderOracle;
 class Manager;
-struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
 
@@ -79,7 +65,7 @@ class Raw;
 
 namespace opentxs::blockchain::node::blockoracle
 {
-class BlockFetcher::Shared : public Allocated
+class BlockFetcher::Shared final : public Allocated
 {
 public:
     enum class Status { pending, downloading, success };
@@ -104,67 +90,23 @@ public:
     };
 
     using Guarded = libguarded::plain_guarded<Data>;
+    using Socket = libguarded::plain_guarded<network::zeromq::socket::Raw>;
 
+    const network::zeromq::BatchID batch_id_;
+    const std::size_t peer_target_;
     mutable Guarded data_;
+    mutable Socket to_actor_;
 
+    auto GetJob(boost::shared_ptr<Shared> self, allocator_type alloc)
+        const noexcept -> internal::BlockBatch;
     auto get_allocator() const noexcept -> allocator_type final;
 
-    Shared(allocator_type alloc) noexcept;
-};
-}  // namespace opentxs::blockchain::node::blockoracle
-
-namespace opentxs::blockchain::node::blockoracle
-{
-class BlockFetcher::Imp final : public Actor<Imp, BlockFetcherJob>
-{
-public:
-    auto GetJob(allocator_type alloc) const noexcept -> internal::BlockBatch;
-
-    auto Init(boost::shared_ptr<Imp> self) noexcept -> void;
-
-    Imp(std::shared_ptr<const api::Session> api,
-        std::shared_ptr<const node::Manager> node,
-        boost::shared_ptr<Shared> shared,
+    Shared(
+        const api::Session& api,
+        const node::Manager& node,
         network::zeromq::BatchID batchID,
         allocator_type alloc) noexcept;
-    Imp() = delete;
-    Imp(const Imp&) = delete;
-    Imp(Imp&&) = delete;
-    auto operator=(const Imp&) -> Imp& = delete;
-    auto operator=(Imp&&) -> Imp& = delete;
 
-    ~Imp() final;
-
-private:
-    friend Actor<Imp, BlockFetcherJob>;
-
-    using Status = Shared::Status;
-
-    std::shared_ptr<const api::Session> api_p_;
-    std::shared_ptr<const node::Manager> node_p_;
-    boost::shared_ptr<Shared> shared_;
-    const api::Session& api_;
-    const node::Manager& node_;
-    const HeaderOracle& header_oracle_;
-    database::Block& db_;
-    network::zeromq::socket::Raw& job_ready_;
-    network::zeromq::socket::Raw& tip_updated_;
-    const blockchain::Type chain_;
-    const std::size_t peer_target_;
-    Shared::Guarded& data_;
-    boost::shared_ptr<Imp> self_;
-
-    auto broadcast_tip(const block::Position& tip) noexcept -> void;
-    auto do_shutdown() noexcept -> void;
-    auto do_startup() noexcept -> void;
-    auto erase_obsolete(
-        const block::Position& after,
-        Shared::Data& data) noexcept -> void;
-    auto pipeline(const Work work, Message&& msg) noexcept -> void;
-    auto process_batch_finished(Message&& msg) noexcept -> void;
-    auto process_block_received(Message&& msg) noexcept -> void;
-    auto process_reorg(Message&& msg) noexcept -> void;
-    auto update_tip(Shared::Data& data) noexcept -> void;
-    auto work() noexcept -> bool;
+    ~Shared() final;
 };
 }  // namespace opentxs::blockchain::node::blockoracle

@@ -8,13 +8,15 @@
 #include <memory>
 
 #include "ottest/fixtures/blockchain/HeaderOracle.hpp"
+#include "internal/blockchain/node/HeaderOracle.hpp"
 
 namespace ottest
 {
 TEST_F(Test_HeaderOracle, checkpoint_prevents_reorg_batch)
 {
     EXPECT_TRUE(create_blocks(create_4_));
-    EXPECT_TRUE(header_oracle_.AddCheckpoint(4, get_block_hash(BLOCK_4)));
+    EXPECT_TRUE(
+        header_oracle_.Internal().AddCheckpoint(4, get_block_hash(BLOCK_4)));
 
     const auto [cpHeight, cpHash] = header_oracle_.GetCheckpoint();
 
@@ -25,4 +27,6 @@ TEST_F(Test_HeaderOracle, checkpoint_prevents_reorg_batch)
     EXPECT_TRUE(verify_post_state(post_state_4_));
     EXPECT_TRUE(verify_siblings(siblings_4_));
 }
+
+TEST_F(Test_HeaderOracle, shutdown) { Shutdown(); }
 }  // namespace ottest

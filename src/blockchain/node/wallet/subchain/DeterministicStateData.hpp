@@ -94,6 +94,7 @@ namespace wallet
 {
 class Accounts;
 class Progress;
+class Reorg;
 class Rescan;
 class Scan;
 }  // namespace wallet
@@ -131,15 +132,13 @@ public:
     const crypto::Deterministic& deterministic_;
 
     DeterministicStateData(
-        const api::Session& api,
-        const node::Manager& node,
-        database::Wallet& db,
-        const node::internal::Mempool& mempool,
+        Reorg& reorg,
         const crypto::Deterministic& subaccount,
-        const cfilter::Type filter,
-        const crypto::Subchain subchain,
-        const network::zeromq::BatchID batch,
-        const std::string_view parent,
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        crypto::Subchain subchain,
+        std::string_view fromParent,
+        network::zeromq::BatchID batch,
         allocator_type alloc) noexcept;
     DeterministicStateData() = delete;
     DeterministicStateData(const DeterministicStateData&) = delete;
@@ -149,7 +148,7 @@ public:
     auto operator=(DeterministicStateData&&)
         -> DeterministicStateData& = delete;
 
-    ~DeterministicStateData() final = default;
+    ~DeterministicStateData() final;
 
 private:
     using CacheData = std::pair<Time, database::Wallet::BatchedMatches>;
@@ -164,7 +163,7 @@ private:
         FinishedCallback cb) const noexcept -> void;
 
     auto get_index(const boost::shared_ptr<const SubchainStateData>& me)
-        const noexcept -> Index final;
+        const noexcept -> void final;
     auto handle_confirmed_matches(
         const bitcoin::block::Block& block,
         const block::Position& position,

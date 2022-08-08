@@ -13,6 +13,16 @@
 namespace opentxs::blockchain::node::blockoracle
 {
 // WARNING update print function if new values are added or removed
+enum class Job : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    request_blocks = OT_ZMQ_INTERNAL_SIGNAL + 0u,
+    process_block = OT_ZMQ_INTERNAL_SIGNAL + 1u,
+    start_downloader = OT_ZMQ_INTERNAL_SIGNAL + 2u,
+    init = OT_ZMQ_INIT_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+
+// WARNING update print function if new values are added or removed
 enum class BlockFetcherJob : OTZMQWorkType {
     shutdown = value(WorkType::Shutdown),
     header = value(WorkType::BlockchainNewHeader),
@@ -23,5 +33,16 @@ enum class BlockFetcherJob : OTZMQWorkType {
     statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };
 
+// WARNING update print function if new values are added or removed
+enum class CacheJob : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    request_blocks = OT_ZMQ_INTERNAL_SIGNAL + 0u,
+    process_block = OT_ZMQ_INTERNAL_SIGNAL + 1u,
+    init = OT_ZMQ_INIT_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+
+auto print(Job) noexcept -> std::string_view;
 auto print(BlockFetcherJob) noexcept -> std::string_view;
+auto print(CacheJob) noexcept -> std::string_view;
 }  // namespace opentxs::blockchain::node::blockoracle

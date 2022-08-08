@@ -18,10 +18,12 @@
 
 #include "blockchain/node/wallet/subchain/SubchainStateData.hpp"
 #include "internal/api/network/Asio.hpp"
+#include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -57,11 +59,9 @@ auto print(JobState state) noexcept -> std::string_view
 
         return map.at(state);
     } catch (...) {
-        LogError()(__FUNCTION__)(": invalid JobState: ")(
+        LogAbort()(__FUNCTION__)(": invalid JobState: ")(
             static_cast<OTZMQWorkType>(state))
-            .Flush();
-
-        OT_FAIL;
+            .Abort();
     }
 }
 
@@ -78,11 +78,9 @@ auto print(JobType state) noexcept -> std::string_view
 
         return map.at(state);
     } catch (...) {
-        LogError()(__FUNCTION__)(": invalid JobType: ")(
+        LogAbort()(__FUNCTION__)(": invalid JobType: ")(
             static_cast<OTZMQWorkType>(state))
-            .Flush();
-
-        OT_FAIL;
+            .Abort();
     }
 }
 }  // namespace opentxs::blockchain::node::wallet
@@ -135,6 +133,7 @@ Job::Job(
           std::move(neverDrop))
     , parent_p_(parent)
     , parent_(*parent_p_)
+    , reorg_(parent_.GetReorg().GetSlave(pipeline_, name_, alloc))
     , job_type_(type)
     , to_parent_(pipeline_.Internal().ExtraSocket(0))
     , pending_state_(State::normal)
@@ -154,57 +153,38 @@ auto Job::add_last_reorg(Message& out) const noexcept -> void
     }
 }
 
-auto Job::ChangeState(const State state, StateSequence reorg) noexcept -> bool
-{
-    if (auto old = pending_state_.exchange(state); old == state) {
-
-        return true;
-    }
-
-    auto lock = lock_for_reorg(name_, reorg_lock_);
-    auto output{false};
-
-    switch (state) {
-        case State::normal: {
-            if (State::reorg != state_) { break; }
-            output = transition_state_normal();
-        } break;
-        case State::reorg: {
-            if (State::shutdown == state_) { break; }
-
-            output = transition_state_reorg(reorg);
-        } break;
-        case State::shutdown: {
-            if (State::reorg == state_) { break; }
-
-            output = transition_state_shutdown();
-        } break;
-        default: {
-            OT_FAIL;
-        }
-    }
-
-    if (false == output) {
-        LogError()(OT_PRETTY_CLASS())(name_)(" failed to change state from ")(
-            print(state_))(" to ")(print(state))
-            .Flush();
-    }
-
-    return output;
-}
-
 auto Job::do_process_update(Message&& msg) noexcept -> void
 {
-    LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Flush();
-
-    OT_FAIL;
+    LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
 
-auto Job::do_shutdown() noexcept -> void {}
+auto Job::do_reorg(
+    const node::HeaderOracle& oracle,
+    const Lock& oracleLock,
+    Reorg::Params& params) noexcept -> bool
+{
+    return true;
+}
+
+auto Job::do_shutdown() noexcept -> void
+{
+    state_ = State::shutdown;
+    reorg_.Stop();
+    parent_p_.reset();
+}
+
+auto Job::do_startup() noexcept -> bool
+{
+    if (Reorg::State::shutdown == reorg_.Start()) { return true; }
+
+    do_startup_internal();
+
+    return false;
+}
 
 auto Job::last_reorg() const noexcept -> std::optional<StateSequence>
 {
-    if (0u == reorgs_.size()) {
+    if (0_uz == reorgs_.size()) {
 
         return std::nullopt;
     } else {
@@ -222,11 +202,14 @@ auto Job::pipeline(const Work work, Message&& msg) noexcept -> void
         case State::reorg: {
             state_reorg(work, std::move(msg));
         } break;
+        case State::pre_shutdown: {
+            state_pre_shutdown(work, std::move(msg));
+        } break;
         case State::shutdown: {
-            shutdown_actor();
+            // NOTE do nothing
         } break;
         default: {
-            OT_FAIL;
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": invalid state").Abort();
         }
     }
 
@@ -237,7 +220,7 @@ auto Job::process_block(Message&& in) noexcept -> void
 {
     const auto body = in.Body();
 
-    OT_ASSERT(2 < body.size());
+    OT_ASSERT(2_uz < body.size());
 
     const auto chain = body.at(1).as<blockchain::Type>();
 
@@ -248,42 +231,32 @@ auto Job::process_block(Message&& in) noexcept -> void
 
 auto Job::process_block(block::Hash&&) noexcept -> void
 {
-    LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Flush();
-
-    OT_FAIL;
+    LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
 
 auto Job::process_filter(Message&& in) noexcept -> void
 {
     const auto body = in.Body();
 
-    OT_ASSERT(4 < body.size());
+    OT_ASSERT(3_uz < body.size());
 
-    const auto chain = body.at(1).as<blockchain::Type>();
-
-    if (parent_.chain_ != chain) { return; }
-
-    const auto type = body.at(2).as<cfilter::Type>();
+    const auto type = body.at(1).as<cfilter::Type>();
 
     if (type != parent_.node_.FilterOracle().DefaultType()) { return; }
 
     auto position =
-        block::Position{body.at(3).as<block::Height>(), body.at(4).Bytes()};
+        block::Position{body.at(2).as<block::Height>(), body.at(3).Bytes()};
     process_filter(std::move(in), std::move(position));
 }
 
 auto Job::process_filter(Message&&, block::Position&&) noexcept -> void
 {
-    LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Flush();
-
-    OT_FAIL;
+    LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
 
 auto Job::process_key(Message&& in) noexcept -> void
 {
-    LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Flush();
-
-    OT_FAIL;
+    LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
 
 auto Job::process_prepare_reorg(Message&& in) noexcept -> void
@@ -299,7 +272,7 @@ auto Job::process_process(Message&& in) noexcept -> void
 {
     const auto body = in.Body();
 
-    OT_ASSERT(2 < body.size());
+    OT_ASSERT(2_uz < body.size());
 
     process_process(
         block::Position{body.at(1).as<block::Height>(), body.at(2).Bytes()});
@@ -307,16 +280,12 @@ auto Job::process_process(Message&& in) noexcept -> void
 
 auto Job::process_process(block::Position&& position) noexcept -> void
 {
-    LogError()(OT_PRETTY_CLASS())(name_)("unhandled message type").Flush();
-
-    OT_FAIL;
+    LogAbort()(OT_PRETTY_CLASS())(name_)("unhandled message type").Abort();
 }
 
 auto Job::process_reprocess(Message&& msg) noexcept -> void
 {
-    LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Flush();
-
-    OT_FAIL;
+    LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
 
 auto Job::process_startup(Message&& msg) noexcept -> void
@@ -330,21 +299,19 @@ auto Job::process_startup(Message&& msg) noexcept -> void
 
 auto Job::process_mempool(Message&& in) noexcept -> void
 {
-    LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Flush();
-
-    OT_FAIL;
+    LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
 
 auto Job::process_update(Message&& msg) noexcept -> void
 {
     const auto body = msg.Body();
 
-    OT_ASSERT(1 < body.size());
+    OT_ASSERT(1_uz < body.size());
 
     const auto& epoc = body.at(1);
     const auto expected = last_reorg();
 
-    if (0u == epoc.size()) {
+    if (0_uz == epoc.size()) {
         if (expected.has_value()) {
             log_(OT_PRETTY_CLASS())(name_)(" ignoring stale update").Flush();
 
@@ -372,12 +339,15 @@ auto Job::process_update(Message&& msg) noexcept -> void
 
 auto Job::process_watchdog() noexcept -> void
 {
-    to_parent_.Send([&] {
-        auto out = MakeWork(Work::watchdog_ack);
-        out.AddFrame(job_type_);
+    to_parent_.SendDeferred(
+        [&] {
+            auto out = MakeWork(Work::watchdog_ack);
+            out.AddFrame(job_type_);
 
-        return out;
-    }());
+            return out;
+        }(),
+        __FILE__,
+        __LINE__);
     using namespace std::literals;
     reset_timer(10s, watchdog_, Work::watchdog);
 }
@@ -385,9 +355,6 @@ auto Job::process_watchdog() noexcept -> void
 auto Job::state_normal(const Work work, Message&& msg) noexcept -> void
 {
     switch (work) {
-        case Work::shutdown: {
-            shutdown_actor();
-        } break;
         case Work::filter: {
             process_filter(std::move(msg));
         } break;
@@ -407,7 +374,7 @@ auto Job::state_normal(const Work work, Message&& msg) noexcept -> void
             process_process(std::move(msg));
         } break;
         case Work::rescan: {
-            // NOTE do nothing
+            // NOTE ignore message
         } break;
         case Work::do_rescan: {
             process_do_rescan(std::move(msg));
@@ -425,18 +392,58 @@ auto Job::state_normal(const Work work, Message&& msg) noexcept -> void
             process_key(std::move(msg));
         } break;
         case Work::prepare_shutdown: {
-            transition_state_shutdown();
+            transition_state_pre_shutdown();
         } break;
         case Work::statemachine: {
             do_work();
         } break;
+        case Work::shutdown:
+        case Work::finish_reorg: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+                print(work))(" message")
+                .Abort();
+        }
         case Work::watchdog_ack:
         default: {
-            LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))
-                .Flush();
+                .Abort();
+        }
+    }
+}
 
-            OT_FAIL;
+auto Job::state_pre_shutdown(const Work work, Message&& msg) noexcept -> void
+{
+    switch (work) {
+        case Work::shutdown: {
+            shutdown_actor();
+        } break;
+        case Work::filter:
+        case Work::mempool:
+        case Work::block:
+        case Work::update:
+        case Work::process:
+        case Work::rescan:
+        case Work::do_rescan:
+        case Work::watchdog:
+        case Work::reprocess:
+        case Work::key:
+        case Work::statemachine: {
+            // NOTE ignore message
+        } break;
+        case Work::prepare_reorg:
+        case Work::finish_reorg:
+        case Work::init:
+        case Work::prepare_shutdown: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+                print(work))(" message")
+                .Abort();
+        }
+        case Work::watchdog_ack:
+        default: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
+                static_cast<OTZMQWorkType>(work))
+                .Abort();
         }
     }
 }
@@ -446,9 +453,8 @@ auto Job::state_reorg(const Work work, Message&& msg) noexcept -> void
     switch (work) {
         case Work::filter:
         case Work::update: {
-
-            return;
-        }
+            // NOTE ignore message
+        } break;
         case Work::mempool:
         case Work::block:
         case Work::prepare_reorg:
@@ -463,62 +469,62 @@ auto Job::state_reorg(const Work work, Message&& msg) noexcept -> void
                 .Flush();
             defer(std::move(msg));
         } break;
+        case Work::finish_reorg: {
+            transition_state_normal();
+        } break;
         case Work::shutdown:
         case Work::init:
         case Work::prepare_shutdown: {
-            LogError()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
                 print(work))(" message")
-                .Flush();
-
-            OT_FAIL;
+                .Abort();
         }
         case Work::watchdog: {
             process_watchdog();
         } break;
         case Work::watchdog_ack:
         default: {
-            LogError()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
+            LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))
-                .Flush();
-
-            OT_FAIL;
+                .Abort();
         }
     }
 }
 
-auto Job::transition_state_normal() noexcept -> bool
+auto Job::transition_state_normal() noexcept -> void
 {
     disable_automatic_processing_ = false;
     state_ = State::normal;
     log_(OT_PRETTY_CLASS())(name_)(" transitioned to normal state ").Flush();
     trigger();
-
-    return true;
 }
 
-auto Job::transition_state_reorg(StateSequence id) noexcept -> bool
+auto Job::transition_state_pre_shutdown() noexcept -> void
 {
-    OT_ASSERT(0u < id);
+    watchdog_.Cancel();
+    reorg_.AcknowledgeShutdown();
+    state_ = State::pre_shutdown;
+    log_(OT_PRETTY_CLASS())(name_)(": transitioned to pre_shutdown state")
+        .Flush();
+}
 
-    if (0u == reorgs_.count(id)) {
+auto Job::transition_state_reorg(StateSequence id) noexcept -> void
+{
+    OT_ASSERT(0_uz < id);
+
+    if (0_uz == reorgs_.count(id)) {
         reorgs_.emplace(id);
         disable_automatic_processing_ = true;
         state_ = State::reorg;
         log_(OT_PRETTY_CLASS())(name_)(" ready to process reorg ")(id).Flush();
+        reorg_.AcknowledgePrepareReorg(
+            [this](const auto& header, const auto& lock, auto& params) {
+                return do_reorg(header, lock, params);
+            });
     } else {
-        log_(OT_PRETTY_CLASS())(name_)(" reorg ")(id)(" already handled")
-            .Flush();
+        LogAbort()(OT_PRETTY_CLASS())(name_)(" reorg ")(id)(" already handled")
+            .Abort();
     }
-
-    return true;
-}
-
-auto Job::transition_state_shutdown() noexcept -> bool
-{
-    state_ = State::shutdown;
-    log_(OT_PRETTY_CLASS())(name_)(" transitioned to shutdown state ").Flush();
-
-    return true;
 }
 
 auto Job::work() noexcept -> bool
@@ -528,5 +534,5 @@ auto Job::work() noexcept -> bool
     return false;
 }
 
-Job::~Job() { watchdog_.Cancel(); }
+Job::~Job() = default;
 }  // namespace opentxs::blockchain::node::wallet::statemachine

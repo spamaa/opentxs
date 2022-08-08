@@ -96,14 +96,6 @@ auto BlockchainPeerManager(
     std::string_view seednode,
     const blockchain::node::Endpoints& endpoints) noexcept
     -> std::unique_ptr<blockchain::node::internal::PeerManager>;
-auto BlockchainWallet(
-    const api::Session& api,
-    const blockchain::node::Manager& parent,
-    blockchain::database::Wallet& db,
-    const blockchain::node::internal::Mempool& mempool,
-    const blockchain::Type chain,
-    const blockchain::node::Endpoints& endpoints)
-    -> std::unique_ptr<blockchain::node::Wallet>;
 auto HeaderOracle(
     const api::Session& api,
     blockchain::database::Header& database,

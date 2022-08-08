@@ -9,6 +9,7 @@
 #include <chrono>
 #include <functional>
 #include <future>
+#include <string_view>
 
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/Types.hpp"
@@ -100,6 +101,10 @@ protected:
     Worker(
         const API& api,
         const std::chrono::milliseconds rateLimit,
+        const std::string_view name,
+        const network::zeromq::EndpointArgs& subscribe = {},
+        const network::zeromq::EndpointArgs& pull = {},
+        const network::zeromq::EndpointArgs& dealer = {},
         const Vector<network::zeromq::SocketData>& extra = {}) noexcept
         : api_(api)
         , rate_limit_(rateLimit)
@@ -108,10 +113,10 @@ protected:
         , shutdown_(shutdown_promise_.get_future())
         , pipeline_(api.Network().ZeroMQ().Internal().Pipeline(
               [this](auto&& in) { downcast().pipeline(std::move(in)); },
-              "Worker",
-              {},
-              {},
-              {},
+              name,
+              subscribe,
+              pull,
+              dealer,
               extra))
         , last_executed_(Clock::now())
         , state_machine_queued_(false)

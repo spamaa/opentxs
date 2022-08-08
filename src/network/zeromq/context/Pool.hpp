@@ -72,6 +72,8 @@ namespace opentxs::network::zeromq::context
 class Pool final : public zeromq::internal::Pool
 {
 public:
+    auto ActiveBatches(alloc::Default alloc = {}) const noexcept
+        -> CString final;
     auto BelongsToThreadPool(const std::thread::id) const noexcept
         -> bool final;
     auto Parent() const noexcept -> const zeromq::Context& final
@@ -86,16 +88,16 @@ public:
     auto DoModify(SocketID id) noexcept -> void final;
     auto GetStartArgs(BatchID id) noexcept -> ThreadStartArgs final;
     auto GetStopArgs(BatchID id) noexcept -> Set<void*> final;
-    auto MakeBatch(Vector<socket::Type>&& types) noexcept -> internal::Handle;
-    auto MakeBatch(const BatchID id, Vector<socket::Type>&& types) noexcept
-        -> internal::Handle final;
+    auto MakeBatch(Vector<socket::Type>&& types, std::string_view name) noexcept
+        -> internal::Handle;
+    auto MakeBatch(
+        const BatchID id,
+        Vector<socket::Type>&& types,
+        std::string_view name) noexcept -> internal::Handle final;
     auto Modify(SocketID id, ModifyCallback cb) noexcept -> void;
     auto ReportShutdown(unsigned int index) noexcept -> void final;
     auto Shutdown() noexcept -> void final;
-    auto Start(
-        BatchID id,
-        StartArgs&& sockets,
-        const std::string_view threadname) noexcept
+    auto Start(BatchID id, StartArgs&& sockets) noexcept
         -> zeromq::internal::Thread* final;
     auto Stop(BatchID id) noexcept -> void final;
 

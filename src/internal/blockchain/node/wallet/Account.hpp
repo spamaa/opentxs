@@ -6,16 +6,8 @@
 #pragma once
 
 #include <boost/smart_ptr/shared_ptr.hpp>
-#include <atomic>
-#include <functional>
 #include <memory>
 #include <string_view>
-
-#include "internal/blockchain/crypto/Crypto.hpp"
-#include "internal/blockchain/node/wallet/Types.hpp"
-#include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
-#include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
-#include "util/LMDB.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -46,6 +38,11 @@ namespace internal
 class Mempool;
 }  // namespace internal
 
+namespace wallet
+{
+class Reorg;
+}  // namespace wallet
+
 class Manager;
 }  // namespace node
 }  // namespace blockchain
@@ -58,30 +55,16 @@ namespace opentxs::blockchain::node::wallet
 class Account
 {
 public:
-    using State = JobState;
-
-    [[nodiscard]] auto ChangeState(
-        const State state,
-        StateSequence reorg = {}) noexcept -> bool;
-    auto VerifyState(const State state) const noexcept -> void;
-
-    auto ProcessReorg(
-        const Lock& headerOracleLock,
-        storage::lmdb::LMDB::Transaction& tx,
-        std::atomic_int& errors,
-        const block::Position& parent) noexcept -> void;
+    auto Init() noexcept -> void;
 
     Account(
-        const api::Session& api,
+        Reorg& reorg,
         const crypto::Account& account,
-        const node::Manager& node,
-        database::Wallet& db,
-        const node::internal::Mempool& mempool,
-        const Type chain,
-        const cfilter::Type filter,
-        const std::string_view shutdown) noexcept;
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        std::string_view fromParent) noexcept;
     Account(const Account&) = delete;
-    Account(Account&&) noexcept;
+    Account(Account&&) = delete;
     auto operator=(const Account&) -> Account& = delete;
     auto operator=(Account&&) -> Account& = delete;
 

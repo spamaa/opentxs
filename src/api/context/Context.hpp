@@ -32,6 +32,7 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/api/Context.hpp"
 #include "opentxs/api/Factory.hpp"
+#include "opentxs/api/Periodic.hpp"
 #include "opentxs/api/Settings.hpp"
 #include "opentxs/api/crypto/Crypto.hpp"
 #include "opentxs/api/network/Asio.hpp"
@@ -103,10 +104,11 @@ struct rlimit;
 
 namespace opentxs::api::imp
 {
-class Context final : public internal::Context, Periodic
+class Context final : public internal::Context
 {
 public:
     auto Asio() const noexcept -> const network::Asio& final { return *asio_; }
+    auto Cancel(const TaskID task) const -> bool final;
     auto ClientSession(const int instance) const noexcept(false)
         -> const api::session::Client& final;
     auto ClientSessionCount() const noexcept -> std::size_t final
@@ -130,10 +132,16 @@ public:
     }
     auto ProfileId() const noexcept -> std::string_view final;
     auto QtRootObject() const noexcept -> QObject* final;
+    auto Reschedule(const TaskID task, const std::chrono::seconds& interval)
+        const -> bool final;
     auto RPC(const rpc::request::Base& command) const noexcept
         -> std::unique_ptr<rpc::response::Base> final;
     auto RPC(const ReadView command, const AllocateOutput response)
         const noexcept -> bool final;
+    auto Schedule(
+        const std::chrono::seconds& interval,
+        const PeriodicTask& task,
+        const std::chrono::seconds& last) const -> TaskID final;
     auto StartClientSession(const Options& args, const int instance) const
         -> const api::session::Client& final;
     auto StartClientSession(const int instance) const
@@ -178,7 +186,8 @@ private:
         Vector<std::shared_ptr<api::session::Notary>> server_{};
         Vector<std::shared_ptr<api::session::Client>> client_{};
 
-        auto clear() noexcept -> void;
+        auto clear(const opentxs::network::zeromq::Context& zmq) noexcept
+            -> void;
     };
 
     using ConfigMap =
@@ -189,6 +198,7 @@ private:
     using GuardedSignals =
         libguarded::ordered_guarded<SignalHandler, std::shared_mutex>;
 
+    Flag& running_;
     const Options args_;
     const std::filesystem::path home_;
     const std::unique_ptr<PasswordCallback> null_callback_;
@@ -197,6 +207,7 @@ private:
     AsyncConst<CString> profile_id_;
     std::shared_ptr<opentxs::network::zeromq::Context> zmq_context_;
     std::unique_ptr<network::Asio> asio_;
+    std::optional<api::imp::Periodic> periodic_;
     std::unique_ptr<api::internal::Log> log_;
     std::unique_ptr<api::Legacy> legacy_;
     mutable GuardedConfig config_;
@@ -215,15 +226,16 @@ private:
     auto init_pid() const -> void;
 
     auto get_qt() const noexcept -> std::unique_ptr<QObject>&;
+    auto Init() noexcept -> void final;
     auto Init_Asio() -> void;
     auto Init_CoreDump() noexcept -> void;
     auto Init_Crypto() -> void;
     auto Init_Factory() -> void;
     auto Init_Log() -> void;
-    auto Init_Rlimit() noexcept -> void;
+    auto Init_Periodic() -> void;
     auto Init_Profile() -> void;
+    auto Init_Rlimit() noexcept -> void;
     auto Init_Zap() -> void;
-    auto Init() noexcept -> void final;
     auto shutdown() noexcept -> void final;
     auto shutdown_qt() noexcept -> void;
 };
