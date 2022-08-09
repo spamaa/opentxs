@@ -25,6 +25,7 @@
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/util/Future.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/P0330.hpp"
 #include "internal/util/Timer.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Network.hpp"
@@ -88,7 +89,6 @@ protected:
 
     const Log& log_;
     network::zeromq::Pipeline pipeline_;
-    bool disable_automatic_processing_;
 
     auto trigger() const noexcept -> void
     {
@@ -151,20 +151,6 @@ protected:
             next_state_machine_ = now + rate_limit_;
         }
     }
-    auto flush_cache() noexcept -> void
-    {
-        if (false == cache_.empty()) {
-            log_(OT_PRETTY_CLASS())(name_)(": flushing ")(cache_.size())(
-                " cached messages")
-                .Flush();
-        }
-
-        while (false == cache_.empty()) {
-            auto message = Message{std::move(cache_.front())};
-            cache_.pop();
-            handle_message(std::move(message));
-        }
-    }
     auto reset_timer(
         const std::chrono::microseconds& value,
         Timer& timer,
@@ -222,7 +208,6 @@ protected:
               extra,
               batch,
               alloc.resource()))
-        , disable_automatic_processing_(false)
         , rate_limit_(std::move(rateLimit))
         , never_drop_(std::move(neverDrop))
         , init_complete_(false)
@@ -284,6 +269,20 @@ private:
     {
         return static_cast<CRTP&>(*this);
     }
+    auto flush_cache() noexcept -> void
+    {
+        if (false == cache_.empty()) {
+            log_(OT_PRETTY_CLASS())(name_)(": flushing ")(cache_.size())(
+                " cached messages")
+                .Flush();
+        }
+
+        for (auto n{0_uz}, stop = cache_.size(); n < stop; ++n) {
+            auto message = Message{std::move(cache_.front())};
+            cache_.pop();
+            handle_message(std::move(message));
+        }
+    }
     auto handle_message(network::zeromq::Message&& in) noexcept -> void
     {
         try {
@@ -319,16 +318,7 @@ private:
                 defer(std::move(in));
             }
         } else {
-            if (disable_automatic_processing_) {
-                log_(OT_PRETTY_CLASS())(name_)(": processing ")(
-                    type)(" in bypass mode")
-                    .Flush();
-                handle_message(work, std::move(in));
-
-                return;
-            } else if (topLevel) {
-                flush_cache();
-            }
+            if (topLevel) { flush_cache(); }
 
             switch (work) {
                 case terminate_signal_: {

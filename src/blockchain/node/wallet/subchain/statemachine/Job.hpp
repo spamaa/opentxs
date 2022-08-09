@@ -90,6 +90,7 @@ protected:
 
     auto add_last_reorg(Message& out) const noexcept -> void;
     auto last_reorg() const noexcept -> std::optional<StateSequence>;
+    auto state() const noexcept -> State { return state_.load(); }
 
     virtual auto do_reorg(
         const node::HeaderOracle& oracle,
@@ -147,6 +148,6 @@ private:
     virtual auto process_mempool(Message&& in) noexcept -> void;
     virtual auto process_process(block::Position&& position) noexcept -> void;
     virtual auto process_reprocess(Message&& msg) noexcept -> void;
-    virtual auto process_startup(Message&& in) noexcept -> void;
+    virtual auto process_start_scan(Message&& in) noexcept -> void;
 };
 }  // namespace opentxs::blockchain::node::wallet::statemachine

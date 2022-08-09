@@ -423,6 +423,8 @@ auto Rescan::Imp::stop() const noexcept -> block::Height
 
 auto Rescan::Imp::work() noexcept -> bool
 {
+    if (State::reorg == state()) { return false; }
+
     auto post = ScopeGuard{[&] {
         if (last_scanned_.has_value()) {
             log_(OT_PRETTY_CLASS())(name_)(" progress updated to ")(

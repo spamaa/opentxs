@@ -82,6 +82,7 @@ private:
     std::optional<block::Position> last_scanned_;
     std::optional<block::Position> filter_tip_;
     bool enabled_;
+    bool index_ready_;
 
     auto caught_up() const noexcept -> bool;
     auto current() const noexcept -> const block::Position&;
@@ -96,6 +97,7 @@ private:
     auto process_do_rescan(Message&& in) noexcept -> void final;
     auto process_filter(Message&& in, block::Position&& tip) noexcept
         -> void final;
+    auto process_start_scan(Message&& in) noexcept -> void final;
     auto scan(Vector<ScanStatus>& out) noexcept -> void;
     auto work() noexcept -> bool final;
 };

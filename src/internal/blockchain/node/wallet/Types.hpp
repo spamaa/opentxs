@@ -58,6 +58,7 @@ enum class SubchainJobs : OTZMQWorkType {
     filter = OT_ZMQ_NEW_FILTER_SIGNAL,
     mempool = value(WorkType::BlockchainMempoolUpdated),
     block = value(WorkType::BlockchainBlockAvailable),
+    start_scan = OT_ZMQ_INTERNAL_SIGNAL + 0,
     prepare_reorg = OT_ZMQ_BLOCKCHAIN_WALLET_PREPARE_REORG,
     update = OT_ZMQ_BLOCKCHAIN_WALLET_UPDATE,
     process = OT_ZMQ_BLOCKCHAIN_WALLET_PROCESS,

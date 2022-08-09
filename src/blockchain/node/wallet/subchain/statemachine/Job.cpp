@@ -278,26 +278,22 @@ auto Job::process_process(Message&& in) noexcept -> void
         block::Position{body.at(1).as<block::Height>(), body.at(2).Bytes()});
 }
 
-auto Job::process_process(block::Position&& position) noexcept -> void
+auto Job::process_process(block::Position&&) noexcept -> void
 {
     LogAbort()(OT_PRETTY_CLASS())(name_)("unhandled message type").Abort();
 }
 
-auto Job::process_reprocess(Message&& msg) noexcept -> void
+auto Job::process_reprocess(Message&&) noexcept -> void
 {
     LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
 
-auto Job::process_startup(Message&& msg) noexcept -> void
+auto Job::process_start_scan(Message&&) noexcept -> void
 {
-    state_ = State::normal;
-    log_(OT_PRETTY_CLASS())(name_)(" transitioned to normal state ").Flush();
-    disable_automatic_processing_ = false;
-    flush_cache();
-    do_work();
+    LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
 
-auto Job::process_mempool(Message&& in) noexcept -> void
+auto Job::process_mempool(Message&&) noexcept -> void
 {
     LogAbort()(OT_PRETTY_CLASS())(name_)(" unhandled message type").Abort();
 }
@@ -364,6 +360,9 @@ auto Job::state_normal(const Work work, Message&& msg) noexcept -> void
         case Work::block: {
             process_block(std::move(msg));
         } break;
+        case Work::start_scan: {
+            process_start_scan(std::move(msg));
+        } break;
         case Work::prepare_reorg: {
             process_prepare_reorg(std::move(msg));
         } break;
@@ -421,6 +420,7 @@ auto Job::state_pre_shutdown(const Work work, Message&& msg) noexcept -> void
         case Work::filter:
         case Work::mempool:
         case Work::block:
+        case Work::start_scan:
         case Work::update:
         case Work::process:
         case Work::rescan:
@@ -457,6 +457,7 @@ auto Job::state_reorg(const Work work, Message&& msg) noexcept -> void
         } break;
         case Work::mempool:
         case Work::block:
+        case Work::start_scan:
         case Work::prepare_reorg:
         case Work::process:
         case Work::reprocess:
@@ -493,7 +494,6 @@ auto Job::state_reorg(const Work work, Message&& msg) noexcept -> void
 
 auto Job::transition_state_normal() noexcept -> void
 {
-    disable_automatic_processing_ = false;
     state_ = State::normal;
     log_(OT_PRETTY_CLASS())(name_)(" transitioned to normal state ").Flush();
     trigger();
@@ -514,7 +514,6 @@ auto Job::transition_state_reorg(StateSequence id) noexcept -> void
 
     if (0_uz == reorgs_.count(id)) {
         reorgs_.emplace(id);
-        disable_automatic_processing_ = true;
         state_ = State::reorg;
         log_(OT_PRETTY_CLASS())(name_)(" ready to process reorg ")(id).Flush();
         reorg_.AcknowledgePrepareReorg(
