@@ -2595,7 +2595,9 @@ const ot::UnallocatedVector<ot::UnallocatedCString> Test_HeaderOracle_base::bitc
 // clang-format on
 
 Test_HeaderOracle_base::Test_HeaderOracle_base(const b::Type type)
-    : api_(ot::Context().StartClientSession(0))
+    : api_(ot::Context().StartClientSession(
+          ot::Options{}.SetBlockchainProfile(ot::BlockchainProfile::server),
+          0))
     , type_(type)
     , network_(init_network(api_, type_))
     , header_oracle_(const_cast<bc::HeaderOracle&>(network_.HeaderOracle()))

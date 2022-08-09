@@ -9,7 +9,6 @@
 #include "1_Internal.hpp"                      // IWYU pragma: associated
 #include "network/zeromq/socket/Pipeline.hpp"  // IWYU pragma: associated
 
-#include <cstdint>
 #include <iterator>
 #include <memory>
 #include <stdexcept>
@@ -103,8 +102,6 @@ Pipeline::Imp::Imp(
     : Allocated(allocator_type{pmr})
     , context_(context)
     , total_socket_count_(fixed_sockets_ + extra.size())
-    , internal_endpoint_(std::move(internalEndpoint))
-    , outgoing_endpoint_(std::move(outgoingEndpoint))
     , gate_()
     , shutdown_(false)
     , handle_([&] {
@@ -113,9 +110,9 @@ Pipeline::Imp::Imp(
             out.reserve(total_socket_count_);
             out.emplace_back(socket::Type::Subscribe);  // NOTE sub_
             out.emplace_back(socket::Type::Pull);       // NOTE pull_
-            out.emplace_back(socket::Type::Pull);       // NOTE outgoing_
+            out.emplace_back(socket::Type::Pair);       // NOTE outgoing_
             out.emplace_back(socket::Type::Dealer);     // NOTE dealer_
-            out.emplace_back(socket::Type::Pull);       // NOTE internal_
+            out.emplace_back(socket::Type::Pair);       // NOTE internal_
 
             for (const auto& [type, args] : extra) { out.emplace_back(type); }
 
@@ -161,7 +158,7 @@ Pipeline::Imp::Imp(
     }())
     , outgoing_([&]() -> auto& {
         auto& socket = batch_.sockets_.at(2);
-        const auto rc = socket.Bind(outgoing_endpoint_.c_str());
+        const auto rc = socket.Bind(outgoingEndpoint.c_str());
 
         OT_ASSERT(rc);
 
@@ -175,7 +172,23 @@ Pipeline::Imp::Imp(
     }())
     , internal_([&]() -> auto& {
         auto& socket = batch_.sockets_.at(4);
-        const auto rc = socket.Bind(internal_endpoint_.c_str());
+        const auto rc = socket.Bind(internalEndpoint.c_str());
+
+        OT_ASSERT(rc);
+
+        return socket;
+    }())
+    , to_dealer_([&] {
+        auto socket = factory::ZMQSocket(context_, socket::Type::Pair);
+        const auto rc = socket.Connect(outgoingEndpoint.c_str());
+
+        OT_ASSERT(rc);
+
+        return socket;
+    }())
+    , to_internal_([&] {
+        auto socket = factory::ZMQSocket(context_, socket::Type::Pair);
+        const auto rc = socket.Connect(internalEndpoint.c_str());
 
         OT_ASSERT(rc);
 
@@ -385,36 +398,11 @@ auto Pipeline::Imp::Push(zeromq::Message&& msg) const noexcept -> bool
 
     if (done) { return false; }
 
-    using Key = std::uintptr_t;
-    static thread_local auto map = Map<Key, socket::Raw>{};
-    auto& socket = [this]() -> auto&
-    {
-        const auto key = reinterpret_cast<Key>(this);
+    to_internal_.modify_detach([data = std::move(msg)](auto& socket) mutable {
+        socket.Send(std::move(data), __FILE__, __LINE__);
+    });
 
-        if (auto it = map.find(key); map.end() == it) {
-
-            return map
-                .try_emplace(
-                    key,
-                    [&] {
-                        auto socket =
-                            factory::ZMQSocket(context_, socket::Type::Push);
-                        const auto rc =
-                            socket.Connect(internal_endpoint_.c_str());
-
-                        OT_ASSERT(rc);
-
-                        return socket;
-                    }())
-                .first->second;
-        } else {
-
-            return it->second;
-        }
-    }
-    ();
-
-    return socket.SendDeferred(std::move(msg), __FILE__, __LINE__);
+    return true;
 }
 
 auto Pipeline::Imp::Send(zeromq::Message&& msg) const noexcept -> bool
@@ -423,36 +411,11 @@ auto Pipeline::Imp::Send(zeromq::Message&& msg) const noexcept -> bool
 
     if (done) { return false; }
 
-    using Key = std::uintptr_t;
-    static thread_local auto map = Map<Key, socket::Raw>{};
-    auto& socket = [this]() -> auto&
-    {
-        const auto key = reinterpret_cast<Key>(this);
+    to_dealer_.modify_detach([data = std::move(msg)](auto& socket) mutable {
+        socket.Send(std::move(data), __FILE__, __LINE__);
+    });
 
-        if (auto it = map.find(key); map.end() == it) {
-
-            return map
-                .try_emplace(
-                    key,
-                    [&] {
-                        auto socket =
-                            factory::ZMQSocket(context_, socket::Type::Push);
-                        const auto rc =
-                            socket.Connect(outgoing_endpoint_.c_str());
-
-                        OT_ASSERT(rc);
-
-                        return socket;
-                    }())
-                .first->second;
-        } else {
-
-            return it->second;
-        }
-    }
-    ();
-
-    return socket.SendDeferred(std::move(msg), __FILE__, __LINE__);
+    return true;
 }
 
 auto Pipeline::Imp::SendFromThread(zeromq::Message&& msg) noexcept -> bool

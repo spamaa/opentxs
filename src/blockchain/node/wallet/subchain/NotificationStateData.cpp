@@ -113,7 +113,7 @@ auto NotificationStateData::do_startup() noexcept -> bool
 auto NotificationStateData::get_index(
     const boost::shared_ptr<const SubchainStateData>& me) const noexcept -> void
 {
-    wallet::Index{Index::NotificationFactory(me, *code_.lock_shared())}.Init();
+    Index::NotificationFactory(me, *code_.lock_shared()).Init();
 }
 
 auto NotificationStateData::handle_confirmed_matches(
