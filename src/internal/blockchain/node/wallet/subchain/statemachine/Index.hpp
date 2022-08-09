@@ -49,7 +49,7 @@ public:
 
     Index() = delete;
     Index(const Index&) = delete;
-    Index(Index&&) = delete;
+    Index(Index&& rhs) noexcept;
     auto operator=(const Index&) -> Index& = delete;
     auto operator=(Index&&) -> Index& = delete;
 

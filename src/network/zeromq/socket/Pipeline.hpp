@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cs_deferred_guarded.h>
 #include <zmq.h>
 #include <atomic>
 #include <cstddef>
@@ -130,21 +131,24 @@ public:
     ~Imp() final;
 
 private:
+    using GuardedSocket =
+        libguarded::deferred_guarded<socket::Raw, std::shared_mutex>;
+
     static constexpr auto fixed_sockets_ = 5_uz;
 
     const zeromq::Context& context_;
     const std::size_t total_socket_count_;
-    const CString internal_endpoint_;
-    const CString outgoing_endpoint_;
     mutable Gatekeeper gate_;
     mutable std::atomic<bool> shutdown_;
     mutable internal::Handle handle_;
     internal::Batch& batch_;
-    socket::Raw& sub_;       // NOTE activated by SubscribeTo()
-    socket::Raw& pull_;      // NOTE activated by PullFrom()
-    socket::Raw& outgoing_;  // NOTE receives from to_dealer_
-    socket::Raw& dealer_;    // NOTE activated by ConnectDealer()
-    socket::Raw& internal_;  // NOTE receives from to_internal_
+    socket::Raw& sub_;                   // NOTE activated by SubscribeTo()
+    socket::Raw& pull_;                  // NOTE activated by PullFrom()
+    socket::Raw& outgoing_;              // NOTE receives from to_dealer_
+    socket::Raw& dealer_;                // NOTE activated by ConnectDealer()
+    socket::Raw& internal_;              // NOTE receives from to_internal_
+    mutable GuardedSocket to_dealer_;    // NOTE activated by Send()
+    mutable GuardedSocket to_internal_;  // NOTE activated by Push()
     internal::Thread* thread_;
 
     static auto apply(

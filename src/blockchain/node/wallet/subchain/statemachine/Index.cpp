@@ -175,6 +175,11 @@ Index::Index(boost::shared_ptr<Imp>&& imp) noexcept
     OT_ASSERT(imp_);
 }
 
+Index::Index(Index&& rhs) noexcept
+    : Index(std::move(rhs.imp_))
+{
+}
+
 auto Index::Init() noexcept -> void
 {
     imp_->Init(imp_);
