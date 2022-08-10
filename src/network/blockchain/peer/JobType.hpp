@@ -15,7 +15,8 @@ public:
     static auto get() noexcept -> const JobType&;
 
     auto operator()(const std::monostate&) const noexcept -> std::string_view;
-    auto operator()(const GetHeadersJob&) const noexcept -> std::string_view;
+    auto operator()(const opentxs::blockchain::node::internal::HeaderJob&)
+        const noexcept -> std::string_view;
     auto operator()(const opentxs::blockchain::node::internal::BlockBatch&)
         const noexcept -> std::string_view;
     auto operator()(const opentxs::blockchain::node::CfheaderJob&)

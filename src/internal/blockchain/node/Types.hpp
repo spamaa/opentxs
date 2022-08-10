@@ -7,12 +7,7 @@
 
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <string_view>
-
 #include "blockchain/DownloadTask.hpp"
-#include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "util/Work.hpp"
@@ -62,31 +57,35 @@ class GCS;
 namespace opentxs::blockchain::node
 {
 enum class ManagerJobs : OTZMQWorkType {
-    Shutdown = value(WorkType::Shutdown),
-    SyncReply = value(WorkType::P2PBlockchainSyncReply),
-    SyncNewBlock = value(WorkType::P2PBlockchainNewBlock),
-    SubmitBlockHeader = OT_ZMQ_INTERNAL_SIGNAL + 0,
-    SubmitBlock = OT_ZMQ_INTERNAL_SIGNAL + 2,
-    Heartbeat = OT_ZMQ_INTERNAL_SIGNAL + 3,
-    SendToAddress = OT_ZMQ_INTERNAL_SIGNAL + 4,
-    SendToPaymentCode = OT_ZMQ_INTERNAL_SIGNAL + 5,
-    StartWallet = OT_ZMQ_INTERNAL_SIGNAL + 6,
-    FilterUpdate = OT_ZMQ_NEW_FILTER_SIGNAL,
-    StateMachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+    shutdown = value(WorkType::Shutdown),
+    sync_reply = value(WorkType::P2PBlockchainSyncReply),
+    sync_new_block = value(WorkType::P2PBlockchainNewBlock),
+    submit_block = OT_ZMQ_INTERNAL_SIGNAL + 2,
+    heartbeat = OT_ZMQ_INTERNAL_SIGNAL + 3,
+    send_to_address = OT_ZMQ_INTERNAL_SIGNAL + 4,
+    send_to_paymentcode = OT_ZMQ_INTERNAL_SIGNAL + 5,
+    start_wallet = OT_ZMQ_INTERNAL_SIGNAL + 6,
+    filter_update = OT_ZMQ_NEW_FILTER_SIGNAL,
+    state_machine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };
 
 enum class PeerManagerJobs : OTZMQWorkType {
-    Getheaders = OT_ZMQ_INTERNAL_SIGNAL + 0,
     BroadcastTransaction = OT_ZMQ_INTERNAL_SIGNAL + 2,
     JobAvailableCfheaders = OT_ZMQ_INTERNAL_SIGNAL + 4,
     JobAvailableCfilters = OT_ZMQ_INTERNAL_SIGNAL + 5,
     Heartbeat = OT_ZMQ_HEARTBEAT_SIGNAL,
 };
 
+enum class SyncServerJobs : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    heartbeat = OT_ZMQ_HEARTBEAT_SIGNAL,
+    filter = OT_ZMQ_NEW_FILTER_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+
 using CfheaderJob =
     download::Batch<cfilter::Hash, cfilter::Header, cfilter::Type>;
 using CfilterJob = download::Batch<GCS, cfilter::Header, cfilter::Type>;
-using ReorgTask = std::function<bool(const node::HeaderOracle&, const Lock&)>;
 
 constexpr auto value(PeerManagerJobs job) noexcept
 {

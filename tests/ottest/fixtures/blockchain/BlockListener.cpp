@@ -6,70 +6,171 @@
 #include "ottest/fixtures/blockchain/BlockListener.hpp"  // IWYU pragma: associated
 
 #include <opentxs/opentxs.hpp>
+#include <chrono>
+#include <exception>
 #include <mutex>
 #include <utility>
 
+#include "internal/network/zeromq/Context.hpp"
+#include "internal/network/zeromq/Types.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
+#include "internal/util/P0330.hpp"
+#include "internal/util/Timer.hpp"
+#include "util/Actor.hpp"
+#include "util/Work.hpp"
 
 namespace ottest
 {
-struct BlockListener::Imp {
+using namespace std::literals;
+
+enum class BlockListenerJob : ot::OTZMQWorkType {
+    shutdown = value(ot::WorkType::Shutdown),
+    header = value(ot::WorkType::BlockchainNewHeader),
+    reorg = value(ot::WorkType::BlockchainReorg),
+    init = ot::OT_ZMQ_INIT_SIGNAL,
+    statemachine = ot::OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+
+static auto print(BlockListenerJob state) noexcept -> std::string_view
+{
+    try {
+        using Job = BlockListenerJob;
+        static const auto map = ot::Map<Job, std::string_view>{
+            {Job::shutdown, "shutdown"sv},
+            {Job::header, "header"sv},
+            {Job::reorg, "reorg"sv},
+            {Job::init, "init"sv},
+            {Job::statemachine, "statemachine"sv},
+        };
+
+        return map.at(state);
+    } catch (...) {
+        ot::LogAbort()(__FUNCTION__)(": invalid BlockListenerJob: ")(
+            static_cast<ot::OTZMQWorkType>(state))
+            .Abort();
+    }
+}
+}  // namespace ottest
+
+namespace ottest
+{
+using namespace opentxs::literals;
+
+using BlockListenerActor = opentxs::Actor<BlockListener::Imp, BlockListenerJob>;
+
+class BlockListener::Imp final : public BlockListenerActor
+{
+public:
     const ot::api::Session& api_;
-    const ot::CString name_;
     mutable std::mutex lock_;
     std::promise<Position> promise_;
     Height target_;
-    ot::OTZMQListenCallback cb_;
-    ot::OTZMQSubscribeSocket socket_;
 
-    Imp(const ot::api::Session& api, std::string_view name)
-        : api_(api)
-        , name_(name)
+    auto Init(std::shared_ptr<Imp> me) noexcept -> void { signal_startup(me); }
+    auto Stop() noexcept -> void
+    {
+        pipeline_.Push(ot::MakeWork(Work::shutdown));
+    }
+
+    Imp(const ot::api::Session& api, std::string_view name) noexcept
+        : Imp(api, name, api.Network().ZeroMQ().Internal().PreallocateBatch())
+    {
+    }
+
+private:
+    friend BlockListenerActor;
+
+    auto do_shutdown() noexcept -> void {}
+    auto do_startup() noexcept -> bool { return false; }
+    auto pipeline(const Work work, Message&& msg) noexcept -> void
+    {
+        switch (work) {
+            case Work::header: {
+                process_header(std::move(msg));
+            } break;
+            case Work::reorg: {
+                process_reorg(std::move(msg));
+            } break;
+            default: {
+                ot::LogAbort()(OT_PRETTY_CLASS())(
+                    name_)(" unhandled message type ")(
+                    static_cast<ot::OTZMQWorkType>(work))
+                    .Abort();
+            }
+        }
+    }
+    auto process_header(Message&& msg) noexcept -> void
+    {
+        const auto body = msg.Body();
+
+        OT_ASSERT(3_uz < body.size());
+
+        using Height = ot::blockchain::block::Height;
+        process_position({body.at(3).as<Height>(), body.at(2).Bytes()});
+    }
+    auto process_position(ot::blockchain::block::Position&& position) noexcept
+        -> void
+    {
+        ot::LogConsole()(name_)(" header oracle updated to ")(position).Flush();
+        auto lock = ot::Lock{lock_};
+
+        if (position.height_ == target_) {
+            try {
+                promise_.set_value(position);
+                log_(name_)(" future for ")(position.height_)(" is ready ")
+                    .Flush();
+            } catch (const std::exception& e) {
+                log_(name_)(": ")(e.what()).Flush();
+            }
+        } else {
+            log_(name_)(" received position ")(
+                position)(" but no future is active for this height")
+                .Flush();
+        }
+    }
+    auto process_reorg(Message&& msg) noexcept -> void
+    {
+        const auto body = msg.Body();
+
+        OT_ASSERT(5_uz < body.size());
+
+        using Height = ot::blockchain::block::Height;
+        process_position({body.at(5).as<Height>(), body.at(4).Bytes()});
+    }
+    auto work() noexcept -> bool { return false; }
+
+    Imp(const ot::api::Session& api,
+        std::string_view name,
+        ot::network::zeromq::BatchID batch)
+        : Imp(api, name, batch, api.Network().ZeroMQ().Internal().Alloc(batch))
+    {
+    }
+    Imp(const ot::api::Session& api,
+        std::string_view name,
+        ot::network::zeromq::BatchID batch,
+        allocator_type alloc)
+        : BlockListenerActor(
+              api,
+              ot::LogTrace(),
+              ot::CString{name, alloc},
+              0ms,
+              std::move(batch),
+              alloc,
+              [&] {
+                  auto sub = ot::network::zeromq::EndpointArgs{alloc};
+                  sub.emplace_back(
+                      api.Endpoints().Shutdown(), Direction::Connect);
+                  sub.emplace_back(
+                      api.Endpoints().BlockchainReorg(), Direction::Connect);
+
+                  return sub;
+              }())
+        , api_(api)
         , lock_()
         , promise_()
         , target_(-1)
-        , cb_(ot::network::zeromq::ListenCallback::Factory(
-              [&](ot::network::zeromq::Message&& msg) {
-                  const auto body = msg.Body();
-
-                  OT_ASSERT(0 < body.size());
-
-                  auto position = [&]() -> Position {
-                      switch (body.at(0).as<ot::WorkType>()) {
-                          case ot::WorkType::BlockchainNewHeader: {
-                              OT_ASSERT(3 < body.size());
-
-                              return {
-                                  body.at(3).as<Height>(), body.at(2).Bytes()};
-                          }
-                          case ot::WorkType::BlockchainReorg: {
-                              OT_ASSERT(5 < body.size());
-
-                              return {
-                                  body.at(5).as<Height>(), body.at(4).Bytes()};
-                          }
-                          default: {
-
-                              OT_FAIL;
-                          }
-                      }
-                  }();
-                  ot::LogConsole()(name_)(" header oracle updated to ")(
-                      position)
-                      .Flush();
-                  auto lock = ot::Lock{lock_};
-
-                  if (position.height_ == target_) {
-                      try {
-                          promise_.set_value(std::move(position));
-                      } catch (...) {
-                      }
-                  }
-              }))
-        , socket_(api_.Network().ZeroMQ().SubscribeSocket(cb_))
     {
-        OT_ASSERT(socket_->Start(api_.Endpoints().BlockchainReorg().data()));
     }
 };
 }  // namespace ottest
@@ -79,8 +180,9 @@ namespace ottest
 BlockListener::BlockListener(
     const ot::api::Session& api,
     std::string_view name) noexcept
-    : imp_(std::make_unique<Imp>(api, name))
+    : imp_(std::make_shared<Imp>(api, name))
 {
+    imp_->Init(imp_);
 }
 
 auto BlockListener::GetFuture(const Height height) noexcept -> Future
@@ -96,5 +198,5 @@ auto BlockListener::GetFuture(const Height height) noexcept -> Future
     return imp_->promise_.get_future();
 }
 
-BlockListener::~BlockListener() = default;
+BlockListener::~BlockListener() { imp_->Stop(); }
 }  // namespace ottest

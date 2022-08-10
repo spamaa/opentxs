@@ -34,7 +34,7 @@ auto Config::PeerTarget(const blockchain::Type chain) const noexcept
         }
         case BlockchainProfile::server: {
 
-            return 6_uz;
+            return 8_uz;
         }
         default: {
 

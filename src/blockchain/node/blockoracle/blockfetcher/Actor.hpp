@@ -35,11 +35,6 @@ namespace block
 class Position;
 }  // namespace block
 
-namespace database
-{
-class Block;
-}  // namespace database
-
 namespace node
 {
 class HeaderOracle;
@@ -96,23 +91,21 @@ private:
     boost::shared_ptr<Shared> shared_;
     const api::Session& api_;
     const node::Manager& node_;
-    const HeaderOracle& header_oracle_;
-    database::Block& db_;
+    const node::HeaderOracle& header_oracle_;
     network::zeromq::socket::Raw& job_ready_;
     network::zeromq::socket::Raw& tip_updated_;
     const blockchain::Type chain_;
     Shared::Guarded& data_;
+    Timer job_available_;
 
-    auto broadcast_tip(const block::Position& tip) noexcept -> void;
+    auto broadcast_tip(Shared::Data& data, const block::Position& tip) noexcept
+        -> void;
     auto do_shutdown() noexcept -> void;
     auto do_startup() noexcept -> bool;
-    auto erase_obsolete(
-        const block::Position& after,
-        Shared::Data& data) noexcept -> void;
     auto pipeline(const Work work, Message&& msg) noexcept -> void;
-    auto process_batch_finished(Message&& msg) noexcept -> void;
-    auto process_block_received(Message&& msg) noexcept -> void;
+    auto process_heartbeat(Message&& msg) noexcept -> void;
     auto process_reorg(Message&& msg) noexcept -> void;
+    auto publish_job_ready() noexcept -> void;
     auto update_tip(Shared::Data& data) noexcept -> void;
     auto work() noexcept -> bool;
 };

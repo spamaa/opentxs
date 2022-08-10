@@ -106,7 +106,7 @@ auto Progress::Imp::do_process_update(Message&& msg) noexcept -> void
 
 auto Progress::Imp::do_reorg(
     const node::HeaderOracle& oracle,
-    const Lock& oracleLock,
+    const node::internal::HeaderOraclePrivate& data,
     Reorg::Params& params) noexcept -> bool
 {
     if (false == parent_.need_reorg_) { return true; }
@@ -121,7 +121,7 @@ auto Progress::Imp::do_reorg(
         notify(target);
     }
 
-    return Job::do_reorg(oracle, oracleLock, params);
+    return Job::do_reorg(oracle, data, params);
 }
 
 auto Progress::Imp::notify(const block::Position& pos) const noexcept -> void

@@ -35,6 +35,11 @@ class Position;
 
 namespace node
 {
+namespace internal
+{
+struct HeaderOraclePrivate;
+}  // namespace internal
+
 namespace wallet
 {
 class SubchainStateData;
@@ -82,7 +87,7 @@ private:
     auto do_process_update(Message&& msg) noexcept -> void final;
     auto do_reorg(
         const node::HeaderOracle& oracle,
-        const Lock& oracleLock,
+        const node::internal::HeaderOraclePrivate& data,
         Reorg::Params& params) noexcept -> bool final;
     auto do_startup_internal() noexcept -> void final {}
     auto forward_to_next(Message&& msg) noexcept -> void final {}

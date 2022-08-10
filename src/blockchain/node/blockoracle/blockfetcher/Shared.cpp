@@ -10,10 +10,12 @@
 #include "blockchain/node/blockoracle/blockfetcher/Shared.hpp"  // IWYU pragma: associated
 
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <functional>
 #include <memory>
 #include <utility>
 
 #include "blockchain/node/blockoracle/BlockBatch.hpp"
+#include "internal/blockchain/database/Database.hpp"  // IWYU pragma: keep
 #include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Manager.hpp"
@@ -27,28 +29,9 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
-#include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/socket/SocketType.hpp"
 #include "opentxs/util/Allocator.hpp"
-#include "util/ScopeGuard.hpp"
 #include "util/Work.hpp"
-
-namespace opentxs::blockchain::node::blockoracle
-{
-BlockFetcher::Shared::Data::Data(allocator_type alloc) noexcept
-    : tip_()
-    , queue_()
-    , blocks_(alloc)
-    , job_index_(alloc)
-{
-}
-
-auto BlockFetcher::Shared::Data::get_allocator() const noexcept
-    -> allocator_type
-{
-    return job_index_.get_allocator();
-}
-}  // namespace opentxs::blockchain::node::blockoracle
 
 namespace opentxs::blockchain::node::blockoracle
 {
@@ -60,7 +43,11 @@ BlockFetcher::Shared::Shared(
     : batch_id_(std::move(batchID))
     , peer_target_(
           node.Internal().GetConfig().PeerTarget(node.Internal().Chain()))
-    , data_(std::move(alloc))
+    , data_(
+          api,
+          node.Internal().DB(),
+          node.Internal().Chain(),
+          std::move(alloc))
     , to_actor_([&] {
         using Type = network::zeromq::socket::Type;
         auto out = api.Network().ZeroMQ().Internal().RawSocket(Type::Push);
@@ -82,76 +69,32 @@ auto BlockFetcher::Shared::GetJob(
 
     auto alloc = alloc::PMR<internal::BlockBatch::Imp>{pmr};
     auto* imp = alloc.allocate(1_uz);
-    const auto id = download::next_job();
-    auto hashes = [&] {
-        // TODO define max in Params
-        static constexpr auto max = 50000_uz;
-        static constexpr auto min = 10_uz;
-        auto handle = data_.lock();
-        auto& data = *handle;
-        auto& queue = data.queue_;
-        auto& blocks = data.blocks_;
-        const auto count = download::batch_size(queue, peer_target_, max, min);
+    auto [job, hashes] = data_.lock()->GetBatch(peer_target_, alloc);
+    // TODO c++20 lambda capture structured binding
+    auto id{job};
+    const auto trigger = [self] {
+        self->to_actor_.lock()->SendDeferred(
+            MakeWork(BlockFetcherJob::statemachine), __FILE__, __LINE__);
+    };
 
-        OT_ASSERT(blocks.size() >= count);
-        OT_ASSERT(count <= queue);
-
-        auto& index = data.job_index_[id];
-        auto out = Vector<block::Hash>{pmr};
-        out.reserve(count);
-        auto i = blocks.begin();
-
-        while (out.size() < count) {
-            auto cur = i++;
-            auto& [height, val] = *cur;
-            auto& [hash, job, status] = val;
-
-            if (Status::pending == status) {
-                --queue;
-                job = id;
-                status = Status::downloading;
-                --data.queue_;
-                out.emplace_back(hash);
-                index.emplace(hash, cur);
-            }
-        }
-
-        return out;
-    }();
-
-    if (hashes.empty()) {
+    if (0 > job) {
+        OT_ASSERT(0_uz == hashes.size());
+        std::invoke(trigger);
 
         return {};
     } else {
-        auto download = [me = self, id](const auto bytes) {
-            me->to_actor_.lock()->SendDeferred(
-                [bytes, id] {
-                    auto msg = MakeWork(BlockFetcherJob::block_received);
-                    msg.AddFrame(id);
-                    msg.AddFrame(bytes.data(), bytes.size());
-
-                    return msg;
-                }(),
-                __FILE__,
-                __LINE__);
-        };
-        auto finished = [me = self, id] {
-            me->to_actor_.lock()->SendDeferred(
-                [id] {
-                    auto msg = MakeWork(BlockFetcherJob::batch_finished);
-                    msg.AddFrame(id);
-
-                    return msg;
-                }(),
-                __FILE__,
-                __LINE__);
-        };
         alloc.construct(
             imp,
             id,
             std::move(hashes),
-            download,
-            std::make_shared<ScopeGuard>(finished));
+            [self, id, trigger](const auto bytes) {
+                self->data_.lock()->ReceiveBlock(id, bytes);
+                std::invoke(trigger);
+            },
+            [self, id, trigger] {
+                self->data_.lock()->FinishJob(id);
+                std::invoke(trigger);
+            });
 
         return imp;
     }

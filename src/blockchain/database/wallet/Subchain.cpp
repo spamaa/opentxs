@@ -20,8 +20,9 @@
 #include "blockchain/database/wallet/Types.hpp"
 #include "internal/api/network/Asio.hpp"
 #include "internal/blockchain/database/Types.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/Mutex.hpp"
 #include "internal/util/TSV.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Network.hpp"
@@ -69,7 +70,7 @@ struct SubchainData::Imp {
         }
     }
     auto Reorg(
-        const Lock& headerOracleLock,
+        const node::internal::HeaderOraclePrivate& data,
         MDB_txn* tx,
         const node::HeaderOracle& headers,
         const SubchainIndex& subchain,
@@ -95,8 +96,7 @@ struct SubchainData::Imp {
             target = std::max<block::Height>(lastGoodHeight - 1, 0);
         }
 
-        const auto position =
-            headers.Internal().GetPosition(headerOracleLock, target);
+        const auto position = headers.Internal().GetPosition(data, target);
         LogTrace()(OT_PRETTY_CLASS())("resetting last scanned to ")(position)
             .Flush();
 
@@ -331,13 +331,13 @@ auto SubchainData::GetPatterns(
 }
 
 auto SubchainData::Reorg(
-    const Lock& headerOracleLock,
+    const node::internal::HeaderOraclePrivate& data,
     MDB_txn* tx,
     const node::HeaderOracle& headers,
     const SubchainIndex& subchain,
     const block::Height lastGoodHeight) const noexcept(false) -> bool
 {
-    return imp_->Reorg(headerOracleLock, tx, headers, subchain, lastGoodHeight);
+    return imp_->Reorg(data, tx, headers, subchain, lastGoodHeight);
 }
 
 auto SubchainData::SubchainAddElements(

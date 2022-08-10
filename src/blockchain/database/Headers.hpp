@@ -131,9 +131,9 @@ private:
     class IsSameTip;
 
     const api::Session& api_;
-    const node::Manager& network_;
     const common::Database& common_;
     const storage::lmdb::LMDB& lmdb_;
+    const blockchain::Type chain_;
     mutable std::mutex lock_;
     network::zeromq::socket::Raw publish_tip_internal_;
     network::zeromq::socket::Raw publish_tip_;

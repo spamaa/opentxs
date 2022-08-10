@@ -8,7 +8,7 @@
 #include <memory>
 #include <utility>
 
-#include "internal/blockchain/node/HeaderOracle.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "ottest/fixtures/blockchain/HeaderOracle.hpp"
 
 ot::Vector<std::unique_ptr<bb::Header>> headers_btc_{};
@@ -67,7 +67,10 @@ TEST_F(Test_HeaderOracle_btc, receive_btc)
 
 TEST_F(Test_HeaderOracle_btc, receive_bch)
 {
-    const auto& network = init_network(api_, b::Type::BitcoinCash);
+    api_.Network().Blockchain().Start(b::Type::BitcoinCash);
+    const auto handle =
+        api_.Network().Blockchain().GetChain(b::Type::BitcoinCash);
+    const auto& network = handle.get();
     auto& oracle = const_cast<bc::HeaderOracle&>(network.HeaderOracle());
 
     EXPECT_TRUE(oracle.Internal().AddHeaders(headers_bch_));

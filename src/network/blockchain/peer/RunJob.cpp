@@ -16,9 +16,10 @@ Peer::Imp::RunJob::RunJob(Imp& parent) noexcept
 
 auto Peer::Imp::RunJob::operator()(std::monostate& job) noexcept -> void {}
 
-auto Peer::Imp::RunJob::operator()(GetHeadersJob& job) noexcept -> void
+auto Peer::Imp::RunJob::operator()(
+    opentxs::blockchain::node::internal::HeaderJob& job) noexcept -> void
 {
-    parent_.transmit_request_block_headers();
+    parent_.transmit_request_block_headers(job);
 }
 
 auto Peer::Imp::RunJob::operator()(

@@ -3,10 +3,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// IWYU pragma: no_forward_declare opentxs::blockchain::node::internal::BlockOracle::Actor
+
 #pragma once
 
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <chrono>
+#include <exception>
 #include <memory>
 #include <string_view>
 
@@ -15,6 +18,7 @@
 #include "internal/blockchain/node/blockoracle/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/util/Timer.hpp"
+#include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/util/Allocated.hpp"
 #include "util/Actor.hpp"
 
@@ -54,12 +58,12 @@ class Raw;
 // }  // namespace v1
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
+
 namespace opentxs::blockchain::node::internal
 {
-using namespace std::literals;
+using BlockOracleActor = opentxs::Actor<BlockOracle::Actor, blockoracle::Job>;
 
-class BlockOracle::Actor final
-    : public opentxs::Actor<BlockOracle::Actor, blockoracle::Job>
+class BlockOracle::Actor final : public BlockOracleActor
 {
 public:
     auto Init(boost::shared_ptr<Actor> me) noexcept -> void;
@@ -79,7 +83,7 @@ public:
     ~Actor() final;
 
 private:
-    friend opentxs::Actor<BlockOracle::Actor, blockoracle::Job>;
+    friend BlockOracleActor;
 
     std::shared_ptr<const api::Session> api_p_;
     std::shared_ptr<const node::Manager> node_p_;

@@ -12,6 +12,7 @@
 
 #include "blockchain/bitcoin/Inventory.hpp"
 #include "internal/blockchain/node/Types.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderJob.hpp"
 #include "internal/blockchain/p2p/bitcoin/Bitcoin.hpp"
 #include "internal/network/blockchain/Peer.hpp"
 #include "internal/network/zeromq/Types.hpp"
@@ -355,6 +356,9 @@ private:
     auto transmit_protocol_getheaders(
         Vector<opentxs::blockchain::block::Hash>&& history,
         const opentxs::blockchain::block::Hash& stop) noexcept -> void;
+    auto transmit_protocol_getheaders(
+        const Vector<opentxs::blockchain::block::Hash>& history) noexcept
+        -> void;
     auto transmit_protocol_headers(
         UnallocatedVector<
             std::unique_ptr<opentxs::blockchain::bitcoin::block::Header>>&&
@@ -375,6 +379,9 @@ private:
     auto transmit_protocol_verack() noexcept -> void;
     auto transmit_protocol_version() noexcept -> void;
     auto transmit_request_block_headers() noexcept -> void final;
+    auto transmit_request_block_headers(
+        const opentxs::blockchain::node::internal::HeaderJob& job) noexcept
+        -> void final;
     auto transmit_request_blocks(
         opentxs::blockchain::node::internal::BlockBatch& job) noexcept
         -> void final;

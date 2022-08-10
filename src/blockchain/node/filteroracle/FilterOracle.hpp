@@ -188,7 +188,7 @@ public:
         const api::Session& api,
         const internal::Config& config,
         const node::Manager& node,
-        const HeaderOracle& header,
+        const node::HeaderOracle& header,
         const node::BlockOracle& block,
         database::Cfilter& database,
         const blockchain::Type chain,
@@ -215,7 +215,7 @@ private:
 
     const api::Session& api_;
     const node::Manager& node_;
-    const HeaderOracle& header_;
+    const node::HeaderOracle& header_;
     database::Cfilter& database_;
     const network::zeromq::socket::Publish& filter_notifier_;
     const blockchain::Type chain_;

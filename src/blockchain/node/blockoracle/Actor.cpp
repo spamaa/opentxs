@@ -13,6 +13,7 @@
 #include <chrono>
 #include <exception>
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "blockchain/node/blockoracle/Shared.hpp"
@@ -23,6 +24,7 @@
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Timer.hpp"
+#include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
@@ -40,7 +42,7 @@ BlockOracle::Actor::Actor(
     boost::shared_ptr<Shared> shared,
     network::zeromq::BatchID batch,
     allocator_type alloc) noexcept
-    : opentxs::Actor<BlockOracle::Actor, blockoracle::Job>(
+    : BlockOracleActor(
           *api,
           LogTrace(),
           [&] {
@@ -56,6 +58,7 @@ BlockOracle::Actor::Actor(
           alloc,
           [&] {
               auto sub = network::zeromq::EndpointArgs{alloc};
+              sub.emplace_back(api->Endpoints().Shutdown(), Direction::Connect);
               sub.emplace_back(
                   node->Internal().Endpoints().shutdown_publish_,
                   Direction::Connect);
@@ -128,9 +131,6 @@ auto BlockOracle::Actor::pipeline(const Work work, Message&& msg) noexcept
         } break;
         case Work::process_block: {
             to_cache_.SendDeferred(std::move(msg), __FILE__, __LINE__);
-        } break;
-        case Work::start_downloader: {
-            shared_->StartDownloader(api_p_, node_p_);
         } break;
         case Work::init: {
             do_init();

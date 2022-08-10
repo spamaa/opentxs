@@ -170,7 +170,6 @@ public:
     {
         return peers_.Nonce();
     }
-    auto RequestHeaders() const noexcept -> bool final;
     auto VerifyPeer(const int id, const UnallocatedCString& address)
         const noexcept -> void final;
 
@@ -222,10 +221,8 @@ private:
         using SocketMap = UnallocatedMap<PeerManagerJobs, zmq::socket::Sender*>;
 
         const zmq::Context& zmq_;
-        OTZMQPushSocket getheaders_;
         OTZMQPublishSocket getcfheaders_;
         OTZMQPublishSocket getcfilters_;
-        OTZMQPublishSocket getblocks_;
         OTZMQPublishSocket heartbeat_;
         OTZMQPushSocket getblock_;
         OTZMQPushSocket broadcast_transaction_;

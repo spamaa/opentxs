@@ -13,7 +13,8 @@ class Peer::Imp::HasJob
 {
 public:
     auto operator()(const std::monostate&) const noexcept -> bool;
-    auto operator()(const GetHeadersJob&) const noexcept -> bool;
+    auto operator()(const opentxs::blockchain::node::internal::HeaderJob&)
+        const noexcept -> bool;
     auto operator()(const opentxs::blockchain::node::internal::BlockBatch&)
         const noexcept -> bool;
     auto operator()(

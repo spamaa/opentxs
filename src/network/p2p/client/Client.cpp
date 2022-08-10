@@ -732,7 +732,6 @@ auto Client::Imp::process_monitor(Message&& msg) noexcept -> void
 
 auto Client::Imp::process_pushtx(Message&& msg) noexcept -> void
 {
-#if OT_BLOCKCHAIN
     const auto base = api_.Factory().BlockchainSyncMessage(msg);
     using Type = opentxs::network::p2p::MessageType;
 
@@ -742,7 +741,6 @@ auto Client::Imp::process_pushtx(Message&& msg) noexcept -> void
     const auto& pushtx = base->asPushTransaction();
 
     forward_to_all(pushtx.Chain(), std::move(msg));
-#endif  // OT_BLOCKCHAIN
 }
 
 auto Client::Imp::process_register(Message&& msg) noexcept -> void
@@ -778,7 +776,7 @@ auto Client::Imp::process_request(Message&& msg) noexcept -> void
     const auto provider = get_provider(chain);
 
     if (provider.empty()) {
-        LogError()(OT_PRETTY_CLASS())("no provider for ")(print(chain)).Flush();
+        LogTrace()(OT_PRETTY_CLASS())("no provider for ")(print(chain)).Flush();
 
         return;
     }
@@ -814,7 +812,6 @@ auto Client::Imp::process_request(Message&& msg) noexcept -> void
 
 auto Client::Imp::process_response(Message&& msg) noexcept -> void
 {
-#if OT_BLOCKCHAIN
     try {
         const auto base = api_.Factory().BlockchainSyncMessage(msg);
 
@@ -851,7 +848,6 @@ auto Client::Imp::process_response(Message&& msg) noexcept -> void
     } catch (const std::exception& e) {
         LogError()(OT_PRETTY_CLASS())(e.what()).Flush();
     }
-#endif  // OT_BLOCKCHAIN
 }
 
 auto Client::Imp::process_server(Message&& msg) noexcept -> void

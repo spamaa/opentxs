@@ -115,7 +115,7 @@ FilterOracle::FilterOracle(
     const api::Session& api,
     const internal::Config& config,
     const node::Manager& node,
-    const HeaderOracle& header,
+    const node::HeaderOracle& header,
     const node::BlockOracle& block,
     database::Cfilter& database,
     const blockchain::Type chain,

@@ -25,6 +25,11 @@ class Position;
 
 namespace node
 {
+namespace internal
+{
+struct HeaderOraclePrivate;
+}  // namespace internal
+
 namespace wallet
 {
 class ReorgSlave;
@@ -66,8 +71,10 @@ public:
         auto operator=(const Params&) -> Params& = delete;
         auto operator=(Params&&) -> Params& = delete;
     };
-    using Job =
-        std::function<bool(const node::HeaderOracle&, const Lock&, Params&)>;
+    using Job = std::function<bool(
+        const node::HeaderOracle&,
+        const node::internal::HeaderOraclePrivate&,
+        Params&)>;
 
     enum class State {
         normal,

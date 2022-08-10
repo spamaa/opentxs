@@ -9,12 +9,16 @@
 #include <cs_plain_guarded.h>
 #include <cstddef>
 #include <optional>
+#include <string_view>
 #include <tuple>
+#include <utility>
 
 #include "internal/blockchain/node/Job.hpp"
 #include "internal/blockchain/node/blockoracle/BlockFetcher.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
+#include "opentxs/blockchain/Types.hpp"
+#include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/util/Allocated.hpp"
@@ -38,6 +42,11 @@ class Hash;
 class Position;
 }  // namespace block
 
+namespace database
+{
+class Block;
+}  // namespace database
+
 namespace node
 {
 namespace internal
@@ -59,6 +68,8 @@ class Raw;
 }  // namespace socket
 }  // namespace zeromq
 }  // namespace network
+
+class Log;
 // }  // namespace v1
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
@@ -68,25 +79,61 @@ namespace opentxs::blockchain::node::blockoracle
 class BlockFetcher::Shared final : public Allocated
 {
 public:
-    enum class Status { pending, downloading, success };
+    enum class Status { pending, downloading, success, stale };
     using Index =
         Map<block::Height,
             std::tuple<block::Hash, std::optional<download::JobID>, Status>>;
 
-    struct Data : public Allocated {
-        block::Position tip_;
-        std::size_t queue_;
-        Index blocks_;
-        Map<download::JobID, Map<block::Hash, Index::iterator>> job_index_;
+    class Data : public Allocated
+    {
+    public:
+        const api::Session& api_;
+        database::Block& db_;
+        const Log& log_;
+        const blockchain::Type chain_;
+
+        using Batch = std::pair<download::JobID, Vector<block::Hash>>;
+        using NewBlocks = Vector<std::pair<block::Position, Status>>;
 
         auto get_allocator() const noexcept -> allocator_type final;
+        auto JobAvailable() const noexcept -> bool;
+        auto LastBlock() const noexcept -> block::Height;
+        auto Tip() const noexcept -> block::Position { return tip_; }
 
-        Data(allocator_type alloc) noexcept;
+        auto AddBlocks(NewBlocks&& blocks) noexcept -> void;
+        auto DownloadBlock(
+            const block::Hash& block,
+            download::JobID job) noexcept -> void;
+        auto FinishJob(download::JobID id) noexcept -> void;
+        auto GetBatch(std::size_t peerTarget, allocator_type alloc) noexcept
+            -> Batch;
+        auto PruneStale(const block::Position& lastGood) noexcept -> void;
+        auto ReceiveBlock(download::JobID job, std::string_view block) noexcept
+            -> void;
+        auto ReviseTip(const block::Position& newTip) noexcept -> bool;
+        auto UpdateTip() noexcept -> std::optional<block::Position>;
+
+        Data(
+            const api::Session& api,
+            database::Block& db,
+            blockchain::Type chain,
+            allocator_type alloc) noexcept;
         Data() = delete;
         Data(const Data&) = delete;
         Data(Data&&) = delete;
         auto operator=(const Data&) -> Data& = delete;
         auto operator=(Data&&) -> Data& = delete;
+
+    private:
+        Index blocks_;
+        Map<download::JobID, Map<block::Hash, Index::iterator>> job_index_;
+        std::size_t unassigned_;
+        block::Position tip_;
+
+        auto remove_block_from_job(
+            const block::Hash& block,
+            download::JobID job,
+            Status update) noexcept -> void;
     };
 
     using Guarded = libguarded::plain_guarded<Data>;

@@ -13,7 +13,9 @@ class Peer::Imp::UpdateBlockJob
 {
 public:
     auto operator()(std::monostate& job) noexcept -> JobUpdate;
-    auto operator()(GetHeadersJob& job) noexcept -> JobUpdate;
+    auto operator()(
+        opentxs::blockchain::node::internal::HeaderJob& job) noexcept
+        -> JobUpdate;
     auto operator()(
         opentxs::blockchain::node::internal::BlockBatch& job) noexcept
         -> JobUpdate;

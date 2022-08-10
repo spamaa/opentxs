@@ -24,7 +24,6 @@
 #include "internal/blockchain/database/Database.hpp"
 #include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/Mempool.hpp"
 #include "internal/blockchain/node/PeerManager.hpp"
@@ -32,6 +31,7 @@
 #include "internal/blockchain/node/Wallet.hpp"
 #include "internal/blockchain/node/blockoracle/BlockOracle.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "internal/util/Flag.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
@@ -151,21 +151,12 @@ class PaymentCode;
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
-namespace zmq = opentxs::network::zeromq;
-
 namespace opentxs::blockchain::node::implementation
 {
 class Base : virtual public node::internal::Manager,
              public Worker<Base, api::Session>
 {
 public:
-    enum class Work : OTZMQWorkType {
-        shutdown = value(WorkType::Shutdown),
-        heartbeat = OT_ZMQ_HEARTBEAT_SIGNAL,
-        filter = OT_ZMQ_NEW_FILTER_SIGNAL,
-        statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
-    };
-
     const Type chain_;
 
     auto AddBlock(const std::shared_ptr<const bitcoin::block::Block> block)
@@ -193,10 +184,6 @@ public:
     }
     auto GetConfirmations(const UnallocatedCString& txid) const noexcept
         -> ChainHeight final;
-    auto GetHeight() const noexcept -> ChainHeight final
-    {
-        return local_chain_height_.load();
-    }
     auto GetPeerCount() const noexcept -> std::size_t final;
     auto GetShared() const noexcept
         -> std::shared_ptr<const node::Manager> final;
@@ -239,13 +226,7 @@ public:
         const Amount amount,
         const UnallocatedCString& memo) const noexcept -> PendingOutgoing final;
     auto ShuttingDown() const noexcept -> bool final;
-    auto Submit(network::zeromq::Message&& work) const noexcept -> void final;
     auto SyncTip() const noexcept -> block::Position final;
-    auto Track(network::zeromq::Message&& work) const noexcept
-        -> std::future<void> final;
-    auto UpdateHeight(const block::Height height) const noexcept -> void final;
-    auto UpdateLocalHeight(const block::Position position) const noexcept
-        -> void final;
 
     auto Connect() noexcept -> bool final;
     auto Disconnect() noexcept -> bool final;
@@ -271,11 +252,11 @@ private:
     const node::Endpoints endpoints_;
     const cfilter::Type filter_type_;
     opentxs::internal::ShutdownSender shutdown_sender_;
-    mutable std::unique_ptr<blockchain::database::Database> database_p_;
+    mutable std::shared_ptr<blockchain::database::Database> database_p_;
     node::Mempool mempool_;
-    std::unique_ptr<node::HeaderOracle> header_p_;
 
 protected:
+    mutable node::internal::HeaderOracle header_;
     node::internal::BlockOracle block_;
 
 private:
@@ -285,7 +266,6 @@ private:
 protected:
     blockchain::database::Database& database_;
     node::FilterOracle& filters_;
-    node::HeaderOracle& header_;
     node::internal::PeerManager& peer_;
     node::internal::Wallet wallet_;
 
@@ -311,31 +291,6 @@ private:
         Normal
     };
 
-    struct WorkPromises {
-        auto clear(int index) noexcept -> void
-        {
-            auto lock = Lock{lock_};
-            auto it = map_.find(index);
-
-            if (map_.end() == it) { return; }
-
-            it->second.set_value();
-            map_.erase(it);
-        }
-        auto get() noexcept -> std::pair<int, std::future<void>>
-        {
-            auto lock = Lock{lock_};
-            const auto counter = ++counter_;
-            auto& promise = map_[counter];
-
-            return std::make_pair(counter, promise.get_future());
-        }
-
-    private:
-        std::mutex lock_{};
-        int counter_{-1};
-        UnallocatedMap<int, std::promise<void>> map_{};
-    };
     struct SendPromises {
         auto finish(int index) noexcept -> std::promise<SendOutcome>
         {
@@ -377,12 +332,6 @@ private:
     const bool have_p2p_requestor_;
     OTZMQListenCallback sync_cb_;
     OTZMQPairSocket sync_socket_;
-    mutable std::atomic<block::Height> local_chain_height_;
-    mutable std::atomic<block::Height> remote_chain_height_;
-    OTFlag waiting_for_headers_;
-    Time headers_requested_;
-    Time headers_received_;
-    mutable WorkPromises work_promises_;
     mutable SendPromises send_promises_;
     Timer heartbeat_;
     Time header_sync_;
@@ -392,8 +341,6 @@ private:
     std::shared_future<void> init_;
     mutable GuardedSelf self_;
 
-    virtual auto instantiate_header(const ReadView payload) const noexcept
-        -> std::unique_ptr<block::Header> = 0;
     auto is_synchronized_blocks() const noexcept -> bool;
     auto is_synchronized_filters() const noexcept -> bool;
     auto is_synchronized_headers() const noexcept -> bool;
@@ -401,17 +348,17 @@ private:
     auto notify_sync_client() const noexcept -> void;
     auto target() const noexcept -> block::Height;
 
-    auto pipeline(zmq::Message&& in) noexcept -> void;
-    auto process_block(zmq::Message&& in) noexcept -> void;
-    auto process_filter_update(zmq::Message&& in) noexcept -> void;
-    auto process_header(zmq::Message&& in) noexcept -> void;
-    auto process_send_to_address(zmq::Message&& in) noexcept -> void;
-    auto process_send_to_payment_code(zmq::Message&& in) noexcept -> void;
-    auto process_sync_data(zmq::Message&& in) noexcept -> void;
+    auto pipeline(network::zeromq::Message&& in) noexcept -> void;
+    auto process_block(network::zeromq::Message&& in) noexcept -> void;
+    auto process_filter_update(network::zeromq::Message&& in) noexcept -> void;
+    auto process_send_to_address(network::zeromq::Message&& in) noexcept
+        -> void;
+    auto process_send_to_payment_code(network::zeromq::Message&& in) noexcept
+        -> void;
+    auto process_sync_data(network::zeromq::Message&& in) noexcept -> void;
     auto reset_heartbeat() noexcept -> void;
     auto shutdown(std::promise<void>& promise) noexcept -> void;
     auto state_machine() noexcept -> bool;
-    auto state_machine_headers() noexcept -> void;
     auto state_transition_blocks() noexcept -> void;
     auto state_transition_filters() noexcept -> void;
     auto state_transition_normal() noexcept -> void;

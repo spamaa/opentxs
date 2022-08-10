@@ -44,6 +44,7 @@ namespace node
 {
 namespace internal
 {
+struct HeaderOraclePrivate;
 struct SpendPolicy;
 }  // namespace internal
 
@@ -179,7 +180,7 @@ public:
     virtual auto ForgetProposals(
         const UnallocatedSet<identifier::Generic>& ids) noexcept -> bool = 0;
     virtual auto ReorgTo(
-        const Lock& headerOracleLock,
+        const node::internal::HeaderOraclePrivate& data,
         storage::lmdb::LMDB::Transaction& tx,
         const node::HeaderOracle& headers,
         const NodeID& account,

@@ -319,17 +319,6 @@ auto PeerManager::pipeline(zmq::Message&& message) noexcept -> void
     }
 }
 
-auto PeerManager::RequestHeaders() const noexcept -> bool
-{
-    if (false == running_.load()) { return false; }
-
-    if (0 == peers_.Count()) { return false; }
-
-    jobs_.Dispatch(PeerManagerJobs::Getheaders);
-
-    return true;
-}
-
 auto PeerManager::shutdown(std::promise<void>& promise) noexcept -> void
 {
     if (auto previous = running_.exchange(false); previous) {

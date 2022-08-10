@@ -1,0 +1,57 @@
+// Copyright (c) 2010-2022 The Open-Transactions developers
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#pragma once
+
+#include <optional>
+#include <string_view>
+
+#include "internal/blockchain/node/headeroracle/HeaderJob.hpp"
+#include "internal/network/zeromq/socket/Raw.hpp"
+#include "opentxs/util/Container.hpp"
+
+// NOLINTBEGIN(modernize-concat-nested-namespaces)
+namespace opentxs  // NOLINT
+{
+// inline namespace v1
+// {
+namespace api
+{
+class Session;
+}  // namespace api
+
+namespace blockchain
+{
+namespace block
+{
+class Hash;
+}  // namespace block
+}  // namespace blockchain
+// }  // namespace v1
+}  // namespace opentxs
+// NOLINTEND(modernize-concat-nested-namespaces)
+
+namespace opentxs::blockchain::node::internal
+{
+class HeaderJob::Imp
+{
+public:
+    const bool valid_;
+    const Vector<block::Hash> previous_;
+    std::optional<network::zeromq::socket::Raw> to_parent_;
+
+    Imp() noexcept;
+    Imp(bool valid,
+        Vector<block::Hash>&& previous,
+        const api::Session* api,
+        std::string_view endpoint) noexcept;
+    Imp(const Imp&) = delete;
+    Imp(Imp&&) = delete;
+    auto operator=(const Imp&) -> Imp& = delete;
+    auto operator=(Imp&&) noexcept -> Imp& = delete;
+
+    ~Imp();
+};
+}  // namespace opentxs::blockchain::node::internal

@@ -19,7 +19,7 @@
 #include "internal/util/P0330.hpp"
 #include "ottest/fixtures/blockchain/BlockListener.hpp"
 #include "ottest/fixtures/blockchain/Common.hpp"
-#include "ottest/fixtures/blockchain/WalletListener.hpp"
+#include "ottest/fixtures/blockchain/SyncListener.hpp"
 #include "ottest/fixtures/common/User.hpp"
 
 namespace ottest
@@ -28,7 +28,7 @@ using namespace opentxs::literals;
 
 RegtestListener::RegtestListener(const ot::api::session::Client& client)
     : block_listener(std::make_unique<BlockListener>(client, "client"))
-    , wallet_listener(std::make_unique<WalletListener>(client))
+    , sync_listener(std::make_unique<SyncListener>(client, "client"))
 {
 }
 
@@ -137,14 +137,13 @@ auto Regtest_fixture_simple::MineBlocks(
 {
     auto target = ancestor + static_cast<int>(count);
     auto blocks = ot::UnallocatedVector<BlockListener::Future>{};
-    auto wallets = ot::UnallocatedVector<WalletListener::Future>{};
+    auto wallets = ot::UnallocatedVector<SyncListener::Future>{};
     blocks.reserve(users_.size());
     wallets.reserve(users_.size());
 
     for (auto& listeners : user_listeners_) {
         blocks.emplace_back(listeners.second.block_listener->GetFuture(target));
-        wallets.emplace_back(
-            listeners.second.wallet_listener->GetFuture(target));
+        wallets.emplace_back(listeners.second.sync_listener->GetFuture(target));
     }
 
     auto success = Mine(ancestor, count);
@@ -173,14 +172,13 @@ auto Regtest_fixture_simple::MineBlocks(
 
     auto target = ancestor + block_number;
     auto blocks = ot::UnallocatedVector<BlockListener::Future>{};
-    auto wallets = ot::UnallocatedVector<WalletListener::Future>{};
+    auto wallets = ot::UnallocatedVector<SyncListener::Future>{};
     blocks.reserve(users_.size());
     wallets.reserve(users_.size());
 
     for (auto& listeners : user_listeners_) {
         blocks.emplace_back(listeners.second.block_listener->GetFuture(target));
-        wallets.emplace_back(
-            listeners.second.wallet_listener->GetFuture(target));
+        wallets.emplace_back(listeners.second.sync_listener->GetFuture(target));
     }
 
     Generator gen = [&](Height height) -> Transaction {

@@ -9,38 +9,31 @@
 
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <chrono>
-#include <cstddef>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <string_view>
-#include <tuple>
-#include <type_traits>
 #include <utility>
 
 #include "blockchain/node/blockoracle/blockfetcher/Shared.hpp"
+#include "internal/api/network/Asio.hpp"
 #include "internal/api/session/Endpoints.hpp"
 #include "internal/api/session/Session.hpp"
 #include "internal/blockchain/database/Block.hpp"
-#include "internal/blockchain/database/Database.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
-#include "internal/blockchain/node/Job.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
+#include "opentxs/api/network/Asio.hpp"
+#include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
-#include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
-#include "opentxs/blockchain/bitcoin/block/Block.hpp"
-#include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
-#include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
@@ -77,24 +70,24 @@ BlockFetcher::Actor::Actor(
           alloc,
           [&] {
               using Dir = network::zeromq::socket::Direction;
-              auto out = network::zeromq::EndpointArgs{alloc};
-              out.emplace_back(
+              auto sub = network::zeromq::EndpointArgs{alloc};
+              sub.emplace_back(
                   CString{api->Endpoints().BlockchainReorg(), alloc},
                   Dir::Connect);
-              out.emplace_back(
+              sub.emplace_back(
                   CString{api->Endpoints().Shutdown(), alloc}, Dir::Connect);
-              out.emplace_back(
+              sub.emplace_back(
                   node->Internal().Endpoints().shutdown_publish_, Dir::Connect);
 
-              return out;
+              return sub;
           }(),
           [&] {
               using Dir = network::zeromq::socket::Direction;
-              auto out = network::zeromq::EndpointArgs{alloc};
-              out.emplace_back(
+              auto pull = network::zeromq::EndpointArgs{alloc};
+              pull.emplace_back(
                   node->Internal().Endpoints().block_fetcher_pull_, Dir::Bind);
 
-              return out;
+              return pull;
           }(),
           {},
           [&] {
@@ -128,19 +121,20 @@ BlockFetcher::Actor::Actor(
     , api_(*api_p_)
     , node_(*node_p_)
     , header_oracle_(node_.HeaderOracle())
-    , db_(node_.Internal().DB())
     , job_ready_(pipeline_.Internal().ExtraSocket(0))
     , tip_updated_(pipeline_.Internal().ExtraSocket(1))
     , chain_(node_.Internal().Chain())
     , data_(shared_->data_)
+    , job_available_(api_.Network().Asio().Internal().GetTimer())
 {
 }
 
-auto BlockFetcher::Actor::broadcast_tip(const block::Position& tip) noexcept
-    -> void
+auto BlockFetcher::Actor::broadcast_tip(
+    Shared::Data& data,
+    const block::Position& tip) noexcept -> void
 {
     log_(OT_PRETTY_CLASS())(name_)(": block tip updated to ")(tip).Flush();
-    const auto saved = db_.SetBlockTip(tip);
+    const auto saved = data.db_.SetBlockTip(tip);
 
     OT_ASSERT(saved);
 
@@ -170,9 +164,8 @@ auto BlockFetcher::Actor::do_startup() noexcept -> bool
 
     {
         auto handle = data_.lock();
-        auto& tip = handle->tip_;
-        tip = db_.BlockTip();
-        const auto original = tip;
+        auto& data = *handle;
+        auto tip = data.db_.BlockTip();
 
         OT_ASSERT(0 <= tip.height_);
 
@@ -189,7 +182,7 @@ auto BlockFetcher::Actor::do_startup() noexcept -> bool
         }
 
         while (tip.height_ > 0) {
-            if (auto block = db_.BlockLoadBitcoin(tip.hash_); block) {
+            if (auto block = data.db_.BlockLoadBitcoin(tip.hash_); block) {
 
                 break;
             } else {
@@ -198,7 +191,7 @@ auto BlockFetcher::Actor::do_startup() noexcept -> bool
             }
         }
 
-        if (original != tip) { broadcast_tip(tip); }
+        if (data.ReviseTip(tip)) { broadcast_tip(data, tip); }
 
         log_(OT_PRETTY_CLASS())(": best downloaded full block is ")(tip)
             .Flush();
@@ -209,35 +202,6 @@ auto BlockFetcher::Actor::do_startup() noexcept -> bool
     return false;
 }
 
-auto BlockFetcher::Actor::erase_obsolete(
-    const block::Position& after,
-    Shared::Data& data) noexcept -> void
-{
-    auto& blocks = data.blocks_;
-
-    if (blocks.empty()) { return; }
-
-    for (auto i = blocks.lower_bound(after.height_), stop = blocks.end();
-         i != stop;) {
-        auto& [height, val] = *i;
-        auto& [hash, job, status] = val;
-
-        if ((height == after.height_) && (hash == after.hash_)) {
-            ++i;
-        } else {
-            if (job.has_value()) {
-                data.job_index_.at(*job).erase(hash);
-            } else {
-                OT_ASSERT(0_uz < data.queue_);
-
-                --data.queue_;
-            }
-
-            i = blocks.erase(i);
-        }
-    }
-}
-
 auto BlockFetcher::Actor::pipeline(const Work work, Message&& msg) noexcept
     -> void
 {
@@ -245,11 +209,8 @@ auto BlockFetcher::Actor::pipeline(const Work work, Message&& msg) noexcept
         case Work::shutdown: {
             shutdown_actor();
         } break;
-        case Work::block_received: {
-            process_block_received(std::move(msg));
-        } break;
-        case Work::batch_finished: {
-            process_batch_finished(std::move(msg));
+        case Work::heartbeat: {
+            process_heartbeat(std::move(msg));
         } break;
         case Work::reorg: {
             process_reorg(std::move(msg));
@@ -262,74 +223,19 @@ auto BlockFetcher::Actor::pipeline(const Work work, Message&& msg) noexcept
             do_work();
         } break;
         default: {
-            LogError()(OT_PRETTY_CLASS())(name_)(": unhandled message type ")(
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))
-                .Flush();
-
-            OT_FAIL;
+                .Abort();
         }
     }
 }
 
-auto BlockFetcher::Actor::process_batch_finished(Message&& msg) noexcept -> void
+auto BlockFetcher::Actor::process_heartbeat(Message&& msg) noexcept -> void
 {
-    auto body = msg.Body();
-
-    OT_ASSERT(1_uz < body.size());
-
-    const auto id = body.at(1).as<download::JobID>();
     auto handle = data_.lock();
-    auto& index = handle->job_index_;
+    const auto& data = *handle;
 
-    if (auto i = index.find(id); index.end() != i) {
-        for (auto& [block, j] : i->second) {
-            auto& [height, data] = *j;
-            auto& [hash, job, status] = data;
-            job = std::nullopt;
-
-            if (Status::downloading == status) { status = Status::pending; }
-        }
-
-        index.erase(i);
-    }
-
-    update_tip(*handle);
-}
-
-auto BlockFetcher::Actor::process_block_received(Message&& msg) noexcept -> void
-{
-    auto body = msg.Body();
-
-    OT_ASSERT(2_uz < body.size());
-
-    const auto id = body.at(1).as<download::JobID>();
-    auto pBlock = api_.Factory().BitcoinBlock(chain_, body.at(2).Bytes());
-
-    if (false == pBlock.operator bool()) {
-        log_(OT_PRETTY_CLASS())(name_)(": received invalid block").Flush();
-
-        return;
-    }
-
-    const auto& block = *pBlock;
-    auto handle = data_.lock();
-    auto& batch = handle->job_index_.at(id);
-    const auto& hash = block.ID();
-
-    if (auto i = batch.find(hash); batch.end() != i) {
-        const auto& [key, value] = *i;
-        auto& [h, job, status] = value->second;
-        const auto saved = db_.BlockStore(block);
-
-        OT_ASSERT(saved);
-
-        status = Status::success;
-        update_tip(*handle);
-    } else {
-        log_(OT_PRETTY_CLASS())(name_)(": received block ")
-            .asHex(hash)(" but it is not part of batch ")(id)
-            .Flush();
-    }
+    if (data.JobAvailable()) { publish_job_ready(); }
 }
 
 auto BlockFetcher::Actor::process_reorg(Message&& msg) noexcept -> void
@@ -345,8 +251,9 @@ auto BlockFetcher::Actor::process_reorg(Message&& msg) noexcept -> void
 
     {
         auto handle = data_.lock();
-        auto& tip = handle->tip_;
-        const auto original{tip};
+        auto& data = *handle;
+        auto tip{data.Tip()};
+        data.PruneStale(ancestor);
 
         if (tip.height_ > ancestor.height_) {
             tip = std::move(ancestor);
@@ -356,50 +263,26 @@ auto BlockFetcher::Actor::process_reorg(Message&& msg) noexcept -> void
             tip = header_oracle_.GetPosition(tip.height_ - 1);
         }
 
-        if (original != tip) { broadcast_tip(tip); }
-
-        erase_obsolete(tip, *handle);
+        if (data.ReviseTip(tip)) { broadcast_tip(data, tip); }
     }
 
     do_work();
 }
 
+auto BlockFetcher::Actor::publish_job_ready() noexcept -> void
+{
+    log_(OT_PRETTY_CLASS())(name_)(
+        ": notifying listeners about new block download jobs")
+        .Flush();
+    job_ready_.SendDeferred(
+        MakeWork(OT_ZMQ_BLOCK_FETCH_JOB_AVAILABLE), __FILE__, __LINE__);
+    reset_timer(15s, job_available_, Work::heartbeat);
+}
+
 auto BlockFetcher::Actor::update_tip(Shared::Data& data) noexcept -> void
 {
-    auto& tip = data.tip_;
-    auto& blocks = data.blocks_;
-    auto expected = tip.height_;
-    auto newTip = std::optional<block::Position>{std::nullopt};
-    auto erase = [&] {
-        for (auto i = blocks.begin(), end = blocks.end(); i != end; ++i) {
-            const auto& [height, val] = *i;
-            const auto& [hash, job, status] = val;
-
-            OT_ASSERT(++expected == height);
-
-            if (Status::success == status) {
-                OT_ASSERT(false == job.has_value());
-
-                newTip.emplace(height, hash);
-                log_(OT_PRETTY_CLASS())(name_)(": block ")(
-                    height)(" successfully downloaded")
-                    .Flush();
-            } else {
-                log_(OT_PRETTY_CLASS())(name_)(": block ")(
-                    height)(" download still in progress")
-                    .Flush();
-
-                return i;
-            }
-        }
-
-        return blocks.end();
-    }();
-    blocks.erase(blocks.begin(), erase);
-
-    if (newTip.has_value()) {
-        tip = *newTip;
-        broadcast_tip(tip);
+    if (auto tip = data.UpdateTip(); tip.has_value()) {
+        broadcast_tip(data, *tip);
     }
 }
 
@@ -407,76 +290,49 @@ auto BlockFetcher::Actor::work() noexcept -> bool
 {
     log_(OT_PRETTY_CLASS())(name_)(": checking for new blocks").Flush();
     auto handle = data_.lock();
-    auto& queue = handle->queue_;
-    auto& blocks = handle->blocks_;
-    auto& tip = handle->tip_;
-    auto start = [&] {
-        if (blocks.empty()) {
-
-            return tip.height_;
-        } else {
-
-            return blocks.crbegin()->first;
-        }
-    }();
+    auto& data = *handle;
+    const auto start = data.LastBlock();
     log_(OT_PRETTY_CLASS())(name_)(": have blocks up to ")(start).Flush();
     auto post = ScopeGuard{[&] {
-        if (0_uz < queue) {
-            log_(OT_PRETTY_CLASS())(name_)(
-                ": notifying listeners about new block download jobs")
-                .Flush();
-            job_ready_.SendDeferred(
-                MakeWork(OT_ZMQ_BLOCK_FETCH_JOB_AVAILABLE), __FILE__, __LINE__);
+        if (data.JobAvailable()) {
+            publish_job_ready();
+        } else {
+            job_available_.Cancel();
         }
     }};
-    auto newBlocks = [&] {
-        auto out = Vector<block::Position>{get_allocator()};
-        auto hashes =
-            header_oracle_.BestHashes(start + 1, 0_uz, get_allocator());
+    auto add = [&] {
+        auto alloc = get_allocator();
+        auto out = Shared::Data::NewBlocks{alloc};
+        // TODO HeaderOracle should have a BestPositions function
+        auto hashes = header_oracle_.BestHashes(start + 1, 0_uz, alloc);
         out.reserve(hashes.size());
+        auto height{start};
 
         for (auto& hash : hashes) {
-            ++start;
-            out.emplace_back(start, std::move(hash));
+            const auto exists = data.db_.BlockExists(hash);
+            out.emplace_back(block::Position{++height, std::move(hash)}, [&] {
+                if (exists) {
+
+                    return Status::success;
+                } else {
+
+                    return Status::pending;
+                }
+            }());
         }
 
         return out;
     }();
 
-    if (newBlocks.empty()) {
+    if (add.empty()) {
         log_(OT_PRETTY_CLASS())(name_)(
             ": block tip caught up to block header tip")
             .Flush();
-
-        return false;
+    } else {
+        data.AddBlocks(std::move(add));
     }
 
-    erase_obsolete(newBlocks.front(), *handle);
-
-    for (auto& pos : newBlocks) {
-        const auto status = [&] {
-            if (db_.BlockExists(pos.hash_)) {
-                log_(OT_PRETTY_CLASS())(name_)(": block ")(
-                    pos)(" already downloaded")
-                    .Flush();
-
-                return Status::success;
-            } else {
-                log_(OT_PRETTY_CLASS())(name_)(": adding block ")(
-                    pos)(" to queue")
-                    .Flush();
-                ++queue;
-
-                return Status::pending;
-            }
-        }();
-        blocks.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(pos.height_),
-            std::forward_as_tuple(std::move(pos.hash_), std::nullopt, status));
-    }
-
-    update_tip(*handle);
+    update_tip(data);
 
     return false;
 }

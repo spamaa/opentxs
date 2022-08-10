@@ -16,7 +16,6 @@
 #include "internal/blockchain/node/wallet/subchain/statemachine/Job.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
-#include "internal/util/Mutex.hpp"
 #include "internal/util/Timer.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/util/Allocated.hpp"
@@ -38,6 +37,11 @@ class Position;
 
 namespace node
 {
+namespace internal
+{
+struct HeaderOraclePrivate;
+}  // namespace internal
+
 namespace wallet
 {
 class SubchainStateData;
@@ -94,7 +98,7 @@ protected:
 
     virtual auto do_reorg(
         const node::HeaderOracle& oracle,
-        const Lock& oracleLock,
+        const node::internal::HeaderOraclePrivate& data,
         Reorg::Params& params) noexcept -> bool;
     virtual auto work() noexcept -> bool;
 

@@ -9,6 +9,7 @@
 #include "opentxs/blockchain/node/Types.hpp"   // IWYU pragma: associated
 
 #include <robin_hood.h>
+#include <chrono>
 
 #include "opentxs/blockchain/node/SendResult.hpp"
 #include "opentxs/blockchain/node/TxoState.hpp"

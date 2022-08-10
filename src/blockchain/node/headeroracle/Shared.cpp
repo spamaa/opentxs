@@ -3,88 +3,87 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"                      // IWYU pragma: associated
-#include "1_Internal.hpp"                    // IWYU pragma: associated
-#include "blockchain/node/HeaderOracle.hpp"  // IWYU pragma: associated
+// IWYU pragma: no_include <boost/smart_ptr/detail/operator_bool.hpp>
+
+#include "0_stdafx.hpp"                             // IWYU pragma: associated
+#include "1_Internal.hpp"                           // IWYU pragma: associated
+#include "blockchain/node/headeroracle/Shared.hpp"  // IWYU pragma: associated
 
 #include <algorithm>
 #include <atomic>
+#include <cstddef>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 #include "blockchain/node/UpdateTransaction.hpp"
+#include "blockchain/node/headeroracle/HeaderJob.hpp"
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/bitcoin/block/Factory.hpp"
 #include "internal/blockchain/block/Header.hpp"
 #include "internal/blockchain/database/Header.hpp"
-#include "internal/blockchain/node/Factory.hpp"
+#include "internal/blockchain/node/Types.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderJob.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
+#include "internal/blockchain/node/headeroracle/Types.hpp"
+#include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
+#include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/Work.hpp"
 #include "opentxs/blockchain/bitcoin/block/Header.hpp"  // IWYU pragma: keep
 #include "opentxs/blockchain/bitcoin/cfilter/Header.hpp"
+#include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
+#include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
 #include "opentxs/network/p2p/Block.hpp"
 #include "opentxs/network/p2p/Data.hpp"
+#include "opentxs/network/p2p/State.hpp"
 #include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/util/Allocator.hpp"
+#include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
+#include "util/Work.hpp"
 
-namespace opentxs::factory
+namespace opentxs::blockchain::node::internal
 {
-auto HeaderOracle(
+HeaderOracle::Shared::Shared(
     const api::Session& api,
-    blockchain::database::Header& database,
-    const blockchain::Type type) noexcept
-    -> std::unique_ptr<blockchain::node::HeaderOracle>
+    const node::Manager& node,
+    network::zeromq::BatchID batch,
+    allocator_type alloc) noexcept
+    : Allocated(std::move(alloc))
+    , batch_(batch)
+    , parent_(nullptr)
+    , data_(api, node)
 {
-    using ReturnType = blockchain::node::implementation::HeaderOracle;
-
-    return std::make_unique<ReturnType>(api, database, type);
-}
-}  // namespace opentxs::factory
-
-namespace opentxs::blockchain::node::implementation
-{
-HeaderOracle::HeaderOracle(
-    const api::Session& api,
-    database::Header& database,
-    const blockchain::Type type) noexcept
-    : internal::HeaderOracle()
-    , api_(api)
-    , database_(database)
-    , chain_(type)
-    , lock_()
-{
-    auto lock = Lock{lock_};
-    const auto best = best_chain(lock);
-
-    OT_ASSERT(0 <= best.height_);
 }
 
-auto HeaderOracle::Ancestors(
+auto HeaderOracle::Shared::Ancestors(
     const block::Position& start,
     const block::Position& target,
     const std::size_t limit) const noexcept(false) -> Positions
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
     const auto check =
         std::max<block::Height>(std::min(start.height_, target.height_), 0);
-    const auto fast = is_in_best_chain(lock, target.hash_).first &&
-                      is_in_best_chain(lock, start.hash_).first &&
+    const auto fast = is_in_best_chain(data, target.hash_).first &&
+                      is_in_best_chain(data, start.hash_).first &&
                       (start.height_ < target.height_);
 
     if (fast) {
-        auto output = best_chain(lock, start, limit);
-        lock.unlock();
+        auto output = best_chain(data, start, limit);
 
         while ((1 < output.size()) &&
                (output.back().height_ > target.height_)) {
@@ -98,14 +97,15 @@ auto HeaderOracle::Ancestors(
     }
 
     auto cache = UnallocatedDeque<block::Position>{};
-    auto current = database_.LoadHeader(target.hash_);
-    auto sibling = database_.LoadHeader(start.hash_);
+    auto current = data.database_.LoadHeader(target.hash_);
+    auto sibling = data.database_.LoadHeader(start.hash_);
 
     while (sibling->Height() > current->Height()) {
-        sibling = database_.TryLoadHeader(sibling->ParentHash());
+        sibling = data.database_.TryLoadHeader(sibling->ParentHash());
 
         if (false == bool(sibling)) {
-            sibling = database_.TryLoadHeader(GenesisBlockHash(chain_));
+            sibling =
+                data.database_.TryLoadHeader(GenesisBlockHash(data.chain_));
 
             OT_ASSERT(sibling);
 
@@ -121,16 +121,17 @@ auto HeaderOracle::Ancestors(
         if (current->Position() == sibling->Position()) {
             break;
         } else if (current->Height() == sibling->Height()) {
-            sibling = database_.TryLoadHeader(sibling->ParentHash());
+            sibling = data.database_.TryLoadHeader(sibling->ParentHash());
 
             if (false == bool(sibling)) {
-                sibling = database_.TryLoadHeader(GenesisBlockHash(chain_));
+                sibling =
+                    data.database_.TryLoadHeader(GenesisBlockHash(data.chain_));
 
                 OT_ASSERT(sibling);
             }
         }
 
-        current = database_.TryLoadHeader(current->ParentHash());
+        current = data.database_.TryLoadHeader(current->ParentHash());
 
         if (false == bool(current)) { break; }
     }
@@ -145,12 +146,22 @@ auto HeaderOracle::Ancestors(
     return output;
 }
 
-auto HeaderOracle::AddCheckpoint(
+auto HeaderOracle::Shared::AddCheckpoint(
     const block::Height position,
     const block::Hash& requiredHash) noexcept -> bool
 {
-    auto lock = Lock{lock_};
-    auto update = UpdateTransaction{api_, database_};
+    auto handle = data_.lock();
+    auto& data = *handle;
+
+    return add_checkpoint(data, position, requiredHash);
+}
+
+auto HeaderOracle::Shared::add_checkpoint(
+    HeaderOraclePrivate& data,
+    const block::Height position,
+    const block::Hash& requiredHash) noexcept -> bool
+{
+    auto update = UpdateTransaction{data.api_, data.database_};
 
     if (update.EffectiveCheckpoint()) {
         LogError()(OT_PRETTY_CLASS())("Checkpoint already exists").Flush();
@@ -166,32 +177,26 @@ auto HeaderOracle::AddCheckpoint(
 
     update.SetCheckpoint({position, requiredHash});
 
-    if (apply_checkpoint(lock, position, update)) {
-
-        return database_.ApplyUpdate(update);
-    } else {
-
-        return false;
-    }
+    return apply_checkpoint(data, position, update);
 }
 
-auto HeaderOracle::AddHeader(std::unique_ptr<block::Header> header) noexcept
-    -> bool
+auto HeaderOracle::Shared::AddHeader(
+    std::unique_ptr<block::Header> header) noexcept -> bool
 {
-    // TODO allocator
-    auto headers = Vector<std::unique_ptr<block::Header>>{};
+    auto headers = Vector<std::unique_ptr<block::Header>>{get_allocator()};
     headers.emplace_back(std::move(header));
 
     return AddHeaders(headers);
 }
 
-auto HeaderOracle::AddHeaders(
+auto HeaderOracle::Shared::AddHeaders(
     Vector<std::unique_ptr<block::Header>>& headers) noexcept -> bool
 {
     if (0 == headers.size()) { return false; }
 
-    auto lock = Lock{lock_};
-    auto update = UpdateTransaction{api_, database_};
+    auto handle = data_.lock();
+    auto& data = *handle;
+    auto update = UpdateTransaction{data.api_, data.database_};
 
     for (auto& header : headers) {
         if (false == bool(header)) {
@@ -200,17 +205,17 @@ auto HeaderOracle::AddHeaders(
             return false;
         }
 
-        if (false == add_header(lock, update, std::move(header))) {
+        if (false == add_header(data, update, std::move(header))) {
 
             return false;
         }
     }
 
-    return database_.ApplyUpdate(update);
+    return apply_update(data, update);
 }
 
-auto HeaderOracle::add_header(
-    const Lock& lock,
+auto HeaderOracle::Shared::add_header(
+    const HeaderOraclePrivate& data,
     UpdateTransaction& update,
     std::unique_ptr<block::Header> pHeader) noexcept -> bool
 {
@@ -244,8 +249,8 @@ auto HeaderOracle::add_header(
 
     try {
         auto& candidate = initialize_candidate(
-            lock, current, parent, update, candidates, header);
-        connect_children(lock, header, candidates, candidate, update);
+            data, current, parent, update, candidates, header);
+        connect_children(data, header, candidates, candidate, update);
     } catch (...) {
         LogError()(OT_PRETTY_CLASS())("Failed to connect children").Flush();
 
@@ -255,8 +260,8 @@ auto HeaderOracle::add_header(
     return choose_candidate(current, candidates, update).first;
 }
 
-auto HeaderOracle::apply_checkpoint(
-    const Lock& lock,
+auto HeaderOracle::Shared::apply_checkpoint(
+    const HeaderOraclePrivate& data,
     const block::Height position,
     UpdateTransaction& update) noexcept -> bool
 {
@@ -273,12 +278,12 @@ auto HeaderOracle::apply_checkpoint(
         const auto& ancestor = update.Stage(position - 1);
         auto candidates = Candidates{};
         candidates.reserve(count + 1u);
-        stage_candidate(lock, ancestor, candidates, update, best);
+        stage_candidate(data, ancestor, candidates, update, best);
         LogConsole()("  * ")(count)(" remaining").Flush();
 
         for (const auto& hash : siblings) {
             stage_candidate(
-                lock, ancestor, candidates, update, update.Stage(hash));
+                data, ancestor, candidates, update, update.Stage(hash));
             LogConsole()("  * ")(--count)(" remaining").Flush();
         }
 
@@ -287,7 +292,7 @@ auto HeaderOracle::apply_checkpoint(
 
             for (const auto& [height, hash] : chain) {
                 auto& child = update.Header(hash);
-                invalid = connect_to_parent(lock, update, *pParent, child);
+                invalid = connect_to_parent(data, update, *pParent, child);
                 pParent = &child;
             }
         }
@@ -312,40 +317,75 @@ auto HeaderOracle::apply_checkpoint(
     }
 }
 
-auto HeaderOracle::best_chain(const Lock& lock) const noexcept
-    -> block::Position
+auto HeaderOracle::Shared::apply_update(
+    HeaderOraclePrivate& data,
+    UpdateTransaction& update) noexcept -> bool
 {
-    return database_.CurrentBest()->Position();
+    const auto before = data.best_;
+    const auto out = data.database_.ApplyUpdate(update);
+    data.best_ = data.database_.CurrentBest()->Position();
+    data.PruneKnownHashes();
+
+    if (before != data.best_) {
+        LogVerbose()(OT_PRETTY_CLASS())(print(data.chain_))(
+            " block header chain updated to ")(best_chain(data))
+            .Flush();
+        data.to_parent_.SendDeferred(
+            [&] {
+                using Job = ManagerJobs;
+                auto out = MakeWork(Job::state_machine);
+
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
+        data.to_actor_.SendDeferred(
+            [&] {
+                using Job = headeroracle::Job;
+                auto out = MakeWork(Job::statemachine);
+
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
+    }
+
+    return out;
 }
 
-auto HeaderOracle::BestChain() const noexcept -> block::Position
+auto HeaderOracle::Shared::BestChain() const noexcept -> block::Position
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
 
-    return best_chain(lock);
+    return best_chain(*handle);
 }
 
-auto HeaderOracle::BestChain(
+auto HeaderOracle::Shared::BestChain(
     const block::Position& tip,
     const std::size_t limit) const noexcept(false) -> Positions
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
 
-    return best_chain(lock, tip, limit);
+    return best_chain(*handle, tip, limit);
 }
 
-auto HeaderOracle::best_chain(
-    const Lock& lock,
+auto HeaderOracle::Shared::best_chain(
+    const HeaderOraclePrivate& data) const noexcept -> block::Position
+{
+    return data.best_;
+}
+
+auto HeaderOracle::Shared::best_chain(
+    const HeaderOraclePrivate& data,
     const block::Position& tip,
     const std::size_t limit) const noexcept -> Positions
 {
-    const auto [youngest, best] = common_parent(lock, tip);
+    const auto [youngest, best] = common_parent(data, tip);
     static const auto blank = block::Hash{};
     auto height = std::max<block::Height>(youngest.height_, 0);
     auto output = Positions{};
 
-    // TODO allocator
-    for (auto& hash : best_hashes(lock, height, blank, 0, alloc::System())) {
+    for (auto& hash : best_hashes(data, height, blank, 0, get_allocator())) {
         output.emplace_back(height++, std::move(hash));
 
         if ((0u < limit) && (output.size() == limit)) { break; }
@@ -356,73 +396,78 @@ auto HeaderOracle::best_chain(
     return output;
 }
 
-auto HeaderOracle::BestHash(const block::Height height) const noexcept
+auto HeaderOracle::Shared::BestHash(const block::Height height) const noexcept
     -> block::Hash
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
 
-    return best_hash(lock, height);
+    return best_hash(*handle, height);
 }
 
-auto HeaderOracle::best_hash(const Lock& lock, const block::Height height)
-    const noexcept -> block::Hash
-{
-    try {
-        return database_.BestBlock(height);
-    } catch (...) {
-        return blank_hash();
-    }
-}
-
-auto HeaderOracle::BestHash(
+auto HeaderOracle::Shared::BestHash(
     const block::Height height,
     const block::Position& check) const noexcept -> block::Hash
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
 
-    if (is_in_best_chain(lock, check)) {
+    if (is_in_best_chain(data, check)) {
 
-        return database_.BestBlock(height);
+        return data.database_.BestBlock(height);
     } else {
 
         return blank_hash();
     }
 }
 
-auto HeaderOracle::BestHashes(
+auto HeaderOracle::Shared::best_hash(
+    const HeaderOraclePrivate& data,
+    const block::Height height) const noexcept -> block::Hash
+{
+    try {
+        return data.database_.BestBlock(height);
+    } catch (...) {
+        return blank_hash();
+    }
+}
+
+auto HeaderOracle::Shared::BestHashes(
     const block::Height start,
     const std::size_t limit,
     alloc::Default alloc) const noexcept -> Hashes
 {
     static const auto blank = block::Hash{};
 
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
 
-    return best_hashes(lock, start, blank, limit, alloc);
+    return best_hashes(data, start, blank, limit, alloc);
 }
 
-auto HeaderOracle::BestHashes(
+auto HeaderOracle::Shared::BestHashes(
     const block::Height start,
     const block::Hash& stop,
     const std::size_t limit,
     alloc::Default alloc) const noexcept -> Hashes
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
 
-    return best_hashes(lock, start, stop, limit, alloc);
+    return best_hashes(data, start, stop, limit, alloc);
 }
 
-auto HeaderOracle::BestHashes(
+auto HeaderOracle::Shared::BestHashes(
     const Hashes& previous,
     const block::Hash& stop,
     const std::size_t limit,
     alloc::Default alloc) const noexcept -> Hashes
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
     auto start = 0_uz;
 
     for (const auto& hash : previous) {
-        const auto [best, height] = is_in_best_chain(lock, hash);
+        const auto [best, height] = is_in_best_chain(data, hash);
 
         if (best) {
             start = height;
@@ -430,11 +475,11 @@ auto HeaderOracle::BestHashes(
         }
     }
 
-    return best_hashes(lock, start, stop, limit, alloc);
+    return best_hashes(data, start, stop, limit, alloc);
 }
 
-auto HeaderOracle::best_hashes(
-    const Lock& lock,
+auto HeaderOracle::Shared::best_hashes(
+    const HeaderOraclePrivate& data,
     const block::Height start,
     const block::Hash& stop,
     const std::size_t limit,
@@ -443,7 +488,7 @@ auto HeaderOracle::best_hashes(
     auto output = Hashes{alloc};
     const auto limitIsZero = (0 == limit);
     auto current{start};
-    const auto tip = best_chain(lock);
+    const auto tip = best_chain(data);
     const auto last = [&] {
         if (limitIsZero) {
 
@@ -458,7 +503,7 @@ auto HeaderOracle::best_hashes(
     }();
 
     while (current <= last) {
-        auto hash = database_.BestBlock(current++);
+        auto hash = data.database_.BestBlock(current++);
 
         // TODO this check shouldn't be necessary but BestBlock doesn't
         // throw the exception documented in its declaration.
@@ -473,7 +518,7 @@ auto HeaderOracle::best_hashes(
     return output;
 }
 
-auto HeaderOracle::blank_hash() const noexcept -> const block::Hash&
+auto HeaderOracle::Shared::blank_hash() const noexcept -> const block::Hash&
 {
     static const auto blank = block::Hash{};
 
@@ -482,27 +527,37 @@ auto HeaderOracle::blank_hash() const noexcept -> const block::Hash&
     return blank;
 }
 
-auto HeaderOracle::blank_position() const noexcept -> const block::Position&
+auto HeaderOracle::Shared::blank_position() const noexcept
+    -> const block::Position&
 {
     static const auto blank = block::Position{};
 
     return blank;
 }
 
-auto HeaderOracle::CalculateReorg(const block::Position& tip) const
+auto HeaderOracle::Shared::CalculateReorg(const block::Position& tip) const
     noexcept(false) -> Positions
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
 
-    return calculate_reorg(lock, tip);
+    return calculate_reorg(data, tip);
 }
 
-auto HeaderOracle::calculate_reorg(const Lock& lock, const block::Position& tip)
-    const noexcept(false) -> Positions
+auto HeaderOracle::Shared::CalculateReorg(
+    const HeaderOraclePrivate& data,
+    const block::Position& tip) const noexcept(false) -> Positions
+{
+    return calculate_reorg(data, tip);
+}
+
+auto HeaderOracle::Shared::calculate_reorg(
+    const HeaderOraclePrivate& data,
+    const block::Position& tip) const noexcept(false) -> Positions
 {
     auto output = Positions{};
 
-    if (is_in_best_chain(lock, tip)) { return output; }
+    if (is_in_best_chain(data, tip)) { return output; }
 
     output.emplace_back(tip);
 
@@ -513,7 +568,7 @@ auto HeaderOracle::calculate_reorg(const Lock& lock, const block::Position& tip)
         }
 
         const auto& child = *output.crbegin();
-        const auto pHeader = database_.TryLoadHeader(child.hash_);
+        const auto pHeader = data.database_.TryLoadHeader(child.hash_);
 
         if (false == bool(pHeader)) {
             throw std::runtime_error("Failed to load block header");
@@ -527,7 +582,7 @@ auto HeaderOracle::calculate_reorg(const Lock& lock, const block::Position& tip)
 
         auto parent = block::Position{height - 1, header.ParentHash()};
 
-        if (is_in_best_chain(lock, parent)) { break; }
+        if (is_in_best_chain(data, parent)) { break; }
 
         output.emplace_back(std::move(parent));
     }
@@ -535,7 +590,7 @@ auto HeaderOracle::calculate_reorg(const Lock& lock, const block::Position& tip)
     return output;
 }
 
-auto HeaderOracle::choose_candidate(
+auto HeaderOracle::Shared::choose_candidate(
     const block::Header& current,
     const Candidates& candidates,
     UpdateTransaction& update) noexcept(false) -> std::pair<bool, bool>
@@ -617,22 +672,23 @@ auto HeaderOracle::choose_candidate(
     return output;
 }
 
-auto HeaderOracle::CommonParent(const block::Position& position) const noexcept
-    -> std::pair<block::Position, block::Position>
+auto HeaderOracle::Shared::CommonParent(const block::Position& position)
+    const noexcept -> std::pair<block::Position, block::Position>
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
 
-    return common_parent(lock, position);
+    return common_parent(data, position);
 }
 
-auto HeaderOracle::common_parent(
-    const Lock& lock,
+auto HeaderOracle::Shared::common_parent(
+    const HeaderOraclePrivate& data,
     const block::Position& position) const noexcept
     -> std::pair<block::Position, block::Position>
 {
-    const auto& database = database_;
-    std::pair<block::Position, block::Position> output{
-        {0, GenesisBlockHash(chain_)}, best_chain(lock)};
+    const auto& database = data.database_;
+    auto output = std::pair<block::Position, block::Position>{
+        {0, GenesisBlockHash(data.chain_)}, best_chain(data)};
     auto& [parent, best] = output;
     auto test{position};
     auto pHeader = database.TryLoadHeader(test.hash_);
@@ -640,7 +696,7 @@ auto HeaderOracle::common_parent(
     if (false == bool(pHeader)) { return output; }
 
     while (0 < test.height_) {
-        if (is_in_best_chain(lock, test.hash_).first) {
+        if (is_in_best_chain(data, test.hash_).first) {
             parent = test;
 
             return output;
@@ -658,8 +714,8 @@ auto HeaderOracle::common_parent(
     return output;
 }
 
-auto HeaderOracle::connect_children(
-    const Lock& lock,
+auto HeaderOracle::Shared::connect_children(
+    const HeaderOraclePrivate& data,
     block::Header& parent,
     Candidates& candidates,
     Candidate& candidate,
@@ -684,19 +740,19 @@ auto HeaderOracle::connect_children(
         const auto& [parentHash, childHash] = in;
         update.ConnectBlock({parentHash, childHash});
         auto& child = update.Stage(childHash);
-        candidate.blacklisted_ = connect_to_parent(lock, update, parent, child);
+        candidate.blacklisted_ = connect_to_parent(data, update, parent, child);
         // The first child block extends the current candidate. Subsequent child
         // blocks create a new candidate to extend. This transforms the tree
         // of disconnected blocks into a table of candidates.
         auto& chainToExtend = firstChild.exchange(false)
                                   ? candidate
                                   : candidates.emplace_back(original);
-        connect_children(lock, child, candidates, chainToExtend, update);
+        connect_children(data, child, candidates, chainToExtend, update);
     });
 }
 
-auto HeaderOracle::connect_to_parent(
-    const Lock& lock,
+auto HeaderOracle::Shared::connect_to_parent(
+    const HeaderOraclePrivate& data,
     const UpdateTransaction& update,
     const block::Header& parent,
     block::Header& child) noexcept -> bool
@@ -709,10 +765,11 @@ auto HeaderOracle::connect_to_parent(
     return child.Internal().IsBlacklisted();
 }
 
-auto HeaderOracle::DeleteCheckpoint() noexcept -> bool
+auto HeaderOracle::Shared::DeleteCheckpoint() noexcept -> bool
 {
-    auto lock = Lock{lock_};
-    auto update = UpdateTransaction{api_, database_};
+    auto handle = data_.lock();
+    auto& data = *handle;
+    auto update = UpdateTransaction{data.api_, data.database_};
 
     if (false == update.EffectiveCheckpoint()) {
         LogError()(OT_PRETTY_CLASS())("No checkpoint").Flush();
@@ -723,41 +780,77 @@ auto HeaderOracle::DeleteCheckpoint() noexcept -> bool
     const auto position = update.Checkpoint().height_;
     update.ClearCheckpoint();
 
-    if (apply_checkpoint(lock, position, update)) {
+    if (apply_checkpoint(data, position, update)) {
 
-        return database_.ApplyUpdate(update);
+        return apply_update(data, update);
     } else {
 
         return false;
     }
 }
 
-auto HeaderOracle::evaluate_candidate(
+auto HeaderOracle::Shared::evaluate_candidate(
     const block::Header& current,
     const block::Header& candidate) noexcept -> bool
 {
     return candidate.Work() > current.Work();
 }
 
-auto HeaderOracle::Execute(Vector<ReorgTask>&& jobs) const noexcept -> bool
+auto HeaderOracle::Shared::Execute(Vector<ReorgTask>&& jobs) const noexcept
+    -> bool
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
 
     for (auto& job : jobs) {
-        if (false == std::invoke(job, *this, lock)) { return false; }
+        if (false == std::invoke(job, *parent_, data)) { return false; }
     }
 
     return true;
 }
 
-auto HeaderOracle::Exists(const block::Hash& hash) const noexcept -> bool
+auto HeaderOracle::Shared::Exists(const block::Hash& hash) const noexcept
+    -> bool
 {
-    return database_.HeaderExists(hash);
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return data.database_.HeaderExists(hash);
 }
 
-auto HeaderOracle::GetDefaultCheckpoint() const noexcept -> CheckpointData
+auto HeaderOracle::Shared::GetCheckpoint() const noexcept -> block::Position
 {
-    const auto& checkpoint = params::Chains().at(chain_).checkpoint_;
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return get_checkpoint(data);
+}
+
+auto HeaderOracle::Shared::get_checkpoint(
+    const HeaderOraclePrivate& data) const noexcept -> block::Position
+{
+    return data.database_.CurrentCheckpoint();
+}
+
+auto HeaderOracle::Shared::GetDefaultCheckpoint() const noexcept
+    -> CheckpointData
+{
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return get_default_checkpoint(data);
+}
+
+auto HeaderOracle::Shared::get_default_checkpoint(
+    const HeaderOraclePrivate& data) const noexcept -> CheckpointData
+{
+    return get_default_checkpoint(data.chain_);
+}
+
+auto HeaderOracle::Shared::get_default_checkpoint(
+    const blockchain::Type chain) const noexcept -> CheckpointData
+{
+    const auto& checkpoint = params::Chains().at(chain).checkpoint_;
 
     return CheckpointData{
         checkpoint.height_,
@@ -787,25 +880,46 @@ auto HeaderOracle::GetDefaultCheckpoint() const noexcept -> CheckpointData
         }()};
 }
 
-auto HeaderOracle::GetCheckpoint() const noexcept -> block::Position
+auto HeaderOracle::Shared::GetJob(alloc::Default alloc) const noexcept
+    -> HeaderJob
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock();
+    auto& data = *handle;
 
-    return database_.CurrentCheckpoint();
+    if (data.JobIsAvailable()) {
+
+        return std::make_unique<HeaderJob::Imp>(
+            true,
+            recent_hashes(data, alloc),
+            std::addressof(data.api_),
+            data.endpoint_);
+    } else {
+
+        return {};
+    }
 }
 
-auto HeaderOracle::GetPosition(const block::Height height) const noexcept
-    -> block::Position
+auto HeaderOracle::Shared::GetPosition(
+    const block::Height height) const noexcept -> block::Position
 {
-    auto lock = Lock{lock_};
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
 
-    return get_position(lock, height);
+    return get_position(data, height);
 }
 
-auto HeaderOracle::get_position(const Lock& lock, const block::Height height)
-    const noexcept -> block::Position
+auto HeaderOracle::Shared::GetPosition(
+    const HeaderOraclePrivate& data,
+    const block::Height height) const noexcept -> block::Position
 {
-    auto hash = best_hash(lock, height);
+    return get_position(data, height);
+}
+
+auto HeaderOracle::Shared::get_position(
+    const HeaderOraclePrivate& data,
+    const block::Height height) const noexcept -> block::Position
+{
+    auto hash = best_hash(data, height);
 
     if (hash == blank_hash()) {
 
@@ -816,12 +930,14 @@ auto HeaderOracle::get_position(const Lock& lock, const block::Height height)
     }
 }
 
-auto HeaderOracle::Init() noexcept -> void
+auto HeaderOracle::Shared::Init() noexcept -> void
 {
+    auto handle = data_.lock();
+    auto& data = *handle;
     const auto& null = blank_position();
-    const auto existingCheckpoint = GetCheckpoint();
+    const auto existingCheckpoint = get_checkpoint(data);
     const auto& [existingHeight, existingBlockHash] = existingCheckpoint;
-    const auto defaultCheckpoint = GetDefaultCheckpoint();
+    const auto defaultCheckpoint = get_default_checkpoint(data);
     const auto& [defaultHeight, defaultBlockhash, defaultParenthash, defaultFilterhash] =
         defaultCheckpoint;
 
@@ -836,7 +952,7 @@ auto HeaderOracle::Init() noexcept -> void
 
     // Remove existing checkpoint if it is set
     if (existingHeight != null.height_) {
-        LogConsole()(print(chain_))(
+        LogConsole()(print(data.chain_))(
             ": Removing obsolete checkpoint at height ")(existingHeight)
             .Flush();
         const auto deleted = DeleteCheckpoint();
@@ -845,18 +961,19 @@ auto HeaderOracle::Init() noexcept -> void
     }
 
     if (1 < defaultHeight) {
-        LogConsole()(print(chain_))(": Updating checkpoint to hash ")(
+        LogConsole()(print(data.chain_))(": Updating checkpoint to hash ")(
             defaultBlockhash.asHex())(" at height ")(defaultHeight)
             .Flush();
 
-        const auto added = AddCheckpoint(defaultHeight, defaultBlockhash);
+        const auto added =
+            add_checkpoint(data, defaultHeight, defaultBlockhash);
 
         OT_ASSERT(added);
     }
 }
 
-auto HeaderOracle::initialize_candidate(
-    const Lock& lock,
+auto HeaderOracle::Shared::initialize_candidate(
+    const HeaderOraclePrivate& data,
     const block::Header& best,
     const block::Header& parent,
     UpdateTransaction& update,
@@ -864,7 +981,7 @@ auto HeaderOracle::initialize_candidate(
     block::Header& child,
     const block::Hash& stopHash) noexcept(false) -> Candidate&
 {
-    const auto blacklisted = connect_to_parent(lock, update, parent, child);
+    const auto blacklisted = connect_to_parent(data, update, parent, child);
     auto position{parent.Position()};
     auto& output = candidates.emplace_back(Candidate{blacklisted, {}});
     auto& chain = output.chain_;
@@ -894,22 +1011,7 @@ auto HeaderOracle::initialize_candidate(
     return output;
 }
 
-auto HeaderOracle::IsInBestChain(const block::Hash& hash) const noexcept -> bool
-{
-    auto lock = Lock{lock_};
-
-    return is_in_best_chain(lock, hash).first;
-}
-
-auto HeaderOracle::IsInBestChain(const block::Position& position) const noexcept
-    -> bool
-{
-    auto lock = Lock{lock_};
-
-    return is_in_best_chain(lock, position.height_, position.hash_);
-}
-
-auto HeaderOracle::is_disconnected(
+auto HeaderOracle::Shared::is_disconnected(
     const block::Hash& parent,
     UpdateTransaction& update) noexcept -> const block::Header*
 {
@@ -929,32 +1031,51 @@ auto HeaderOracle::is_disconnected(
     }
 }
 
-auto HeaderOracle::is_in_best_chain(const Lock& lock, const block::Hash& hash)
-    const noexcept -> std::pair<bool, block::Height>
+auto HeaderOracle::Shared::IsInBestChain(const block::Hash& hash) const noexcept
+    -> bool
 {
-    const auto pHeader = database_.TryLoadHeader(hash);
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return is_in_best_chain(data, hash).first;
+}
+
+auto HeaderOracle::Shared::IsInBestChain(
+    const block::Position& position) const noexcept -> bool
+{
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return is_in_best_chain(data, position.height_, position.hash_);
+}
+
+auto HeaderOracle::Shared::is_in_best_chain(
+    const HeaderOraclePrivate& data,
+    const block::Hash& hash) const noexcept -> std::pair<bool, block::Height>
+{
+    const auto pHeader = data.database_.TryLoadHeader(hash);
 
     if (false == bool(pHeader)) { return {false, -1}; }
 
     const auto& header = *pHeader;
 
-    return {is_in_best_chain(lock, header.Height(), hash), header.Height()};
+    return {is_in_best_chain(data, header.Height(), hash), header.Height()};
 }
 
-auto HeaderOracle::is_in_best_chain(
-    const Lock& lock,
+auto HeaderOracle::Shared::is_in_best_chain(
+    const HeaderOraclePrivate& data,
     const block::Position& position) const noexcept -> bool
 {
-    return is_in_best_chain(lock, position.height_, position.hash_);
+    return is_in_best_chain(data, position.height_, position.hash_);
 }
 
-auto HeaderOracle::is_in_best_chain(
-    const Lock& lock,
+auto HeaderOracle::Shared::is_in_best_chain(
+    const HeaderOraclePrivate& data,
     const block::Height height,
     const block::Hash& hash) const noexcept -> bool
 {
     try {
-        return hash == database_.BestBlock(height);
+        return hash == data.database_.BestBlock(height);
 
     } catch (...) {
 
@@ -962,34 +1083,54 @@ auto HeaderOracle::is_in_best_chain(
     }
 }
 
-auto HeaderOracle::LoadBitcoinHeader(const block::Hash& hash) const noexcept
-    -> std::unique_ptr<bitcoin::block::Header>
+auto HeaderOracle::Shared::IsSynchronized() const noexcept -> bool
 {
-    return database_.TryLoadBitcoinHeader(hash);
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return is_synchronized(data);
 }
 
-auto HeaderOracle::LoadHeader(const block::Hash& hash) const noexcept
+auto HeaderOracle::Shared::is_synchronized(
+    const HeaderOraclePrivate& data) const noexcept -> bool
+{
+    return data.IsSynchronized();
+}
+
+auto HeaderOracle::Shared::LoadBitcoinHeader(const block::Hash& hash)
+    const noexcept -> std::unique_ptr<bitcoin::block::Header>
+{
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return data.database_.TryLoadBitcoinHeader(hash);
+}
+
+auto HeaderOracle::Shared::LoadHeader(const block::Hash& hash) const noexcept
     -> std::unique_ptr<block::Header>
 {
-    return database_.TryLoadHeader(hash);
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return data.database_.TryLoadHeader(hash);
 }
 
-auto HeaderOracle::ProcessSyncData(
+auto HeaderOracle::Shared::ProcessSyncData(
     block::Hash& prior,
     Vector<block::Hash>& hashes,
-    const network::p2p::Data& data) noexcept -> std::size_t
+    const network::p2p::Data& in) noexcept -> std::size_t
 {
+    auto handle = data_.lock();
+    auto& data = *handle;
     auto output = 0_uz;
-    auto update = UpdateTransaction{api_, database_};
+    auto update = UpdateTransaction{data.api_, data.database_};
+    data.UpdateRemoteHeight(in.State().Position().height_);
 
     try {
-        const auto& blocks = data.Blocks();
+        const auto& blocks = in.Blocks();
 
-        if (0u == blocks.size()) {
-            std::runtime_error{"No blocks in sync data"};
-        }
+        if (blocks.empty()) { std::runtime_error{"No blocks in sync data"}; }
 
-        auto lock = Lock{lock_};
         auto previous = [&]() -> block::Hash {
             const auto& first = blocks.front();
             const auto height = first.Height();
@@ -998,7 +1139,8 @@ auto HeaderOracle::ProcessSyncData(
 
                 return block::Hash{};
             } else {
-                const auto rc = prior.Assign(database_.BestBlock(height - 1));
+                const auto rc =
+                    prior.Assign(data.database_.BestBlock(height - 1));
 
                 OT_ASSERT(rc);
 
@@ -1008,7 +1150,7 @@ auto HeaderOracle::ProcessSyncData(
 
         for (const auto& block : blocks) {
             auto pHeader = factory::BitcoinBlockHeader(
-                api_, block.Chain(), block.Header());
+                data.api_, block.Chain(), block.Header());
 
             if (false == bool(pHeader)) {
                 throw std::runtime_error{"Invalid header"};
@@ -1022,8 +1164,8 @@ auto HeaderOracle::ProcessSyncData(
 
             auto hash = block::Hash{header.Hash()};
 
-            if (false == is_in_best_chain(lock, hash).first) {
-                if (false == add_header(lock, update, std::move(pHeader))) {
+            if (false == is_in_best_chain(data, hash).first) {
+                if (false == add_header(data, update, std::move(pHeader))) {
                     throw std::runtime_error{"Failed to process header"};
                 }
             }
@@ -1036,7 +1178,7 @@ auto HeaderOracle::ProcessSyncData(
         LogVerbose()(OT_PRETTY_CLASS())(e.what()).Flush();
     }
 
-    if ((0u < output) && database_.ApplyUpdate(update)) {
+    if ((0_uz < output) && apply_update(data, update)) {
         OT_ASSERT(output == hashes.size());
 
         return output;
@@ -1046,13 +1188,33 @@ auto HeaderOracle::ProcessSyncData(
     }
 }
 
-auto HeaderOracle::RecentHashes(alloc::Default alloc) const noexcept -> Hashes
+auto HeaderOracle::Shared::RecentHashes(alloc::Default alloc) const noexcept
+    -> Hashes
 {
-    return database_.RecentHashes(alloc);
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return recent_hashes(data, alloc);
 }
 
-auto HeaderOracle::stage_candidate(
-    const Lock& lock,
+auto HeaderOracle::Shared::recent_hashes(
+    const HeaderOraclePrivate& data,
+    alloc::Default alloc) const noexcept -> Hashes
+{
+    return data.database_.RecentHashes(alloc);
+}
+
+auto HeaderOracle::Shared::Siblings() const noexcept
+    -> UnallocatedSet<block::Hash>
+{
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+
+    return data.database_.SiblingHashes();
+}
+
+auto HeaderOracle::Shared::stage_candidate(
+    const HeaderOraclePrivate& data,
     const block::Header& best,
     Candidates& candidates,
     UpdateTransaction& update,
@@ -1067,7 +1229,7 @@ auto HeaderOracle::stage_candidate(
         candidates.emplace_back(Candidate{false, {child.Position()}});
     } else {
         auto& candidate = initialize_candidate(
-            lock,
+            data,
             best,
             update.Stage(child.ParentHash()),
             update,
@@ -1081,15 +1243,17 @@ auto HeaderOracle::stage_candidate(
     }
 }
 
-auto HeaderOracle::Siblings() const noexcept -> UnallocatedSet<block::Hash>
+auto HeaderOracle::Shared::SubmitBlock(const ReadView in) noexcept -> void
 {
-    auto lock = Lock{lock_};
-
-    return database_.SiblingHashes();
+    auto handle = data_.lock_shared();
+    const auto& data = *handle;
+    AddHeader(data.api_.Factory().BlockHeader(data.chain_, in));
 }
 
-auto HeaderOracle::SubmitBlock(const ReadView in) noexcept -> void
+auto HeaderOracle::Shared::Target() const noexcept -> block::Height
 {
-    AddHeader(api_.Factory().BlockHeader(chain_, in));
+    return data_.lock_shared()->Target();
 }
-}  // namespace opentxs::blockchain::node::implementation
+
+HeaderOracle::Shared::~Shared() = default;
+}  // namespace opentxs::blockchain::node::internal

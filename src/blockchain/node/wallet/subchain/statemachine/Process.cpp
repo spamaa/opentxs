@@ -179,7 +179,7 @@ auto Process::Imp::do_process_update(Message&& msg) noexcept -> void
 
 auto Process::Imp::do_reorg(
     const node::HeaderOracle& oracle,
-    const Lock& oracleLock,
+    const node::internal::HeaderOraclePrivate& data,
     Reorg::Params& params) noexcept -> bool
 {
     if (false == parent_.need_reorg_) { return true; }
@@ -238,7 +238,7 @@ auto Process::Imp::do_reorg(
 
     parent_.process_queue_.store(active());
 
-    return Job::do_reorg(oracle, oracleLock, params);
+    return Job::do_reorg(oracle, data, params);
 }
 
 auto Process::Imp::do_startup_internal() noexcept -> void

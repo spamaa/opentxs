@@ -16,7 +16,8 @@ auto Peer::Imp::UpdateGetHeadersJob::operator()(
 }
 
 auto Peer::Imp::UpdateGetHeadersJob::operator()(
-    GetHeadersJob& job) const noexcept -> JobUpdate
+    opentxs::blockchain::node::internal::HeaderJob& job) const noexcept
+    -> JobUpdate
 {
     return {true, true};
 }

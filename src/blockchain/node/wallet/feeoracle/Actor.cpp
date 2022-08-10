@@ -4,12 +4,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // IWYU pragma: no_include <boost/smart_ptr/detail/operator_bool.hpp>
+// IWYU pragma: no_include <cxxabi.h>
 
 #include "0_stdafx.hpp"    // IWYU pragma: associated
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "blockchain/node/wallet/feeoracle/Actor.hpp"  // IWYU pragma: associated
 
-#include <cxxabi.h>
 #include <algorithm>
 #include <chrono>
 #include <exception>

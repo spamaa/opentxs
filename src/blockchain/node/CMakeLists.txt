@@ -4,6 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 add_subdirectory(blockoracle)
+add_subdirectory(headeroracle)
 
 if(OT_BLOCKCHAIN_EXPORT)
   add_subdirectory(filteroracle)
@@ -26,7 +27,6 @@ if(OT_BLOCKCHAIN_EXPORT)
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/Config.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/Endpoints.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/Factory.hpp"
-      "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/HeaderOracle.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/Job.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/Mempool.hpp"
       "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/SpendPolicy.hpp"
@@ -34,8 +34,6 @@ if(OT_BLOCKCHAIN_EXPORT)
       "Common.cpp"
       "Config.cpp"
       "Endpoints.cpp"
-      "HeaderOracle.cpp"
-      "HeaderOracle.hpp"
       "Job.cpp"
       "Mempool.cpp"
       "Mempool.hpp"
@@ -45,7 +43,6 @@ if(OT_BLOCKCHAIN_EXPORT)
   list(
     APPEND
     cxx-install-headers
-    "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/node/HeaderOracle.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/node/Manager.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/node/TxoState.hpp"
     "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/node/TxoTag.hpp"

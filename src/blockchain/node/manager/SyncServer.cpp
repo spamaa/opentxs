@@ -20,8 +20,8 @@
 
 #include "internal/blockchain/database/Sync.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "internal/network/p2p/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Signals.hpp"
@@ -150,7 +150,7 @@ auto SyncServer::NextBatch() noexcept -> BatchType
     return allocate_batch(type_);
 }
 
-auto SyncServer::pipeline(const zmq::Message& in) noexcept -> void
+auto SyncServer::pipeline(const network::zeromq::Message& in) noexcept -> void
 {
     if (false == running_.load()) { return; }
 
@@ -195,7 +195,8 @@ auto SyncServer::pipeline(const zmq::Message& in) noexcept -> void
     }
 }
 
-auto SyncServer::process_position(const zmq::Message& in) noexcept -> void
+auto SyncServer::process_position(const network::zeromq::Message& in) noexcept
+    -> void
 {
     const auto body = in.Body();
 

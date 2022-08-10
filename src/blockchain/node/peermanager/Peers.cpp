@@ -141,7 +141,7 @@ auto Peers::add_peer(const int id, Endpoint endpoint) noexcept -> int
 {
     OT_ASSERT(endpoint);
 
-    const auto& addressID = endpoint->ID();
+    auto addressID{endpoint->ID()};
     auto& count = active_[addressID];
 
     if (0_uz != count) { return -1; }

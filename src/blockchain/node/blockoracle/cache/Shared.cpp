@@ -23,9 +23,9 @@
 #include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Job.hpp"
 #include "internal/blockchain/node/Manager.hpp"
-#include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
 #include "internal/blockchain/node/blockoracle/Types.hpp"
+#include "internal/blockchain/node/headeroracle/Types.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
@@ -51,6 +51,7 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Time.hpp"
+#include "opentxs/util/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
 #include "util/ScopeGuard.hpp"
 #include "util/Work.hpp"
@@ -114,6 +115,26 @@ Cache::Shared::Data::Data(
             out.Connect(node_.Internal()
                             .Endpoints()
                             .block_cache_job_ready_publish_.c_str());
+
+        OT_ASSERT(rc);
+
+        return out;
+    }())
+    , to_header_oracle_([&] {
+        using Type = opentxs::network::zeromq::socket::Type;
+        auto out = api.Network().ZeroMQ().Internal().RawSocket(Type::Push);
+        const auto rc = out.Connect(
+            node_.Internal().Endpoints().header_oracle_pull_.c_str());
+
+        OT_ASSERT(rc);
+
+        return out;
+    }())
+    , to_block_fetcher_([&] {
+        using Type = opentxs::network::zeromq::socket::Type;
+        auto out = api.Network().ZeroMQ().Internal().RawSocket(Type::Push);
+        const auto rc = out.Connect(
+            node_.Internal().Endpoints().block_fetcher_pull_.c_str());
 
         OT_ASSERT(rc);
 
@@ -219,6 +240,11 @@ auto Cache::Shared::Data::GetBatch(allocator_type alloc) noexcept
     static_assert(batch_size(1000000, 4, 50000, 10) == 50000);
     static_assert(batch_size(1000000, 0, 50000, 10) == 50000);
     const auto target = batch_size(available, peer_target_, max, min);
+
+    if (0_uz == target) {
+        return std::make_pair(-1, Vector<block::Hash>{alloc});
+    }
+
     LogTrace()(OT_PRETTY_CLASS())("creating download batch for ")(
         target)(" block hashes out of ")(available)(" waiting in queue")
         .Flush();
@@ -367,14 +393,16 @@ auto Cache::Shared::Data::ReceiveBlock(
     auto id = block::Hash{block.ID()};
 
     if (false == node_.HeaderOracle().Exists(id)) {
-        // TODO submit directly to header oracle
-        node_.Internal().Track([&] {
-            using Task = opentxs::blockchain::node::ManagerJobs;
-            auto work = MakeWork(Task::SubmitBlockHeader);
-            block.Header().Serialize(work.AppendBytes(), false);
+        to_header_oracle_.SendDeferred(
+            [&] {
+                using Task = headeroracle::Job;
+                auto work = MakeWork(Task::submit_block_header);
+                block.Header().Serialize(work.AppendBytes(), false);
 
-            return work;
-        }());
+                return work;
+            }(),
+            __FILE__,
+            __LINE__);
     }
 
     auto future = [&]() -> BitcoinBlockResult {
@@ -398,6 +426,8 @@ auto Cache::Shared::Data::ReceiveBlock(
     publish_download_queue();
     LogVerbose()(OT_PRETTY_CLASS())("Cached block ").asHex(id).Flush();
     mem_.push(std::move(id), std::move(future));
+    to_block_fetcher_.SendDeferred(
+        MakeWork(BlockFetcherJob::statemachine), __FILE__, __LINE__, true);
 
     return true;
 }
@@ -407,8 +437,8 @@ auto Cache::Shared::Data::receive_block(const block::Hash& id) noexcept -> void
     auto& index = block_id_to_batch_id_;
 
     if (auto i = index.find(id); index.end() != i) {
+        auto post = ScopeGuard{[&] { index.erase(i); }};
         const auto& batch = i->second;
-        index.erase(i);
         LogTrace()(OT_PRETTY_CLASS())(" block ")
             .asHex(id)(" was assigned to batch ")(batch)
             .Flush();
@@ -648,17 +678,22 @@ auto Cache::Shared::GetBlockBatch(
 {
     auto pmr = alloc::PMR<node::internal::BlockBatch::Imp>{alloc};
     auto [id, hashes] = data_.lock()->GetBatch(alloc);
-    const auto batchID{id};  // TODO c++20 lambda capture structured binding
-    auto* imp = pmr.allocate(1_uz);
-    pmr.construct(
-        imp,
-        id,
-        std::move(hashes),
-        [me](const auto bytes) { me->data_.lock()->ReceiveBlock(bytes); },
-        std::make_shared<ScopeGuard>(
-            [me, batchID] { me->data_.lock()->FinishBatch(batchID); }));
 
-    return imp;
+    if (hashes.empty()) {
+
+        return {};
+    } else {
+        const auto batchID{id};  // TODO c++20 lambda capture structured binding
+        auto* imp = pmr.allocate(1_uz);
+        pmr.construct(
+            imp,
+            id,
+            std::move(hashes),
+            [me](const auto bytes) { me->data_.lock()->ReceiveBlock(bytes); },
+            [me, batchID] { me->data_.lock()->FinishBatch(batchID); });
+
+        return imp;
+    }
 }
 
 auto Cache::Shared::ReceiveBlock(

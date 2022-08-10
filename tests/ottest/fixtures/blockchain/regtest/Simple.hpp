@@ -54,8 +54,8 @@ class Options;
 namespace ottest
 {
 class BlockListener;
+class SyncListener;
 class User;
-class WalletListener;
 }  // namespace ottest
 // NOLINTEND(modernize-concat-nested-namespaces)
 
@@ -67,7 +67,7 @@ struct RegtestListener {
     RegtestListener(const ot::api::session::Client& client);
 
     std::unique_ptr<BlockListener> block_listener;
-    std::unique_ptr<WalletListener> wallet_listener;
+    std::unique_ptr<SyncListener> sync_listener;
 
     ~RegtestListener();
 };

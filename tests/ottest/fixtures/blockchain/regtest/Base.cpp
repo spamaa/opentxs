@@ -19,10 +19,11 @@
 #include "internal/util/P0330.hpp"
 #include "ottest/fixtures/blockchain/BlockListener.hpp"
 #include "ottest/fixtures/blockchain/BlockchainStartup.hpp"
+#include "ottest/fixtures/blockchain/CfilterListener.hpp"
 #include "ottest/fixtures/blockchain/Common.hpp"
 #include "ottest/fixtures/blockchain/MinedBlocks.hpp"
 #include "ottest/fixtures/blockchain/PeerListener.hpp"
-#include "ottest/fixtures/blockchain/WalletListener.hpp"
+#include "ottest/fixtures/blockchain/SyncListener.hpp"
 #include "ottest/fixtures/common/User.hpp"
 
 namespace ottest
@@ -48,7 +49,8 @@ std::unique_ptr<const ot::OTBlockchainAddress>
 std::unique_ptr<const PeerListener> Regtest_fixture_base::peer_listener_{};
 std::unique_ptr<MinedBlocks> Regtest_fixture_base::mined_block_cache_{};
 Regtest_fixture_base::BlockListen Regtest_fixture_base::block_listener_{};
-Regtest_fixture_base::WalletListen Regtest_fixture_base::wallet_listener_{};
+Regtest_fixture_base::CfilterListen Regtest_fixture_base::cfilter_listener_{};
+Regtest_fixture_base::SyncListen Regtest_fixture_base::wallet_listener_{};
 }  // namespace ottest
 
 namespace ottest
@@ -138,8 +140,12 @@ Regtest_fixture_base::Regtest_fixture_base(
     , block_sync_server_(init_block(1, sync_server_, "sync server"))
     , block_1_(init_block(2, client_1_, "client 1"))
     , block_2_(init_block(3, client_2_, "client 2"))
-    , wallet_1_(init_wallet(0, client_1_))
-    , wallet_2_(init_wallet(1, client_2_))
+    , cfilter_miner_(init_cfilter(0, miner_, "miner"))
+    , cfilter_sync_server_(init_cfilter(1, sync_server_, "sync server"))
+    , cfilter_1_(init_cfilter(2, client_1_, "client 1"))
+    , cfilter_2_(init_cfilter(3, client_2_, "client 2"))
+    , sync_client_1_(init_sync_client(0, client_1_, "client 1"))
+    , sync_client_2_(init_sync_client(1, client_2_, "client 2"))
 {
 }
 
@@ -424,6 +430,20 @@ auto Regtest_fixture_base::init_block(
     return *p;
 }
 
+auto Regtest_fixture_base::init_cfilter(
+    const int index,
+    const ot::api::Session& api,
+    std::string_view name) noexcept -> CfilterListener&
+{
+    auto& p = cfilter_listener_[index];
+
+    if (false == bool(p)) { p = std::make_unique<CfilterListener>(api, name); }
+
+    OT_ASSERT(p);
+
+    return *p;
+}
+
 auto Regtest_fixture_base::init_mined() noexcept -> MinedBlocks&
 {
     if (false == bool(mined_block_cache_)) {
@@ -453,13 +473,14 @@ auto Regtest_fixture_base::init_peer(
     return *peer_listener_;
 }
 
-auto Regtest_fixture_base::init_wallet(
+auto Regtest_fixture_base::init_sync_client(
     const int index,
-    const ot::api::Session& api) noexcept -> WalletListener&
+    const ot::api::Session& api,
+    std::string_view name) noexcept -> SyncListener&
 {
     auto& p = wallet_listener_[index];
 
-    if (false == bool(p)) { p = std::make_unique<WalletListener>(api); }
+    if (false == bool(p)) { p = std::make_unique<SyncListener>(api, name); }
 
     OT_ASSERT(p);
 
@@ -489,20 +510,27 @@ auto Regtest_fixture_base::Mine(
     const ot::UnallocatedVector<Transaction>& extra) noexcept -> bool
 {
     const auto targetHeight = ancestor + static_cast<Height>(count);
-    auto blocks = ot::UnallocatedVector<BlockListener::Future>{};
-    auto wallets = ot::UnallocatedVector<WalletListener::Future>{};
-    blocks.reserve(client_count_ + 1_uz);
+    auto blocks = ot::Vector<BlockListener::Future>{};
+    auto filters = ot::Vector<CfilterListener::Future>{};
+    auto wallets = ot::Vector<SyncListener::Future>{};
+    blocks.reserve(client_count_ + 2_uz);
+    filters.reserve(client_count_ + 2_uz);
     wallets.reserve(client_count_);
     blocks.emplace_back(block_miner_.GetFuture(targetHeight));
+    blocks.emplace_back(block_sync_server_.GetFuture(targetHeight));
+    filters.emplace_back(cfilter_miner_.GetFuture(targetHeight));
+    filters.emplace_back(cfilter_sync_server_.GetFuture(targetHeight));
 
     if (0 < client_count_) {
         blocks.emplace_back(block_1_.GetFuture(targetHeight));
-        wallets.emplace_back(wallet_1_.GetFuture(targetHeight));
+        filters.emplace_back(cfilter_1_.GetFuture(targetHeight));
+        wallets.emplace_back(sync_client_1_.GetFuture(targetHeight));
     }
 
     if (1 < client_count_) {
         blocks.emplace_back(block_2_.GetFuture(targetHeight));
-        wallets.emplace_back(wallet_2_.GetFuture(targetHeight));
+        filters.emplace_back(cfilter_2_.GetFuture(targetHeight));
+        wallets.emplace_back(sync_client_2_.GetFuture(targetHeight));
     }
 
     const auto handle = miner_.Network().Blockchain().GetChain(test_chain_);
@@ -521,11 +549,12 @@ auto Regtest_fixture_base::Mine(
 
         OT_ASSERT(gen);
 
-        auto tx = gen(previousHeader.Height() + 1);
+        const auto height = previousHeader.Height() + 1;
+        auto tx = gen(height);
 
         OT_ASSERT(tx);
 
-        auto block = miner_.Factory().BitcoinBlock(
+        auto pBlock = miner_.Factory().BitcoinBlock(
             previousHeader,
             tx,
             previousHeader.nBits(),
@@ -535,22 +564,35 @@ auto Regtest_fixture_base::Mine(
                 return (ot::Clock::now() - start) > std::chrono::minutes(2);
             });
 
-        OT_ASSERT(block);
+        OT_ASSERT(pBlock);
 
-        promise.set_value(block->Header().Hash());
-        const auto added = network.AddBlock(block);
+        const auto& block = *pBlock;
+        const auto& hash = block.Header().Hash();
+        promise.set_value(hash);
+        const auto added = network.AddBlock(pBlock);
 
         OT_ASSERT(added);
 
-        previousHeader = block->Header().as_Bitcoin();
+        previousHeader = block.Header().as_Bitcoin();
+        using Position = ot::blockchain::block::Position;
+        ot::LogConsole()("Generated block ")(Position{height, hash}).Flush();
     }
 
     auto output = true;
     constexpr auto limit = 5min;
     using Status = std::future_status;
-
+    auto futureIndex = -1_z;
+    ot::LogConsole()("Waiting for ")(blocks.size())(
+        " header oracles to process mined block(s)")
+        .Flush();
     for (auto& future : blocks) {
-        OT_ASSERT(future.wait_for(limit) == Status::ready);
+        ++futureIndex;
+
+        if (future.wait_for(limit) != Status::ready) {
+            ot::LogAbort()("block header future at index ")(
+                futureIndex)(" not ready")
+                .Abort();
+        }
 
         const auto [height, hash] = future.get();
 
@@ -559,8 +601,41 @@ auto Regtest_fixture_base::Mine(
         output &= (hash == previousHeader.Hash());
     }
 
+    ot::LogConsole()("All header oracles are caught up").Flush();
+    futureIndex = -1_z;
+    ot::LogConsole()("Waiting for ")(filters.size())(
+        " filter oracles to process mined block(s)")
+        .Flush();
+    for (auto& future : filters) {
+        ++futureIndex;
+
+        if (future.wait_for(limit) != Status::ready) {
+            ot::LogAbort()("filter header future at index ")(
+                futureIndex)(" not ready")
+                .Abort();
+        }
+
+        const auto [height, hash] = future.get();
+
+        EXPECT_EQ(hash, previousHeader.Hash());
+
+        output &= (hash == previousHeader.Hash());
+    }
+
+    ot::LogConsole()("All filter oracles are caught up").Flush();
+    futureIndex = -1_z;
+    ot::LogConsole()("Waiting for ")(wallets.size())(
+        " sync client(s) to catch up to mined block(s)")
+        .Flush();
+
     for (auto& future : wallets) {
-        OT_ASSERT(future.wait_for(limit) == Status::ready);
+        ++futureIndex;
+
+        if (future.wait_for(limit) != Status::ready) {
+            ot::LogAbort()("sync client future at index ")(
+                futureIndex)(" not ready")
+                .Abort();
+        }
 
         const auto height = future.get();
 
@@ -568,6 +643,8 @@ auto Regtest_fixture_base::Mine(
 
         output &= (height == targetHeight);
     }
+
+    ot::LogConsole()("All active sync clients are caught up").Flush();
 
     if (output) { height_ = targetHeight; }
 
@@ -581,6 +658,7 @@ auto Regtest_fixture_base::Shutdown() noexcept -> void
     sync_server_startup_s_ = std::nullopt;
     miner_startup_s_ = std::nullopt;
     wallet_listener_.clear();
+    cfilter_listener_.clear();
     block_listener_.clear();
     mined_block_cache_.reset();
     peer_listener_.reset();

@@ -160,7 +160,7 @@ auto Job::do_process_update(Message&& msg) noexcept -> void
 
 auto Job::do_reorg(
     const node::HeaderOracle& oracle,
-    const Lock& oracleLock,
+    const node::internal::HeaderOraclePrivate& data,
     Reorg::Params& params) noexcept -> bool
 {
     return true;

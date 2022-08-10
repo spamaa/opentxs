@@ -19,7 +19,6 @@
 #include <chrono>
 #include <iomanip>
 #include <iosfwd>
-#include <iterator>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -37,12 +36,12 @@
 #include "internal/blockchain/database/Factory.hpp"
 #include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Factory.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/PeerManager.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/Wallet.hpp"
 #include "internal/blockchain/node/blockoracle/Types.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "internal/blockchain/node/p2p/Requestor.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
@@ -53,6 +52,7 @@
 #include "internal/network/p2p/Types.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
+#include "internal/util/P0330.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
@@ -86,21 +86,22 @@
 #include "opentxs/network/p2p/Base.hpp"
 #include "opentxs/network/p2p/Data.hpp"
 #include "opentxs/network/p2p/PushTransaction.hpp"
-#include "opentxs/network/p2p/State.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
-#include "opentxs/network/zeromq/message/FrameIterator.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/socket/SocketType.hpp"
 #include "opentxs/network/zeromq/socket/Types.hpp"
 #include "opentxs/util/Allocator.hpp"
+#include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Numbers.hpp"
 #include "opentxs/util/Options.hpp"
 #include "opentxs/util/Pimpl.hpp"
+#include "opentxs/util/WorkType.hpp"
+#include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::implementation
 {
@@ -120,7 +121,10 @@ Base::Base(
           0s,
           "blockchain::node::Manager",
           {},
-          {},
+          {
+              {endpoints.manager_pull_,
+               network::zeromq::socket::Direction::Bind},
+          },
           {},
           {
               {network::zeromq::socket::Type::Push,
@@ -177,13 +181,13 @@ Base::Base(
           *database_p_,
           api_.Network().Blockchain().Internal().Mempool(),
           chain_)
-    , header_p_(factory::HeaderOracle(api, *database_p_, chain_))
+    , header_(factory::HeaderOracle(api, *this))
     , block_()
     , filter_p_(factory::BlockchainFilterOracle(
           api,
           config_,
           *this,
-          *header_p_,
+          header_,
           block_,
           *database_p_,
           chain_,
@@ -194,7 +198,7 @@ Base::Base(
           config_,
           mempool_,
           *this,
-          *header_p_,
+          header_,
           *filter_p_,
           block_,
           *database_p_,
@@ -203,7 +207,6 @@ Base::Base(
           endpoints_))
     , database_(*database_p_)
     , filters_(*filter_p_)
-    , header_(*header_p_)
     , peer_(*peer_p_)
     , wallet_()
     , to_block_oracle_(pipeline_.Internal().ExtraSocket(0))
@@ -244,18 +247,12 @@ Base::Base(
             }
         }
     }())
-    , sync_cb_(zmq::ListenCallback::Factory(
+    , sync_cb_(network::zeromq::ListenCallback::Factory(
           [&](auto&& m) { pipeline_.Push(std::move(m)); }))
     , sync_socket_(api_.Network().ZeroMQ().PairSocket(
           sync_cb_,
           endpoints_.p2p_requestor_pair_,
           "Blockchain sync"))
-    , local_chain_height_(0)
-    , remote_chain_height_(params::Chains().at(chain_).checkpoint_.height_)
-    , waiting_for_headers_(Flag::Factory(false))
-    , headers_requested_(Clock::now())
-    , headers_received_()
-    , work_promises_()
     , send_promises_()
     , heartbeat_(api_.Network().Asio().Internal().GetTimer())
     , header_sync_()
@@ -267,7 +264,6 @@ Base::Base(
 {
     OT_ASSERT(database_p_);
     OT_ASSERT(filter_p_);
-    OT_ASSERT(header_p_);
     OT_ASSERT(peer_p_);
 
     header_.Internal().Init();
@@ -552,26 +548,11 @@ auto Base::GetVerifiedPeerCount() const noexcept -> std::size_t
 
 auto Base::HeaderOracle() const noexcept -> const node::HeaderOracle&
 {
-    OT_ASSERT(header_p_);
-
-    return *header_p_;
+    return header_;
 }
 
 auto Base::init() noexcept -> void
 {
-    local_chain_height_.store(header_.BestChain().height_);
-
-    {
-        const auto best = database_.CurrentBest();
-
-        OT_ASSERT(best);
-
-        const auto position = best->Position();
-        LogVerbose()(print(chain_))(" chain initialized with best hash ")(
-            position)
-            .Flush();
-    }
-
     trigger();
     reset_heartbeat();
 }
@@ -610,10 +591,7 @@ auto Base::is_synchronized_filters() const noexcept -> bool
 
 auto Base::is_synchronized_headers() const noexcept -> bool
 {
-    const auto target = remote_chain_height_.load();
-    const auto progress = local_chain_height_.load();
-
-    return (progress >= target);
+    return header_.IsSynchronized();
 }
 
 auto Base::is_synchronized_sync_server() const noexcept -> bool
@@ -661,7 +639,7 @@ auto Base::PeerManager() const noexcept -> const internal::PeerManager&
     return *peer_p_;
 }
 
-auto Base::pipeline(zmq::Message&& in) noexcept -> void
+auto Base::pipeline(network::zeromq::Message&& in) noexcept -> void
 {
     if (false == running_.load()) { return; }
 
@@ -682,21 +660,17 @@ auto Base::pipeline(zmq::Message&& in) noexcept -> void
     }();
 
     switch (task) {
-        case ManagerJobs::Shutdown: {
+        case ManagerJobs::shutdown: {
             shutdown(shutdown_promise_);
         } break;
-        case ManagerJobs::SyncReply:
-        case ManagerJobs::SyncNewBlock: {
+        case ManagerJobs::sync_reply:
+        case ManagerJobs::sync_new_block: {
             process_sync_data(std::move(in));
         } break;
-        case ManagerJobs::SubmitBlockHeader: {
-            process_header(std::move(in));
-            do_work();
-        } break;
-        case ManagerJobs::SubmitBlock: {
+        case ManagerJobs::submit_block: {
             process_block(std::move(in));
         } break;
-        case ManagerJobs::Heartbeat: {
+        case ManagerJobs::heartbeat: {
             // TODO upgrade all the oracles to no longer require this
             mempool_.Heartbeat();
             filters_.Internal().Heartbeat();
@@ -707,20 +681,20 @@ auto Base::pipeline(zmq::Message&& in) noexcept -> void
             do_work();
             reset_heartbeat();
         } break;
-        case ManagerJobs::SendToAddress: {
+        case ManagerJobs::send_to_address: {
             process_send_to_address(std::move(in));
         } break;
-        case ManagerJobs::SendToPaymentCode: {
+        case ManagerJobs::send_to_paymentcode: {
             process_send_to_payment_code(std::move(in));
         } break;
-        case ManagerJobs::StartWallet: {
+        case ManagerJobs::start_wallet: {
             to_wallet_.SendDeferred(
                 MakeWork(wallet::WalletJobs::start_wallet), __FILE__, __LINE__);
         } break;
-        case ManagerJobs::FilterUpdate: {
+        case ManagerJobs::filter_update: {
             process_filter_update(std::move(in));
         } break;
-        case ManagerJobs::StateMachine: {
+        case ManagerJobs::state_machine: {
             do_work();
         } break;
         default: {
@@ -780,47 +754,6 @@ auto Base::process_filter_update(network::zeromq::Message&& in) noexcept -> void
 
     api_.Network().Blockchain().Internal().ReportProgress(
         chain_, height, target);
-}
-
-auto Base::process_header(network::zeromq::Message&& in) noexcept -> void
-{
-    if (false == running_.load()) { return; }
-
-    waiting_for_headers_->Off();
-    headers_received_ = Clock::now();
-    auto promise = int{};
-    auto input = UnallocatedVector<ReadView>{};
-
-    {
-        const auto body = in.Body();
-
-        if (2 > body.size()) {
-            LogError()(OT_PRETTY_CLASS())("Invalid message").Flush();
-
-            return;
-        }
-
-        // NOTE can not use std::prev on frame iterators
-        auto end = std::next(body.begin(), body.size() - 1u);
-        std::transform(
-            std::next(body.begin()),
-            end,
-            std::back_inserter(input),
-            [](const auto& frame) { return frame.Bytes(); });
-        const auto& promiseFrame = *end;
-        promise = promiseFrame.as<int>();
-    }
-
-    // TODO allocator
-    auto headers = Vector<std::unique_ptr<block::Header>>{};
-
-    for (const auto& header : input) {
-        headers.emplace_back(instantiate_header(header));
-    }
-
-    if (false == headers.empty()) { header_.Internal().AddHeaders(headers); }
-
-    work_promises_.clear(promise);
 }
 
 auto Base::process_send_to_address(network::zeromq::Message&& in) noexcept
@@ -1052,26 +985,12 @@ auto Base::process_sync_data(network::zeromq::Message&& in) noexcept -> void
     const auto start = Clock::now();
     const auto sync = api_.Factory().BlockchainSyncMessage(in);
     const auto& data = sync->asData();
-
-    {
-        const auto& state = data.State();
-
-        if (state.Chain() != chain_) {
-            LogError()(OT_PRETTY_CLASS())("Wrong chain").Flush();
-
-            return;
-        }
-
-        remote_chain_height_.store(
-            std::max(state.Position().height_, remote_chain_height_.load()));
-    }
-
     auto prior = block::Hash{};
     auto hashes = Vector<block::Hash>{};
     const auto accepted =
         header_.Internal().ProcessSyncData(prior, hashes, data);
 
-    if (0u < accepted) {
+    if (0_uz < accepted) {
         const auto& blocks = data.Blocks();
 
         LogVerbose()("Accepted ")(accepted)(" of ")(blocks.size())(" ")(
@@ -1106,7 +1025,7 @@ auto Base::reset_heartbeat() noexcept -> void
                 LogError()(OT_PRETTY_CLASS())(error).Flush();
             }
         } else {
-            pipeline_.Push(MakeWork(ManagerJobs::Heartbeat));
+            pipeline_.Push(MakeWork(ManagerJobs::heartbeat));
         }
     });
 }
@@ -1118,7 +1037,7 @@ auto Base::SendToAddress(
     const UnallocatedCString& memo) const noexcept -> PendingOutgoing
 {
     auto [index, future] = send_promises_.get();
-    auto work = MakeWork(ManagerJobs::SendToAddress);
+    auto work = MakeWork(ManagerJobs::send_to_address);
     work.AddFrame(sender);
     work.AddFrame(address);
     amount.Serialize(work.AppendBytes());
@@ -1136,7 +1055,7 @@ auto Base::SendToPaymentCode(
     const UnallocatedCString& memo) const noexcept -> PendingOutgoing
 {
     auto [index, future] = send_promises_.get();
-    auto work = MakeWork(ManagerJobs::SendToPaymentCode);
+    auto work = MakeWork(ManagerJobs::send_to_paymentcode);
     work.AddFrame(nymID);
     work.AddFrame(recipient);
     amount.Serialize(work.AppendBytes());
@@ -1197,21 +1116,21 @@ auto Base::Start(std::shared_ptr<const node::Manager> me) noexcept -> void
         return out;
     }();
     *(self_.lock()) = ptr;
+    auto api = api_.Internal().GetShared();
 
-    if (have_p2p_requestor_) {
-        p2p::Requestor{api_.Internal().GetShared(), ptr}.Init();
-    }
+    if (have_p2p_requestor_) { p2p::Requestor{api, ptr}.Init(); }
 
-    block_.Start(api_.Internal().GetShared(), ptr);
+    block_.Start(api, ptr);
     init_promise_.set_value();
+    header_.Start(api, ptr);
     peer_.Start();
-    wallet_.Internal().Init(api_.Internal().GetShared(), ptr);
+    wallet_.Internal().Init(api, ptr);
 }
 
 auto Base::StartWallet() noexcept -> void
 {
     if (false == config_.disable_wallet_) {
-        pipeline_.Push(MakeWork(ManagerJobs::StartWallet));
+        pipeline_.Push(MakeWork(ManagerJobs::start_wallet));
     }
 }
 
@@ -1222,7 +1141,6 @@ auto Base::state_machine() noexcept -> bool
     const auto& log = LogTrace();
     log(OT_PRETTY_CLASS())("Starting state machine for ")(print(chain_))
         .Flush();
-    state_machine_headers();
 
     switch (state_.load()) {
         case State::UpdatingHeaders: {
@@ -1245,7 +1163,8 @@ auto Base::state_machine() noexcept -> bool
                         state_transition_blocks();
                     } break;
                     default: {
-                        OT_FAIL;
+                        LogAbort()(OT_PRETTY_CLASS())("invalid profile")
+                            .Flush();
                     }
                 }
             } else {
@@ -1316,61 +1235,8 @@ auto Base::state_machine() noexcept -> bool
     return false;
 }
 
-auto Base::state_machine_headers() noexcept -> void
-{
-    constexpr auto limit = std::chrono::minutes{5};
-    constexpr auto timeout = 30s;
-    constexpr auto rateLimit = 1s;
-    const auto requestInterval = Clock::now() - headers_requested_;
-    const auto receiveInterval = Clock::now() - headers_received_;
-    const auto requestHeaders = [&] {
-        LogVerbose()(OT_PRETTY_CLASS())("Requesting ")(print(chain_))(
-            " block headers from all connected peers "
-            "(instance ")(api_.Instance())(")")
-            .Flush();
-        waiting_for_headers_->On();
-        peer_.RequestHeaders();
-        headers_requested_ = Clock::now();
-    };
-    const auto useSyncServer = [&] {
-        switch (config_.profile_) {
-            case BlockchainProfile::mobile:
-            case BlockchainProfile::desktop: {
-
-                return true;
-            }
-            case BlockchainProfile::desktop_native:
-            case BlockchainProfile::server: {
-
-                return false;
-            }
-            default: {
-                OT_FAIL;
-            }
-        }
-    }();
-
-    if (requestInterval < rateLimit) { return; }
-
-    if (waiting_for_headers_.get()) {
-        if (requestInterval < timeout) { return; }
-
-        LogDetail()(OT_PRETTY_CLASS())(print(chain_))(
-            " headers not received before timeout "
-            "(instance ")(api_.Instance())(")")
-            .Flush();
-        requestHeaders();
-    } else if ((!is_synchronized_headers()) && (false == useSyncServer)) {
-        requestHeaders();
-    } else if (receiveInterval >= limit) {
-        requestHeaders();
-    }
-}
-
 auto Base::state_transition_blocks() noexcept -> void
 {
-    to_block_oracle_.SendDeferred(
-        MakeWork(blockoracle::Job::start_downloader), __FILE__, __LINE__);
     state_.store(State::UpdatingBlocks);
 }
 
@@ -1393,13 +1259,6 @@ auto Base::state_transition_sync() noexcept -> void
     state_.store(State::UpdatingSyncData);
 }
 
-auto Base::Submit(network::zeromq::Message&& work) const noexcept -> void
-{
-    if (false == running_.load()) { return; }
-
-    pipeline_.Push(std::move(work));
-}
-
 auto Base::SyncTip() const noexcept -> block::Position
 {
     static const auto blank = block::Position{};
@@ -1413,47 +1272,7 @@ auto Base::SyncTip() const noexcept -> block::Position
     }
 }
 
-auto Base::Track(network::zeromq::Message&& work) const noexcept
-    -> std::future<void>
-{
-    if (false == running_.load()) {
-        auto promise = std::promise<void>{};
-        promise.set_value();
-
-        return promise.get_future();
-    }
-
-    auto [index, future] = work_promises_.get();
-    work.AddFrame(index);
-    pipeline_.Push(std::move(work));
-
-    return std::move(future);
-}
-
-auto Base::target() const noexcept -> block::Height
-{
-    return std::max(local_chain_height_.load(), remote_chain_height_.load());
-}
-
-auto Base::UpdateHeight(const block::Height height) const noexcept -> void
-{
-    if (false == running_.load()) { return; }
-
-    remote_chain_height_.store(std::max(height, remote_chain_height_.load()));
-    trigger();
-}
-
-auto Base::UpdateLocalHeight(const block::Position position) const noexcept
-    -> void
-{
-    if (false == running_.load()) { return; }
-
-    const auto& [height, hash] = position;
-    LogDetail()(print(chain_))(" block header chain updated to hash ")(position)
-        .Flush();
-    local_chain_height_.store(height);
-    trigger();
-}
+auto Base::target() const noexcept -> block::Height { return header_.Target(); }
 
 auto Base::Wallet() const noexcept -> const node::Wallet& { return wallet_; }
 

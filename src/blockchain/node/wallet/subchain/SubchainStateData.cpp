@@ -34,10 +34,10 @@
 #include "internal/blockchain/block/Block.hpp"
 #include "internal/blockchain/crypto/Crypto.hpp"
 #include "internal/blockchain/database/Database.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/blockoracle/BlockOracle.hpp"
 #include "internal/blockchain/node/blockoracle/Types.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "internal/blockchain/node/wallet/Reorg.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Process.hpp"
 #include "internal/blockchain/node/wallet/subchain/statemachine/Progress.hpp"
@@ -611,7 +611,7 @@ auto SubchainStateData::describe(
 
 auto SubchainStateData::do_reorg(
     const node::HeaderOracle& oracle,
-    const Lock& oracleLock,
+    const node::internal::HeaderOraclePrivate& data,
     Reorg::Params& params) noexcept -> bool
 {
     auto& [position, tx] = params;
@@ -620,7 +620,7 @@ auto SubchainStateData::do_reorg(
 
     try {
         // TODO use position
-        const auto reorg = oracle.Internal().CalculateReorg(oracleLock, tip);
+        const auto reorg = oracle.Internal().CalculateReorg(data, tip);
 
         if (reorg.empty()) {
             log_(OT_PRETTY_CLASS())(name_)(
@@ -636,8 +636,7 @@ auto SubchainStateData::do_reorg(
             need_reorg_ = true;
         }
 
-        if (db_.ReorgTo(
-                oracleLock, tx, oracle, id_, subchain_, db_key_, reorg)) {
+        if (db_.ReorgTo(data, tx, oracle, id_, subchain_, db_key_, reorg)) {
             LogError()(OT_PRETTY_CLASS())(name_)(" database error").Flush();
         } else {
 

@@ -28,6 +28,7 @@
 #include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
 #include "internal/blockchain/node/blockoracle/BlockOracle.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #include "internal/network/blockchain/ConnectionManager.hpp"
 #include "internal/network/blockchain/Types.hpp"
@@ -84,7 +85,6 @@ auto print(PeerJob job) noexcept -> std::string_view
             {Job::disconnect, "disconnect"sv},
             {Job::sendresult, "sendresult"sv},
             {Job::p2p, "p2p"sv},
-            {Job::getheaders, "getheaders"sv},
             {Job::broadcasttx, "broadcasttx"sv},
             {Job::jobavailablecfheaders, "jobavailablecfheaders"sv},
             {Job::jobavailablecfilters, "jobavailablecfilters"sv},
@@ -96,6 +96,7 @@ auto print(PeerJob job) noexcept -> std::string_view
             {Job::needping, "needping"sv},
             {Job::body, "body"sv},
             {Job::header, "header"sv},
+            {Job::jobavailablegetheaders, "jobavailablegetheaders"sv},
             {Job::jobavailableblock, "jobavailableblock"sv},
             {Job::jobavailableblockbatch, "jobavailableblockbatch"sv},
             {Job::heartbeat, "heartbeat"sv},
@@ -201,17 +202,25 @@ Peer::Imp::Imp(
           }(),
           {},
           [&] {
-              auto out = Vector<network::zeromq::SocketData>{alloc};
-              out.emplace_back(SocketType::Push, [&] {
-                  auto extra = Vector<network::zeromq::EndpointArg>{alloc};
-                  extra.emplace_back(
+              auto extra = Vector<network::zeromq::SocketData>{alloc};
+              extra.emplace_back(SocketType::Push, [&] {
+                  auto args = Vector<network::zeromq::EndpointArg>{alloc};
+                  args.emplace_back(
                       network->Internal().Endpoints().block_cache_pull_,
                       Direction::Connect);
 
-                  return extra;
+                  return args;
+              }());
+              extra.emplace_back(SocketType::Push, [&] {
+                  auto args = Vector<network::zeromq::EndpointArg>{alloc};
+                  args.emplace_back(
+                      network->Internal().Endpoints().header_oracle_pull_,
+                      Direction::Connect);
+
+                  return args;
               }());
 
-              return out;
+              return extra;
           }())
     , api_p_(api)
     , network_p_(network)
@@ -234,6 +243,7 @@ Peer::Imp::Imp(
     }())
     , database_(network_.Internal().DB())
     , to_block_cache_(pipeline_.Internal().ExtraSocket(0))
+    , to_header_oracle_(pipeline_.Internal().ExtraSocket(1))
     , id_(peerID)
     , untrusted_connection_id_(pipeline_.ConnectionIDDealer())
     , ping_interval_(std::move(pingInterval))
@@ -305,33 +315,36 @@ auto Peer::Imp::check_jobs() noexcept -> void
 {
     const auto& filter = filter_oracle_.Internal();
     const auto& block = block_oracle_.Internal();
+    const auto& header = header_oracle_.Internal();
+    auto alloc = get_allocator();
+    const auto& log = log_;
 
     if (has_job()) {
 
         return;
+    } else if (auto bhJob = header.GetJob(alloc); bhJob) {
+        log(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(bhJob)).Flush();
+        job_ = std::move(bhJob);
     } else if (auto hJob = filter.GetHeaderJob(); hJob) {
-        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(hJob))(" ")(
+        log(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(hJob))(" ")(
             hJob.id_)
             .Flush();
         job_ = std::move(hJob);
     } else if (auto fJob = filter.GetFilterJob(); fJob) {
-        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(fJob))(" ")(
+        log(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(fJob))(" ")(
             fJob.id_)
             .Flush();
         job_ = std::move(fJob);
-    } else if (auto bBatch = block.GetBlockBatch(get_allocator()); bBatch) {
-        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(bBatch))(" ")(
-            bBatch.ID())
+    } else if (auto bBatch = block.GetBlockBatch(alloc); bBatch) {
+        log(OT_PRETTY_CLASS())(name_)(": accepted batch ")(job_name(bBatch))(
+            " ")(bBatch.ID())
             .Flush();
         job_ = std::move(bBatch);
-    } else if (auto bJob = block.GetBlockJob(get_allocator()); bBatch) {
-        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(bJob))(" ")(
+    } else if (auto bJob = block.GetBlockJob(alloc); bJob) {
+        log(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(bJob))(" ")(
             bJob.ID())
             .Flush();
         job_ = std::move(bJob);
-    } else if (false == network_.Internal().IsSynchronized()) {
-        job_ = GetHeadersJob{};
-        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name()).Flush();
     }
 
     if (has_job()) { run_job(); }
@@ -590,7 +603,6 @@ auto Peer::Imp::is_allowed_state(Work work) const noexcept -> bool
                 case Work::disconnect:
                 case Work::sendresult:
                 case Work::p2p:
-                case Work::getheaders:
                 case Work::broadcasttx:
                 case Work::jobavailablecfheaders:
                 case Work::jobavailablecfilters:
@@ -601,6 +613,7 @@ auto Peer::Imp::is_allowed_state(Work work) const noexcept -> bool
                 case Work::needping:
                 case Work::body:
                 case Work::header:
+                case Work::jobavailablegetheaders:
                 case Work::jobavailableblock:
                 case Work::jobavailableblockbatch:
                 case Work::heartbeat:
@@ -678,9 +691,6 @@ auto Peer::Imp::pipeline_trusted(
         case Work::connect: {
             process_connect(true);
         } break;
-        case Work::getheaders: {
-            process_getheaders(std::move(msg));
-        } break;
         case Work::broadcasttx: {
             process_broadcasttx(std::move(msg));
         } break;
@@ -710,6 +720,9 @@ auto Peer::Imp::pipeline_trusted(
         } break;
         case Work::block: {
             process_block(std::move(msg));
+        } break;
+        case Work::jobavailablegetheaders: {
+            process_jobavailablegetheaders(std::move(msg));
         } break;
         case Work::jobavailableblock: {
             process_jobavailableblock(std::move(msg));
@@ -926,19 +939,6 @@ auto Peer::Imp::process_disconnect(Message&& msg) noexcept -> void
     disconnect(why);
 }
 
-auto Peer::Imp::process_getheaders(Message&& msg) noexcept -> void
-{
-    if (has_job()) {
-        log_(OT_PRETTY_CLASS())(name_)(": already have ")(job_name()).Flush();
-
-        return;
-    } else {
-        job_ = GetHeadersJob{};
-        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name()).Flush();
-        run_job();
-    }
-}
-
 auto Peer::Imp::process_header(Message&& msg) noexcept -> void
 {
     update_activity();
@@ -949,8 +949,10 @@ auto Peer::Imp::process_header(Message&& msg) noexcept -> void
 
 auto Peer::Imp::process_jobavailableblock(Message&& msg) noexcept -> void
 {
+    const auto& log = log_;
+
     if (has_job()) {
-        log_(OT_PRETTY_CLASS())(name_)(": already have ")(job_name()).Flush();
+        log(OT_PRETTY_CLASS())(name_)(": already have ")(job_name()).Flush();
 
         return;
     }
@@ -958,21 +960,23 @@ auto Peer::Imp::process_jobavailableblock(Message&& msg) noexcept -> void
     auto job = block_oracle_.Internal().GetBlockJob(get_allocator());
 
     if (0_uz < job.Remaining()) {
-        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(job))(" ")(
+        log(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(job))(" ")(
             job.ID())
             .Flush();
         job_ = std::move(job);
         run_job();
     } else {
-        log_(OT_PRETTY_CLASS())(name_)(": job already accepted by another peer")
+        log(OT_PRETTY_CLASS())(name_)(": job already accepted by another peer")
             .Flush();
     }
 }
 
 auto Peer::Imp::process_jobavailableblockbatch(Message&& msg) noexcept -> void
 {
+    const auto& log = log_;
+
     if (has_job()) {
-        log_(OT_PRETTY_CLASS())(name_)(": already have ")(job_name()).Flush();
+        log(OT_PRETTY_CLASS())(name_)(": already have ")(job_name()).Flush();
 
         return;
     }
@@ -980,13 +984,13 @@ auto Peer::Imp::process_jobavailableblockbatch(Message&& msg) noexcept -> void
     auto job = block_oracle_.Internal().GetBlockBatch(get_allocator());
 
     if (0_uz < job.Remaining()) {
-        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(job))(" ")(
+        log(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(job))(" ")(
             job.ID())
             .Flush();
         job_ = std::move(job);
         run_job();
     } else {
-        log_(OT_PRETTY_CLASS())(name_)(": job already accepted by another peer")
+        log(OT_PRETTY_CLASS())(name_)(": job already accepted by another peer")
             .Flush();
     }
 }
@@ -1035,9 +1039,31 @@ auto Peer::Imp::process_jobavailablecfilters(Message&& msg) noexcept -> void
     }
 }
 
+auto Peer::Imp::process_jobavailablegetheaders(Message&& msg) noexcept -> void
+{
+    if (has_job()) {
+        log_(OT_PRETTY_CLASS())(name_)(": already have ")(job_name()).Flush();
+
+        return;
+    }
+
+    auto job = header_oracle_.Internal().GetJob(get_allocator());
+
+    if (job.operator bool()) {
+        log_(OT_PRETTY_CLASS())(name_)(": accepted ")(job_name(job))(" ")
+            .Flush();
+        job_ = std::move(job);
+        run_job();
+    } else {
+        log_(OT_PRETTY_CLASS())(name_)(": job already accepted by another peer")
+            .Flush();
+    }
+}
+
 auto Peer::Imp::process_jobtimeout(Message&& msg) noexcept -> void
 {
-    log_(OT_PRETTY_CLASS())(name_)(": cancelling ")(job_name())(" due to ")(
+    const auto& log = log_;
+    log(OT_PRETTY_CLASS())(name_)(": cancelling ")(job_name())(" due to ")(
         std::chrono::duration_cast<std::chrono::nanoseconds>(job_timeout_))(
         " of inactivity")
         .Flush();
@@ -1234,10 +1260,13 @@ auto Peer::Imp::transition_state_run() noexcept -> void
     pipeline.SubscribeFromThread(api_.Endpoints().BlockchainMempool());
 
     if (network || limited || block_header_capability_) {
-        pipeline.PullFromThread(parent_.Endpoint(Task::Getheaders));
         pipeline.PullFromThread(parent_.Endpoint(Task::BroadcastTransaction));
         pipeline.SubscribeFromThread(
+            network_.Internal().Endpoints().header_oracle_job_ready_);
+        pipeline.SubscribeFromThread(
             network_.Internal().Endpoints().block_cache_job_ready_publish_);
+        pipeline.SubscribeFromThread(
+            network_.Internal().Endpoints().block_fetcher_job_ready_publish_);
         pipeline.SubscribeFromThread(
             api_.Endpoints().BlockchainBlockDownloadQueue());
         pipeline.SubscribeFromThread(block_oracle_.Internal().Endpoint());
@@ -1261,8 +1290,7 @@ auto Peer::Imp::transition_state_run() noexcept -> void
 
     if (bloom) { transmit_request_mempool(); }
 
-    job_ = GetHeadersJob{};
-    run_job();
+    transmit_request_block_headers();
 }
 
 auto Peer::Imp::transition_state_shutdown() noexcept -> void

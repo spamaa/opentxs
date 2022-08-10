@@ -20,6 +20,7 @@
 
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderJob.hpp"
 #include "internal/network/blockchain/Peer.hpp"
 #include "internal/network/blockchain/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
@@ -171,6 +172,7 @@ protected:
     const Dir dir_;
     opentxs::blockchain::database::Peer& database_;
     network::zeromq::socket::Raw& to_block_cache_;
+    network::zeromq::socket::Raw& to_header_oracle_;
 
     static auto print_state(State) noexcept -> std::string_view;
 
@@ -246,9 +248,6 @@ private:
     class UpdateCfilterJob;
     class UpdateGetHeadersJob;
 
-    struct GetHeadersJob {
-    };
-
     friend Actor<Imp, PeerJob>;
     friend RunJob;
     friend UpdateBlockJob;
@@ -261,7 +260,7 @@ private:
         robin_hood::unordered_flat_set<opentxs::blockchain::block::Hash>;
     using Job = std::variant<
         std::monostate,
-        GetHeadersJob,
+        opentxs::blockchain::node::internal::HeaderJob,
         opentxs::blockchain::node::internal::BlockBatch,
         opentxs::blockchain::node::CfheaderJob,
         opentxs::blockchain::node::CfilterJob>;
@@ -335,12 +334,12 @@ private:
     auto process_connect(bool) noexcept -> void;
     auto process_dealerconnected(Message&& msg) noexcept -> void;
     auto process_disconnect(Message&& msg) noexcept -> void;
-    auto process_getheaders(Message&& msg) noexcept -> void;
     auto process_header(Message&& msg) noexcept -> void;
     auto process_jobavailableblock(Message&& msg) noexcept -> void;
     auto process_jobavailableblockbatch(Message&& msg) noexcept -> void;
     auto process_jobavailablecfheaders(Message&& msg) noexcept -> void;
     auto process_jobavailablecfilters(Message&& msg) noexcept -> void;
+    auto process_jobavailablegetheaders(Message&& msg) noexcept -> void;
     auto process_jobtimeout(Message&& msg) noexcept -> void;
     auto process_mempool(Message&& msg) noexcept -> void;
     auto process_needpeers(Message&& msg) noexcept -> void;
@@ -364,6 +363,9 @@ private:
         opentxs::blockchain::block::Hash&& hash) noexcept -> void = 0;
     virtual auto transmit_ping() noexcept -> void = 0;
     virtual auto transmit_request_block_headers() noexcept -> void = 0;
+    virtual auto transmit_request_block_headers(
+        const opentxs::blockchain::node::internal::HeaderJob& job) noexcept
+        -> void = 0;
     virtual auto transmit_request_blocks(
         opentxs::blockchain::node::internal::BlockBatch& job) noexcept
         -> void = 0;
