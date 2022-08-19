@@ -5,7 +5,7 @@
 
 add_subdirectory(asio)
 add_subdirectory(blockchain)
-add_subdirectory(p2p)
+add_subdirectory(otdht)
 add_subdirectory(zeromq)
 
 target_sources(

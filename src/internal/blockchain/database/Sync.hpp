@@ -7,7 +7,7 @@
 
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/util/Container.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
@@ -17,11 +17,11 @@ namespace opentxs  // NOLINT
 // {
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Block;
 class Data;
-}  // namespace p2p
+}  // namespace otdht
 }  // namespace network
 // }  // namespace v1
 }  // namespace opentxs
@@ -33,7 +33,7 @@ class Sync
 {
 public:
     using Height = block::Height;
-    using Message = network::p2p::Data;
+    using Message = network::otdht::Data;
 
     virtual auto SyncTip() const noexcept -> block::Position = 0;
 
@@ -44,7 +44,7 @@ public:
         -> bool = 0;
     virtual auto StoreSync(
         const block::Position& tip,
-        const network::p2p::SyncData& items) noexcept -> bool = 0;
+        const network::otdht::SyncData& items) noexcept -> bool = 0;
 
     virtual ~Sync() = default;
 };

@@ -19,7 +19,7 @@
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/core/Amount.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/BlockchainProfile.hpp"
 #include "opentxs/util/Container.hpp"
@@ -143,7 +143,7 @@ struct Blockchain::Imp : virtual public internal::Blockchain {
         return {};
     }
     auto Hello(alloc::Default) const noexcept
-        -> opentxs::network::p2p::StateData override
+        -> opentxs::network::otdht::StateData override
     {
         return {};
     }

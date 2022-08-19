@@ -13,7 +13,7 @@
 #include <string_view>
 #include <utility>
 
-#include "internal/network/p2p/Factory.hpp"
+#include "internal/network/otdht/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
 #include "ottest/fixtures/blockchain/Common.hpp"
@@ -71,7 +71,7 @@ SyncRequestor::SyncRequestor(
 }
 
 auto SyncRequestor::check(
-    const ot::network::p2p::State& state,
+    const ot::network::otdht::State& state,
     const ot::blockchain::block::Position& pos) const noexcept -> bool
 {
     auto output{true};
@@ -85,7 +85,7 @@ auto SyncRequestor::check(
 }
 
 auto SyncRequestor::check(
-    const ot::network::p2p::State& state,
+    const ot::network::otdht::State& state,
     const std::size_t index) const -> bool
 {
     auto pos = [&] {
@@ -107,7 +107,7 @@ auto SyncRequestor::check(
 }
 
 auto SyncRequestor::check(
-    const ot::network::p2p::Block& block,
+    const ot::network::otdht::Block& block,
     const std::size_t index) const noexcept -> bool
 {
     constexpr auto filterType{ot::blockchain::cfilter::Type::ES};
@@ -153,7 +153,7 @@ auto SyncRequestor::request(
     const ot::blockchain::block::Position& pos) const noexcept -> bool
 {
     return request(opentxs::factory::BlockchainSyncRequest([&] {
-        auto out = ot::network::p2p::StateData{};
+        auto out = ot::network::otdht::StateData{};
         out.emplace_back(test_chain_, pos);
 
         return out;
@@ -161,7 +161,7 @@ auto SyncRequestor::request(
 }
 
 auto SyncRequestor::request(
-    const ot::network::p2p::Base& command) const noexcept -> bool
+    const ot::network::otdht::Base& command) const noexcept -> bool
 {
     try {
         return imp_->socket_->Send([&] {

@@ -27,7 +27,7 @@ struct SyncSubscriber::Imp {
 
     auto check_update(ot::network::zeromq::Message&& in) noexcept -> void
     {
-        namespace bcsync = ot::network::p2p;
+        namespace bcsync = ot::network::otdht;
         const auto base = api_.Factory().BlockchainSyncMessage(in);
 
         try {

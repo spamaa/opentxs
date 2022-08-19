@@ -317,7 +317,7 @@ auto BlockchainImp::GetSyncServers(alloc::Default alloc) const noexcept
 }
 
 auto BlockchainImp::Hello(alloc::Default alloc) const noexcept
-    -> opentxs::network::p2p::StateData
+    -> opentxs::network::otdht::StateData
 {
     auto lock = Lock{lock_};
     auto chains = [&] {
@@ -336,9 +336,9 @@ auto BlockchainImp::Hello(alloc::Default alloc) const noexcept
 auto BlockchainImp::hello(
     const Lock&,
     const Chains& chains,
-    alloc::Default alloc) const noexcept -> opentxs::network::p2p::StateData
+    alloc::Default alloc) const noexcept -> opentxs::network::otdht::StateData
 {
-    auto output = opentxs::network::p2p::StateData{alloc};
+    auto output = opentxs::network::otdht::StateData{alloc};
 
     for (const auto chain : chains) {
         const auto& network = networks_.at(chain);

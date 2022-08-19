@@ -23,8 +23,8 @@
 #include "blockchain/database/common/Database.hpp"
 #include "internal/api/network/Blockchain.hpp"
 #include "internal/blockchain/node/Manager.hpp"
-#include "internal/network/p2p/Client.hpp"
-#include "internal/network/p2p/Server.hpp"
+#include "internal/network/otdht/Client.hpp"
+#include "internal/network/otdht/Server.hpp"
 #include "internal/network/zeromq/Handle.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/util/Mutex.hpp"
@@ -36,7 +36,7 @@
 #include "opentxs/blockchain/crypto/Types.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/core/Amount.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/BlockchainProfile.hpp"
@@ -92,11 +92,11 @@ class Manager;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Client;
 class Server;
-}  // namespace p2p
+}  // namespace otdht
 
 namespace zeromq
 {
@@ -153,7 +153,7 @@ struct BlockchainImp final : public Blockchain::Imp {
         return new_filters_;
     }
     auto Hello(alloc::Default) const noexcept
-        -> opentxs::network::p2p::StateData final;
+        -> opentxs::network::otdht::StateData final;
     auto IsEnabled(const Chain chain) const noexcept -> bool final;
     auto GetChain(const Imp::Chain type) const noexcept(false)
         -> BlockchainHandle final;
@@ -247,8 +247,8 @@ private:
     mutable std::mutex lock_;
     mutable UnallocatedMap<Chain, Config> config_;
     mutable UnallocatedMap<Chain, pNode> networks_;
-    mutable std::optional<opentxs::network::p2p::Client> sync_client_;
-    mutable opentxs::network::p2p::Server sync_server_;
+    mutable std::optional<opentxs::network::otdht::Client> sync_client_;
+    mutable opentxs::network::otdht::Server sync_server_;
     std::promise<void> init_promise_;
     std::shared_future<void> init_;
     std::atomic_bool running_;
@@ -259,7 +259,7 @@ private:
         const Chain type,
         const std::string_view seednode) const noexcept -> bool;
     auto hello(const Lock&, const Chains& chains, alloc::Default alloc)
-        const noexcept -> opentxs::network::p2p::StateData;
+        const noexcept -> opentxs::network::otdht::StateData;
     auto publish_chain_state(Chain type, bool state) const -> void;
     auto start(
         const Lock& lock,

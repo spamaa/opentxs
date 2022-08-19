@@ -38,7 +38,7 @@ extern "C" {
 #include "opentxs/blockchain/Blockchain.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/GCS.hpp"
-#include "opentxs/network/p2p/Block.hpp"
+#include "opentxs/network/otdht/Block.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Log.hpp"
 #include "util/ByteLiterals.hpp"
@@ -125,7 +125,7 @@ struct Sync::Imp final : private util::MappedFileStorage {
         return reorg(chain, height);
     }
 
-    auto Store(const Chain chain, const network::p2p::SyncData& items)
+    auto Store(const Chain chain, const network::otdht::SyncData& items)
         const noexcept -> bool
     {
         if (0 == items.size()) { return true; }
@@ -368,7 +368,7 @@ private:
                 return output;
             }();
             // TODO allocator
-            auto output = network::p2p::SyncData{};
+            auto output = network::otdht::SyncData{};
             const auto header =
                 api_.Factory().DataFromHex(data.genesis_header_hex_);
             const auto filter = [&] {
@@ -452,7 +452,7 @@ auto Sync::Reorg(const Chain chain, const Height height) const noexcept -> bool
     return imp_->Reorg(chain, height);
 }
 
-auto Sync::Store(const Chain chain, const network::p2p::SyncData& items)
+auto Sync::Store(const Chain chain, const network::otdht::SyncData& items)
     const noexcept -> bool
 {
     return imp_->Store(chain, items);

@@ -408,12 +408,12 @@ namespace implementation
 {
 }  // namespace implementation
 
-namespace p2p
+namespace otdht
 {
 namespace client
 {
 }  // namespace client
-}  // namespace p2p
+}  // namespace otdht
 
 namespace zeromq
 {

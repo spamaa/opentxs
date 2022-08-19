@@ -9,8 +9,8 @@
 #include <memory>
 #include <string_view>
 
-#include "opentxs/network/p2p/State.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/State.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/WorkType.hpp"
@@ -72,7 +72,7 @@ public:
     virtual auto FilterUpdate() const noexcept
         -> const opentxs::network::zeromq::socket::Publish& = 0;
     virtual auto Hello(alloc::Default alloc) const noexcept
-        -> opentxs::network::p2p::StateData = 0;
+        -> opentxs::network::otdht::StateData = 0;
     virtual auto IsEnabled(const opentxs::blockchain::Type chain) const noexcept
         -> bool = 0;
     virtual auto Mempool() const noexcept

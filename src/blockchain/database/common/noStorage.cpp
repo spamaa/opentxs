@@ -53,7 +53,7 @@ auto Sync::Reorg(const Chain, const Height) const noexcept -> bool
     return {};
 }
 
-auto Sync::Store(const Chain, const network::p2p::SyncData&) const noexcept
+auto Sync::Store(const Chain, const network::otdht::SyncData&) const noexcept
     -> bool
 {
     return {};

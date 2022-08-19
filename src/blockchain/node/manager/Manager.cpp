@@ -48,8 +48,8 @@
 #include "internal/core/Factory.hpp"
 #include "internal/core/PaymentCode.hpp"
 #include "internal/identity/Nym.hpp"
-#include "internal/network/p2p/Factory.hpp"
-#include "internal/network/p2p/Types.hpp"
+#include "internal/network/otdht/Factory.hpp"
+#include "internal/network/otdht/Types.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/P0330.hpp"
@@ -83,9 +83,9 @@
 #include "opentxs/crypto/Types.hpp"
 #include "opentxs/crypto/key/EllipticCurve.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/network/p2p/Base.hpp"
-#include "opentxs/network/p2p/Data.hpp"
-#include "opentxs/network/p2p/PushTransaction.hpp"
+#include "opentxs/network/otdht/Base.hpp"
+#include "opentxs/network/otdht/Data.hpp"
+#include "opentxs/network/otdht/PushTransaction.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -623,7 +623,7 @@ auto Base::notify_sync_client() const noexcept -> void
     if (have_p2p_requestor_) {
         sync_socket_->Send([this] {
             const auto tip = filters_.FilterTip(filters_.DefaultType());
-            auto msg = MakeWork(network::p2p::Job::Processed);
+            auto msg = MakeWork(network::otdht::Job::Processed);
             msg.AddFrame(tip.height_);
             msg.AddFrame(tip.hash_);
 

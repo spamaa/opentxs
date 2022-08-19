@@ -36,10 +36,10 @@ class GCS;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Data;
-}  // namespace p2p
+}  // namespace otdht
 }  // namespace network
 // }  // namespace v1
 }  // namespace opentxs
@@ -70,7 +70,7 @@ public:
     virtual auto ProcessSyncData(
         const block::Hash& prior,
         const Vector<block::Hash>& hashes,
-        const network::p2p::Data& data) const noexcept -> void = 0;
+        const network::otdht::Data& data) const noexcept -> void = 0;
     virtual auto Tip(const cfilter::Type type) const noexcept
         -> block::Position = 0;
 

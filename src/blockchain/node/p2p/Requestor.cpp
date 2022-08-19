@@ -44,10 +44,10 @@
 #include "opentxs/blockchain/node/FilterOracle.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/blockchain/node/Manager.hpp"
-#include "opentxs/network/p2p/Acknowledgement.hpp"
-#include "opentxs/network/p2p/Base.hpp"
-#include "opentxs/network/p2p/Data.hpp"
-#include "opentxs/network/p2p/State.hpp"
+#include "opentxs/network/otdht/Acknowledgement.hpp"
+#include "opentxs/network/otdht/Base.hpp"
+#include "opentxs/network/otdht/Data.hpp"
+#include "opentxs/network/otdht/State.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -142,7 +142,7 @@ Requestor::Imp::Imp(
 }
 
 auto Requestor::Imp::add_to_queue(
-    const network::p2p::Data& data,
+    const network::otdht::Data& data,
     Message&& msg) noexcept -> void
 {
     const auto& blocks = data.Blocks();
@@ -490,7 +490,7 @@ auto Requestor::Imp::request(const block::Position& position) noexcept -> void
         msg.AddFrame(chain_);
         msg.Internal().AddFrame([&] {
             auto proto = proto::P2PBlockchainChainState{};
-            const auto state = network::p2p::State{chain_, position};
+            const auto state = network::otdht::State{chain_, position};
             state.Serialize(proto);
 
             return proto;
@@ -715,12 +715,12 @@ auto Requestor::Imp::transmit_request(Message&& msg) noexcept -> void
 }
 
 auto Requestor::Imp::update_dht_position(
-    const network::p2p::Data& data) noexcept -> void
+    const network::otdht::Data& data) noexcept -> void
 {
     update_dht_position(data.State());
 }
 auto Requestor::Imp::update_dht_position(
-    const network::p2p::State& state) noexcept -> void
+    const network::otdht::State& state) noexcept -> void
 {
     dht_position_ = state.Position();
     last_dht_position_ = Clock::now();
@@ -751,7 +751,7 @@ auto Requestor::Imp::update_queue_position() noexcept -> void
 }
 
 auto Requestor::Imp::update_queue_position(
-    const network::p2p::Data& data) noexcept -> void
+    const network::otdht::Data& data) noexcept -> void
 {
     const auto& blocks = data.Blocks();
 

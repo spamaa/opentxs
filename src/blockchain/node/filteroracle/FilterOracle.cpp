@@ -45,9 +45,9 @@
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/core/ByteArray.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
-#include "opentxs/network/p2p/Block.hpp"
-#include "opentxs/network/p2p/Data.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Block.hpp"
+#include "opentxs/network/otdht/Data.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/util/BlockchainProfile.hpp"
@@ -84,7 +84,7 @@ struct FilterOracle::SyncClientFilterData {
     using Promise = std::promise<cfilter::Header>;
 
     const block::Hash& block_hash_;
-    const network::p2p::Block& incoming_data_;
+    const network::otdht::Block& incoming_data_;
     cfilter::Hash filter_hash_;
     database::Cfilter::CFilterParams& filter_data_;
     database::Cfilter::CFHeaderParams& header_data_;
@@ -94,7 +94,7 @@ struct FilterOracle::SyncClientFilterData {
 
     SyncClientFilterData(
         const block::Hash& block,
-        const network::p2p::Block& data,
+        const network::otdht::Block& data,
         database::Cfilter::CFilterParams& filter,
         database::Cfilter::CFHeaderParams& header,
         Outstanding& jobCounter,
@@ -566,7 +566,7 @@ auto FilterOracle::ProcessBlock(
 auto FilterOracle::ProcessSyncData(
     const block::Hash& prior,
     const Vector<block::Hash>& hashes,
-    const network::p2p::Data& data) const noexcept -> void
+    const network::otdht::Data& data) const noexcept -> void
 {
     auto filters = Vector<database::Cfilter::CFilterParams>{};
     auto headers = Vector<database::Cfilter::CFHeaderParams>{};

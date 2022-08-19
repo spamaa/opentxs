@@ -22,7 +22,7 @@
 #include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
-#include "internal/network/p2p/Factory.hpp"
+#include "internal/network/otdht/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Signals.hpp"
 #include "opentxs/api/network/Network.hpp"
@@ -40,12 +40,12 @@
 #include "opentxs/blockchain/node/FilterOracle.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/core/ByteArray.hpp"
-#include "opentxs/network/p2p/Base.hpp"
-#include "opentxs/network/p2p/Data.hpp"
-#include "opentxs/network/p2p/MessageType.hpp"
-#include "opentxs/network/p2p/Request.hpp"
-#include "opentxs/network/p2p/State.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Base.hpp"
+#include "opentxs/network/otdht/Data.hpp"
+#include "opentxs/network/otdht/MessageType.hpp"
+#include "opentxs/network/otdht/Request.hpp"
+#include "opentxs/network/otdht/State.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
@@ -140,7 +140,7 @@ auto SyncServer::hello(const Lock&, const block::Position& incoming)
         parent = {height, header_.BestHash(height)};
     }
     const auto needSync = incoming != best;
-    auto state = network::p2p::State{chain_, std::move(best)};
+    auto state = network::otdht::State{chain_, std::move(best)};
 
     return std::make_tuple(needSync, parent, std::move(state));
 }
@@ -265,7 +265,7 @@ auto SyncServer::process_zmq(const Lock& lock) noexcept -> void
 
         return output;
     }();
-    namespace bcsync = network::p2p;
+    namespace bcsync = network::otdht;
     const auto base = api_.Factory().BlockchainSyncMessage(incoming);
 
     if (auto type = base->Type(); type != bcsync::MessageType::sync_request) {
@@ -310,7 +310,7 @@ auto SyncServer::queue_processing(DownloadedData&& data) noexcept -> void
 
     const auto& tip = data.back();
     // TODO allocator
-    auto items = network::p2p::SyncData{};
+    auto items = network::otdht::SyncData{};
     auto previousFilterHeader = api_.Factory().Data();
 
     for (const auto& task : data) {

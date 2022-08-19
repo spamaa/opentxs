@@ -144,9 +144,9 @@ namespace bitcoin
 }  // namespace bitcoin
 }  // namespace blockchain
 
-namespace p2p
+namespace otdht
 {
-}  // namespace p2p
+}  // namespace otdht
 
 namespace zeromq
 {

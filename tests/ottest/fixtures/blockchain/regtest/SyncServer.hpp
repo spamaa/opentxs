@@ -26,7 +26,7 @@ namespace ottest
 class Regtest_fixture_sync_server : public Regtest_fixture_normal
 {
 protected:
-    using MessageType = ot::network::p2p::MessageType;
+    using MessageType = ot::network::otdht::MessageType;
 
     static const User alex_;
     static std::optional<ot::OTServerContract> notary_;
