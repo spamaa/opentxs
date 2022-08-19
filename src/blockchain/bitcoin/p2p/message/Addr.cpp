@@ -23,8 +23,6 @@
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Time.hpp"
 
-// opentxs::blockchain::p2p::bitcoin::message::implementation::Addr::"
-
 namespace opentxs::factory
 {
 auto BitcoinP2PAddr(

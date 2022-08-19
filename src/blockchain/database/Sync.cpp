@@ -85,7 +85,7 @@ auto Sync::SetTip(const block::Position& position) const noexcept -> bool
 
 auto Sync::Store(
     const block::Position& tip,
-    const network::p2p::SyncData& items) const noexcept -> bool
+    const network::otdht::SyncData& items) const noexcept -> bool
 {
     if (false == common_.StoreSync(chain_, items)) {
         LogError()(OT_PRETTY_CLASS())("Failed to store sync data").Flush();

@@ -20,7 +20,7 @@
 #include <thread>
 
 #include "internal/blockchain/node/p2p/Requestor.hpp"
-#include "internal/network/p2p/Types.hpp"
+#include "internal/network/otdht/Types.hpp"
 #include "internal/network/zeromq/Types.hpp"
 #include "internal/util/AsyncConst.hpp"
 #include "internal/util/Timer.hpp"
@@ -59,11 +59,11 @@ class Manager;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Data;
 class State;
-}  // namespace p2p
+}  // namespace otdht
 
 namespace zeromq
 {
@@ -81,7 +81,7 @@ class Message;
 
 namespace opentxs::blockchain::node::p2p
 {
-class Requestor::Imp final : public Actor<Imp, network::p2p::Job>
+class Requestor::Imp final : public Actor<Imp, network::otdht::Job>
 {
 public:
     auto Init(boost::shared_ptr<Imp> me) noexcept -> void
@@ -102,7 +102,7 @@ public:
     ~Imp() final;
 
 private:
-    friend Actor<Imp, network::p2p::Job>;
+    friend Actor<Imp, network::otdht::Job>;
 
     enum class State { init, sync, run };
 
@@ -148,7 +148,7 @@ private:
     auto request_timeout() const noexcept -> std::chrono::seconds;
     auto target_position() const noexcept -> const block::Position&;
 
-    auto add_to_queue(const network::p2p::Data& data, Message&& msg) noexcept
+    auto add_to_queue(const network::otdht::Data& data, Message&& msg) noexcept
         -> void;
     auto check_request_timeout() noexcept -> void;
     auto check_stale_dht() noexcept -> void;
@@ -184,11 +184,13 @@ private:
     auto transmit(Message&& msg, bool request) noexcept -> void;
     auto transmit_push(Message&& msg) noexcept -> void;
     auto transmit_request(Message&& msg) noexcept -> void;
-    auto update_dht_position(const network::p2p::Data& data) noexcept -> void;
-    auto update_dht_position(const network::p2p::State& state) noexcept -> void;
+    auto update_dht_position(const network::otdht::Data& data) noexcept -> void;
+    auto update_dht_position(const network::otdht::State& state) noexcept
+        -> void;
     auto update_incoming() noexcept -> void;
     auto update_queue_position() noexcept -> void;
-    auto update_queue_position(const network::p2p::Data& data) noexcept -> void;
+    auto update_queue_position(const network::otdht::Data& data) noexcept
+        -> void;
     auto work() noexcept -> bool;
 };
 }  // namespace opentxs::blockchain::node::p2p

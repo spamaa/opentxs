@@ -36,8 +36,8 @@
 #include "internal/core/Core.hpp"
 #include "internal/core/contract/Types.hpp"
 #include "internal/identity/Nym.hpp"
-#include "internal/network/p2p/Factory.hpp"
-#include "internal/network/p2p/Types.hpp"
+#include "internal/network/otdht/Factory.hpp"
+#include "internal/network/otdht/Types.hpp"
 #include "internal/network/zeromq/Batch.hpp"
 #include "internal/network/zeromq/Context.hpp"
 #include "internal/network/zeromq/Types.hpp"
@@ -87,13 +87,13 @@
 #include "opentxs/crypto/Parameters.hpp"
 #include "opentxs/identity/IdentityType.hpp"
 #include "opentxs/identity/Nym.hpp"
-#include "opentxs/network/p2p/Base.hpp"
-#include "opentxs/network/p2p/MessageType.hpp"
-#include "opentxs/network/p2p/PublishContract.hpp"
-#include "opentxs/network/p2p/PublishContractReply.hpp"
-#include "opentxs/network/p2p/QueryContract.hpp"
-#include "opentxs/network/p2p/QueryContractReply.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Base.hpp"
+#include "opentxs/network/otdht/MessageType.hpp"
+#include "opentxs/network/otdht/PublishContract.hpp"
+#include "opentxs/network/otdht/PublishContractReply.hpp"
+#include "opentxs/network/otdht/QueryContract.hpp"
+#include "opentxs/network/otdht/QueryContractReply.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/ListenCallback.hpp"
 #include "opentxs/network/zeromq/ZeroMQ.hpp"
@@ -1996,7 +1996,7 @@ auto Wallet::process_p2p(opentxs::network::zeromq::Message&& msg) const noexcept
 
     if (0 == body.size()) { OT_FAIL; }
 
-    using Job = opentxs::network::p2p::Job;
+    using Job = opentxs::network::otdht::Job;
     const auto type = body.at(0).as<Job>();
 
     switch (type) {
@@ -2044,7 +2044,7 @@ auto Wallet::process_p2p_publish_contract(
             throw std::runtime_error{"failed to instantiate message"};
         }
 
-        using Type = opentxs::network::p2p::MessageType;
+        using Type = opentxs::network::otdht::MessageType;
         const auto type = base->Type();
 
         if (Type::publish_contract != type) {
@@ -2113,7 +2113,7 @@ auto Wallet::process_p2p_query_contract(
             throw std::runtime_error{"failed to instantiate message"};
         }
 
-        using Type = opentxs::network::p2p::MessageType;
+        using Type = opentxs::network::otdht::MessageType;
         const auto type = base->Type();
 
         if (Type::contract_query != type) {
@@ -2197,7 +2197,7 @@ auto Wallet::process_p2p_response(
             throw std::runtime_error{"failed to instantiate message"};
         }
 
-        using Type = opentxs::network::p2p::MessageType;
+        using Type = opentxs::network::otdht::MessageType;
         const auto type = base->Type();
 
         switch (type) {

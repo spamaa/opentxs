@@ -21,9 +21,9 @@
 #include "opentxs/api/session/Client.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
-#include "opentxs/network/p2p/Block.hpp"
-#include "opentxs/network/p2p/Data.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Block.hpp"
+#include "opentxs/network/otdht/Data.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "util/LMDB.hpp"
@@ -40,11 +40,11 @@ class Session;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Block;
 class Data;
-}  // namespace p2p
+}  // namespace otdht
 }  // namespace network
 
 namespace storage
@@ -65,13 +65,13 @@ class Sync
 public:
     using Chain = opentxs::blockchain::Type;
     using Height = opentxs::blockchain::block::Height;
-    using Message = opentxs::network::p2p::Data;
+    using Message = opentxs::network::otdht::Data;
 
     auto Load(const Chain chain, const Height height, Message& output)
         const noexcept -> bool;
     // Delete all entries with a height greater than specified
     auto Reorg(const Chain chain, const Height height) const noexcept -> bool;
-    auto Store(const Chain chain, const network::p2p::SyncData& items)
+    auto Store(const Chain chain, const network::otdht::SyncData& items)
         const noexcept -> bool;
     auto Tip(const Chain chain) const noexcept -> Height;
 

@@ -106,10 +106,10 @@ class GCS;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Data;
-}  // namespace p2p
+}  // namespace otdht
 
 namespace zeromq
 {
@@ -178,7 +178,7 @@ public:
     auto ProcessSyncData(
         const block::Hash& prior,
         const Vector<block::Hash>& hashes,
-        const network::p2p::Data& data) const noexcept -> void final;
+        const network::otdht::Data& data) const noexcept -> void final;
     auto Tip(const cfilter::Type type) const noexcept -> block::Position final;
 
     auto Shutdown() noexcept -> void final;

@@ -26,7 +26,7 @@
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/core/String.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
@@ -74,11 +74,11 @@ class Generic;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Block;
 class Data;
-}  // namespace p2p
+}  // namespace otdht
 }  // namespace network
 
 namespace proto
@@ -168,7 +168,7 @@ public:
     auto LoadSync(
         const Chain chain,
         const Height height,
-        opentxs::network::p2p::Data& output) const noexcept -> bool;
+        opentxs::network::otdht::Data& output) const noexcept -> bool;
     auto LoadTransaction(const ReadView txid) const noexcept
         -> std::unique_ptr<bitcoin::block::Transaction>;
     auto LoadTransaction(const ReadView txid, proto::BlockchainTransaction& out)
@@ -193,7 +193,7 @@ public:
         const Vector<CFilterParams>& filters) const noexcept -> bool;
     auto StoreSync(
         const Chain chain,
-        const opentxs::network::p2p::SyncData& items) const noexcept -> bool;
+        const opentxs::network::otdht::SyncData& items) const noexcept -> bool;
     auto StoreTransaction(const bitcoin::block::Transaction& tx) const noexcept
         -> bool;
     auto StoreTransaction(

@@ -10,7 +10,7 @@
 #include <optional>
 
 #include "1_Internal.hpp"  // IWYU pragma: keep
-#include "internal/network/p2p/Factory.hpp"
+#include "internal/network/otdht/Factory.hpp"
 #include "ottest/fixtures/blockchain/Common.hpp"
 #include "ottest/fixtures/blockchain/MinedBlocks.hpp"
 #include "ottest/fixtures/blockchain/SyncRequestor.hpp"

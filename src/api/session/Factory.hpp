@@ -158,10 +158,10 @@ class Nym;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Base;
-}  // namespace p2p
+}  // namespace otdht
 
 namespace zeromq
 {
@@ -389,7 +389,7 @@ public:
         const opentxs::blockchain::p2p::Address::SerializedType& serialized)
         const -> OTBlockchainAddress final;
     auto BlockchainSyncMessage(const opentxs::network::zeromq::Message& in)
-        const noexcept -> std::unique_ptr<opentxs::network::p2p::Base> final;
+        const noexcept -> std::unique_ptr<opentxs::network::otdht::Base> final;
     auto BlockHeader(const proto::BlockchainBlockHeader& serialized) const
         -> BlockHeaderP override
     {

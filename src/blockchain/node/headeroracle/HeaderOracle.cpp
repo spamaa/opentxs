@@ -28,7 +28,7 @@
 #include "opentxs/blockchain/block/Header.hpp"
 #include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
-#include "opentxs/network/p2p/Data.hpp"
+#include "opentxs/network/otdht/Data.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
@@ -269,7 +269,7 @@ auto HeaderOracle::LoadHeader(const block::Hash& hash) const noexcept
 auto HeaderOracle::ProcessSyncData(
     block::Hash& prior,
     Vector<block::Hash>& hashes,
-    const network::p2p::Data& data) noexcept -> std::size_t
+    const network::otdht::Data& data) noexcept -> std::size_t
 {
     return shared_->ProcessSyncData(prior, hashes, data);
 }

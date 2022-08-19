@@ -53,7 +53,7 @@
 #include "opentxs/core/Amount.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/crypto/Types.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
@@ -122,10 +122,10 @@ class Nym;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Block;
-}  // namespace p2p
+}  // namespace otdht
 }  // namespace network
 
 namespace proto
@@ -522,7 +522,7 @@ public:
     }
     auto StoreSync(
         const block::Position& tip,
-        const network::p2p::SyncData& items) noexcept -> bool final
+        const network::otdht::SyncData& items) noexcept -> bool final
     {
         return sync_.Store(tip, items);
     }

@@ -71,10 +71,10 @@ class Manager;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Data;
-}  // namespace p2p
+}  // namespace otdht
 }  // namespace network
 // }  // namespace v1
 }  // namespace opentxs
@@ -174,7 +174,7 @@ public:
     auto ProcessSyncData(
         block::Hash& prior,
         Vector<block::Hash>& hashes,
-        const network::p2p::Data& data) noexcept -> std::size_t;
+        const network::otdht::Data& data) noexcept -> std::size_t;
     auto Start(
         std::shared_ptr<const api::Session> api,
         std::shared_ptr<const node::Manager> node) noexcept -> void;

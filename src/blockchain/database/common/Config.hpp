@@ -19,8 +19,8 @@
 #include "opentxs/Version.hpp"
 #include "opentxs/api/session/Client.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
-#include "opentxs/network/p2p/Block.hpp"
-#include "opentxs/network/p2p/Data.hpp"
+#include "opentxs/network/otdht/Block.hpp"
+#include "opentxs/network/otdht/Data.hpp"
 #include "opentxs/network/zeromq/socket/Publish.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Bytes.hpp"
@@ -39,11 +39,11 @@ class Session;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Block;
 class Data;
-}  // namespace p2p
+}  // namespace otdht
 }  // namespace network
 
 namespace storage

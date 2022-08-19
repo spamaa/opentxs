@@ -76,10 +76,10 @@ class GCS;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Block;
-}  // namespace p2p
+}  // namespace otdht
 
 namespace zeromq
 {

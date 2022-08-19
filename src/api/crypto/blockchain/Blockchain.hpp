@@ -91,10 +91,10 @@ class Nym;
 
 namespace network
 {
-namespace p2p
+namespace otdht
 {
 class Data;
-}  // namespace p2p
+}  // namespace otdht
 
 namespace zeromq
 {

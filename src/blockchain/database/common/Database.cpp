@@ -480,7 +480,7 @@ auto Database::LookupContact(const Data& pubkeyHash) const noexcept
 auto Database::LoadSync(
     const Chain chain,
     const Height height,
-    opentxs::network::p2p::Data& output) const noexcept -> bool
+    opentxs::network::otdht::Data& output) const noexcept -> bool
 {
     return imp_.sync_.Load(chain, height, output);
 }
@@ -564,8 +564,9 @@ auto Database::StoreFilters(
     return imp_.filters_.StoreFilters(type, headers, filters);
 }
 
-auto Database::StoreSync(const Chain chain, const network::p2p::SyncData& items)
-    const noexcept -> bool
+auto Database::StoreSync(
+    const Chain chain,
+    const network::otdht::SyncData& items) const noexcept -> bool
 {
     return imp_.sync_.Store(chain, items);
 }

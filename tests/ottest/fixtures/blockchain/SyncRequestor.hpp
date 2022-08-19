@@ -26,18 +26,19 @@ struct SyncRequestor {
     std::atomic_int expected_;
 
     auto check(
-        const ot::network::p2p::State& state,
+        const ot::network::otdht::State& state,
         const ot::blockchain::block::Position& pos) const noexcept -> bool;
-    auto check(const ot::network::p2p::State& state, const std::size_t index)
+    auto check(const ot::network::otdht::State& state, const std::size_t index)
         const -> bool;
-    auto check(const ot::network::p2p::Block& block, const std::size_t index)
+    auto check(const ot::network::otdht::Block& block, const std::size_t index)
         const noexcept -> bool;
 
     auto get(const std::size_t index) const
         -> const ot::network::zeromq::Message&;
     auto request(const ot::blockchain::block::Position& pos) const noexcept
         -> bool;
-    auto request(const ot::network::p2p::Base& command) const noexcept -> bool;
+    auto request(const ot::network::otdht::Base& command) const noexcept
+        -> bool;
     auto wait(const bool hard = true) noexcept -> bool;
 
     SyncRequestor(

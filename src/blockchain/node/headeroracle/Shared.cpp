@@ -45,10 +45,10 @@
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/node/HeaderOracle.hpp"
 #include "opentxs/core/FixedByteArray.hpp"
-#include "opentxs/network/p2p/Block.hpp"
-#include "opentxs/network/p2p/Data.hpp"
-#include "opentxs/network/p2p/State.hpp"
-#include "opentxs/network/p2p/Types.hpp"
+#include "opentxs/network/otdht/Block.hpp"
+#include "opentxs/network/otdht/Data.hpp"
+#include "opentxs/network/otdht/State.hpp"
+#include "opentxs/network/otdht/Types.hpp"
 #include "opentxs/util/Allocator.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
@@ -1118,7 +1118,7 @@ auto HeaderOracle::Shared::LoadHeader(const block::Hash& hash) const noexcept
 auto HeaderOracle::Shared::ProcessSyncData(
     block::Hash& prior,
     Vector<block::Hash>& hashes,
-    const network::p2p::Data& in) noexcept -> std::size_t
+    const network::otdht::Data& in) noexcept -> std::size_t
 {
     auto handle = data_.lock();
     auto& data = *handle;
