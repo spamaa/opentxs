@@ -46,6 +46,7 @@ namespace node
 namespace internal
 {
 class BlockOracle;
+class HeaderOracle;
 class Mempool;
 class PeerManager;
 struct Config;
@@ -53,7 +54,6 @@ struct Config;
 
 class BlockOracle;
 class FilterOracle;
-class HeaderOracle;
 class Manager;
 class Wallet;
 struct Endpoints;
@@ -98,7 +98,6 @@ auto BlockchainPeerManager(
     -> std::unique_ptr<blockchain::node::internal::PeerManager>;
 auto HeaderOracle(
     const api::Session& api,
-    blockchain::database::Header& database,
-    const blockchain::Type type) noexcept
-    -> std::unique_ptr<blockchain::node::HeaderOracle>;
+    const blockchain::node::Manager& node) noexcept
+    -> blockchain::node::internal::HeaderOracle;
 }  // namespace opentxs::factory

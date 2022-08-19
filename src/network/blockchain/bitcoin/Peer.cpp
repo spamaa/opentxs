@@ -32,13 +32,14 @@
 #include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/database/Peer.hpp"
 #include "internal/blockchain/node/Config.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/blockchain/node/Mempool.hpp"
 #include "internal/blockchain/node/PeerManager.hpp"
 #include "internal/blockchain/node/Types.hpp"
 #include "internal/blockchain/node/blockoracle/BlockBatch.hpp"
 #include "internal/blockchain/node/blockoracle/Types.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
+#include "internal/blockchain/node/headeroracle/Types.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #include "internal/blockchain/p2p/bitcoin/Factory.hpp"
 #include "internal/blockchain/p2p/bitcoin/message/Message.hpp"
@@ -64,6 +65,7 @@
 #include "opentxs/blockchain/bitcoin/cfilter/Header.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"
 #include "opentxs/blockchain/block/Header.hpp"
+#include "opentxs/blockchain/block/Position.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
 #include "opentxs/blockchain/node/BlockOracle.hpp"
 #include "opentxs/blockchain/node/FilterOracle.hpp"
@@ -562,7 +564,8 @@ auto Peer::process_protocol_cfheaders_verify(
     opentxs::blockchain::p2p::bitcoin::message::internal::Cfheaders&
         message) noexcept(false) -> void
 {
-    log_(OT_PRETTY_CLASS())("Received checkpoint cfheader message from ")(name_)
+    log_(OT_PRETTY_CLASS())(name_)(
+        ": Received checkpoint cfheader message from ")(name_)
         .Flush();
     auto postcondition = ScopeGuard{[this] {
         if (false == verification_.got_cfheader_) {
@@ -596,7 +599,8 @@ auto Peer::process_protocol_cfheaders_verify(
         return;
     }
 
-    log_(OT_PRETTY_CLASS())("Cfheader checkpoint validated for ")(name_)
+    log_(OT_PRETTY_CLASS())(name_)(": Cfheader checkpoint validated for ")(
+        name_)
         .Flush();
     verification_.got_cfheader_ = true;
     set_cfilter_capability(true);
@@ -1077,8 +1081,8 @@ auto Peer::process_protocol_headers_verify(
     opentxs::blockchain::p2p::bitcoin::message::internal::Headers&
         message) noexcept(false) -> void
 {
-    log_(OT_PRETTY_CLASS())("Received checkpoint block header message from ")(
-        name_)
+    log_(OT_PRETTY_CLASS())(name_)(
+        ": Received checkpoint block header message from ")(name_)
         .Flush();
     auto postcondition = ScopeGuard{[this] {
         if (false == verification_.got_block_header_) {
@@ -1110,7 +1114,8 @@ auto Peer::process_protocol_headers_verify(
         return;
     }
 
-    log_(OT_PRETTY_CLASS())("Block header checkpoint validated for ")(name_)
+    log_(OT_PRETTY_CLASS())(name_)(": Block header checkpoint validated for ")(
+        name_)
         .Flush();
     verification_.got_block_header_ = true;
     set_block_header_capability(true);
@@ -1124,26 +1129,25 @@ auto Peer::process_protocol_headers_run(
     const auto size = message.size();
 
     if (0_uz < size) {
-        // TODO use header oracle's allocator
-        auto headers =
-            Vector<std::unique_ptr<opentxs::blockchain::block::Header>>{
-                get_allocator()};
-        headers.reserve(message.size());
-        auto work = [&] {
-            using Task = opentxs::blockchain::node::ManagerJobs;
-            auto out = MakeWork(Task::SubmitBlockHeader);
+        auto headers = [&] {
+            // TODO use header oracle's allocator
+            auto out =
+                Vector<std::unique_ptr<opentxs::blockchain::block::Header>>{
+                    get_allocator()};
+            out.reserve(message.size());
 
             for (const auto& header : message) {
-                header.Serialize(out.AppendBytes(), false);
-                headers.emplace_back(header.clone());
+                const auto& ptr = out.emplace_back(header.clone());
+
+                OT_ASSERT(ptr);
             }
 
             return out;
         }();
+        const auto newestID = headers.back()->Hash();
         auto& internal =
             const_cast<opentxs::blockchain::node::internal::HeaderOracle&>(
                 header_oracle_.Internal());
-        const auto newestID = headers.back()->Hash();
 
         if (internal.AddHeaders(headers)) {
             const auto pHeader = header_oracle_.LoadHeader(newestID);
@@ -1153,9 +1157,6 @@ auto Peer::process_protocol_headers_run(
             const auto& header = *pHeader;
             update_remote_position(header.Position());
         }
-
-        // TODO make this unnecessary
-        network_.Internal().Track(std::move(work));
     }
 
     update_get_headers_job();
@@ -1185,50 +1186,19 @@ auto Peer::process_protocol_inv(
         switch (inv.type_) {
             case Kind::MsgBlock:
             case Kind::MsgWitnessBlock: {
-                auto block = opentxs::blockchain::block::Hash{hash.Bytes()};
+                to_header_oracle_.SendDeferred(
+                    [&] {
+                        using Work =
+                            opentxs::blockchain::node::headeroracle::Job;
+                        auto out = MakeWork(Work::submit_block_hash);
+                        out.AddFrame(hash);
 
-                switch (config_.profile_) {
-                    case BlockchainProfile::mobile:
-                    case BlockchainProfile::desktop:
-                    case BlockchainProfile::desktop_native: {
-                        // TODO header oracle needs Exists() function
-                        const auto h = header_oracle_.LoadHeader(block);
-
-                        if (h) {
-                            log_(OT_PRETTY_CLASS())(name_)(
-                                ": header for block ")
-                                .asHex(block)(" already downloaded")
-                                .Flush();
-                        } else {
-                            log_(OT_PRETTY_CLASS())(name_)(
-                                ": downloading header for block ")
-                                .asHex(block)
-                                .Flush();
-                            transmit_protocol_getheaders(block);
-                        }
-                    } break;
-                    case BlockchainProfile::server: {
-                        // TODO block oracle needs Exists() function
-                        const auto b = block_oracle_.LoadBitcoin(block);
-
-                        if (IsReady(b)) {
-                            log_(OT_PRETTY_CLASS())(name_)(": block ")
-                                .asHex(block)(" already downloaded")
-                                .Flush();
-                        } else {
-                            log_(OT_PRETTY_CLASS())(name_)(
-                                ": downloading block ")
-                                .asHex(block)
-                                .Flush();
-                            transmit_protocol_getdata(Inv{inv.type_, block});
-                        }
-                    } break;
-                    default: {
-                        OT_FAIL;
-                    }
-                }
-
-                add_known_block(std::move(block));
+                        return out;
+                    }(),
+                    __FILE__,
+                    __LINE__);
+                using Hash = opentxs::blockchain::block::Hash;
+                add_known_block(Hash{hash.Bytes()});
             } break;
             case Kind::MsgTx:
             case Kind::MsgWitnessTx: {
@@ -1416,7 +1386,16 @@ auto Peer::process_protocol_version(
     const auto pMessage = instantiate<Type>(
         std::move(header), protocol_, payload.data(), payload.size());
     const auto& message = *pMessage;
-    network_.Internal().UpdateHeight(message.Height());
+    to_header_oracle_.SendDeferred(
+        [&] {
+            using Work = opentxs::blockchain::node::headeroracle::Job;
+            auto out = MakeWork(Work::update_remote_height);
+            out.AddFrame(message.Height());
+
+            return out;
+        }(),
+        __FILE__,
+        __LINE__);
     protocol_ = std::min(protocol_, message.ProtocolVersion());
     update_address(message.RemoteServices());
     transmit_protocol_verack();
@@ -1627,6 +1606,15 @@ auto Peer::transmit_protocol_getheaders(
     transmit_protocol<Type>(protocol_, std::move(history), stop);
 }
 
+auto Peer::transmit_protocol_getheaders(
+    const Vector<opentxs::blockchain::block::Hash>& history) noexcept -> void
+{
+    static const auto stop = opentxs::blockchain::block::Hash{};
+
+    transmit_protocol_getheaders(
+        Vector<opentxs::blockchain::block::Hash>{history}, stop);
+}
+
 auto Peer::transmit_protocol_headers(
     UnallocatedVector<
         std::unique_ptr<opentxs::blockchain::bitcoin::block::Header>>&&
@@ -1710,13 +1698,19 @@ auto Peer::transmit_protocol_version() noexcept -> void
         connection.port(),
         nonce_,
         user_agent_,
-        network_.GetHeight(),
+        header_oracle_.BestChain().height_,
         relay_);
 }
 
 auto Peer::transmit_request_block_headers() noexcept -> void
 {
     transmit_protocol_getheaders();
+}
+
+auto Peer::transmit_request_block_headers(
+    const opentxs::blockchain::node::internal::HeaderJob& job) noexcept -> void
+{
+    transmit_protocol_getheaders(job.Recent());
 }
 
 auto Peer::transmit_request_blocks(

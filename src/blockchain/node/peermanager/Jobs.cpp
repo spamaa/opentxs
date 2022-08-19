@@ -28,16 +28,13 @@ namespace opentxs::blockchain::node::implementation
 {
 PeerManager::Jobs::Jobs(const api::Session& api) noexcept
     : zmq_(api.Network().ZeroMQ())
-    , getheaders_(zmq_.PushSocket(zmq::socket::Direction::Bind))
     , getcfheaders_(zmq_.PublishSocket())
     , getcfilters_(zmq_.PublishSocket())
-    , getblocks_(zmq_.PublishSocket())
     , heartbeat_(zmq_.PublishSocket())
     , getblock_(zmq_.PushSocket(zmq::socket::Direction::Bind))
     , broadcast_transaction_(zmq_.PushSocket(zmq::socket::Direction::Bind))
     , endpoint_map_([&] {
         auto map = EndpointMap{};
-        listen(map, PeerManagerJobs::Getheaders, getheaders_);
         listen(map, PeerManagerJobs::JobAvailableCfheaders, getcfheaders_);
         listen(map, PeerManagerJobs::JobAvailableCfilters, getcfilters_);
         listen(map, PeerManagerJobs::Heartbeat, heartbeat_);
@@ -47,9 +44,8 @@ PeerManager::Jobs::Jobs(const api::Session& api) noexcept
         return map;
     }())
     , socket_map_({
-          {PeerManagerJobs::Getheaders, &getheaders_.get()},
           {PeerManagerJobs::JobAvailableCfheaders, &getcfheaders_.get()},
-          {PeerManagerJobs::JobAvailableCfilters, &getblocks_.get()},
+          {PeerManagerJobs::JobAvailableCfilters, &getcfilters_.get()},
           {PeerManagerJobs::Heartbeat, &heartbeat_.get()},
           {PeerManagerJobs::BroadcastTransaction,
            &broadcast_transaction_.get()},

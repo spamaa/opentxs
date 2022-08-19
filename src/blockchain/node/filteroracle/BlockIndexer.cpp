@@ -242,6 +242,7 @@ auto BlockIndexer::Imp::do_startup() noexcept -> bool
     const auto cfilterTip = db_.FilterTip(filter_type_);
     find_best_position(std::min(headerTip, cfilterTip));
     update_position(headerTip, cfilterTip, current_position_);
+    do_work();
 
     return false;
 }

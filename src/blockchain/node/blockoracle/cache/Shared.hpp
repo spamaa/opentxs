@@ -145,6 +145,8 @@ public:
         opentxs::network::zeromq::socket::Raw block_available_;
         opentxs::network::zeromq::socket::Raw cache_size_publisher_;
         opentxs::network::zeromq::socket::Raw job_ready_;
+        opentxs::network::zeromq::socket::Raw to_header_oracle_;
+        opentxs::network::zeromq::socket::Raw to_block_fetcher_;
         mutable opentxs::network::zeromq::socket::Raw to_actor_;
         Pending pending_;
         RequestQueue queue_;

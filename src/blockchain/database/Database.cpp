@@ -27,11 +27,11 @@ auto BlockchainDatabase(
     const blockchain::database::common::Database& common,
     const blockchain::Type chain,
     const blockchain::cfilter::Type filter) noexcept
-    -> std::unique_ptr<blockchain::database::Database>
+    -> std::shared_ptr<blockchain::database::Database>
 {
     using ReturnType = blockchain::implementation::Database;
 
-    return std::make_unique<ReturnType>(api, network, common, chain, filter);
+    return std::make_shared<ReturnType>(api, network, common, chain, filter);
 }
 }  // namespace opentxs::factory
 

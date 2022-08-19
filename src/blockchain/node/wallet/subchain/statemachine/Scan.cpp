@@ -101,7 +101,7 @@ auto Scan::Imp::current() const noexcept -> const block::Position&
 
 auto Scan::Imp::do_reorg(
     const node::HeaderOracle& oracle,
-    const Lock& oracleLock,
+    const node::internal::HeaderOraclePrivate& data,
     Reorg::Params& params) noexcept -> bool
 {
     if (false == parent_.need_reorg_) { return true; }
@@ -122,7 +122,7 @@ auto Scan::Imp::do_reorg(
         filter_tip_ = position;
     }
 
-    return Job::do_reorg(oracle, oracleLock, params);
+    return Job::do_reorg(oracle, data, params);
 }
 
 auto Scan::Imp::do_startup_internal() noexcept -> void

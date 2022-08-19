@@ -8,13 +8,9 @@
 #include "blockchain/bitcoin/node/Manager.hpp"  // IWYU pragma: associated
 
 #include <BlockchainBlockHeader.pb.h>  // IWYU pragma: keep
+#include <memory>
 
-#include "Proto.tpp"
-#include "internal/blockchain/bitcoin/block/Factory.hpp"
-#include "internal/blockchain/block/Header.hpp"
 #include "internal/blockchain/node/Factory.hpp"
-#include "opentxs/blockchain/bitcoin/block/Header.hpp"
-#include "opentxs/blockchain/block/Header.hpp"
 
 namespace opentxs::factory
 {
@@ -44,15 +40,6 @@ Bitcoin::Bitcoin(
     : ot_super(api, type, config, seednode, syncEndpoint)
 {
     init();
-}
-
-auto Bitcoin::instantiate_header(const ReadView payload) const noexcept
-    -> std::unique_ptr<block::Header>
-{
-    using Type = block::internal::Header::SerializedType;
-
-    return std::unique_ptr<block::Header>{
-        factory::BitcoinBlockHeader(api_, proto::Factory<Type>(payload))};
 }
 
 Bitcoin::~Bitcoin() { Shutdown(); }

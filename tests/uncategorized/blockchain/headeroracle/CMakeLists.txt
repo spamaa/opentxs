@@ -48,6 +48,10 @@ add_opentx_test(
 
 if(NOT ANDROID)
   add_opentx_test(ottest-blockchain-headeroracle-random Test_random.cpp)
+  # TODO
+  set_tests_properties(
+    ottest-blockchain-headeroracle-random PROPERTIES DISABLED TRUE
+  )
 endif()
 
 add_opentx_test(
@@ -69,4 +73,70 @@ add_opentx_test(
 add_opentx_test(
   ottest-blockchain-headeroracle-test_block_serialization
   Test_test_block_serialization.cpp
+)
+
+# TODO
+set_tests_properties(
+  ottest-blockchain-headeroracle-add_checkpoint_already_in_best_chain
+  PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-add_checkpoint_disconnected PROPERTIES DISABLED
+                                                                        TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-basic_reorg PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-basic_reorg-batch PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-basic_sequence PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-basic_sequence-batch PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-bitcoin PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-bitcoin-cash PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-checkpoint_prevents_reorg PROPERTIES DISABLED
+                                                                      TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-checkpoint_prevents_reorg-batch
+  PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-checkpoint_prevents_update PROPERTIES DISABLED
+                                                                       TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-checkpoint_prevents_update-batch
+  PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-delete_checkpoint PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-receive_headers_out_of_order
+  PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-receive_headers_out_of_order-batch
+  PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-reorg_to_checkpoint PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-reorg_to_checkpoint_descendent
+  PROPERTIES DISABLED TRUE
+)
+set_tests_properties(
+  ottest-blockchain-headeroracle-test_block_serialization PROPERTIES DISABLED
+                                                                     TRUE
 )

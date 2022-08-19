@@ -49,5 +49,5 @@ auto BlockchainDatabase(
     const blockchain::database::common::Database& db,
     const blockchain::Type chain,
     const blockchain::cfilter::Type filter) noexcept
-    -> std::unique_ptr<blockchain::database::Database>;
+    -> std::shared_ptr<blockchain::database::Database>;
 }  // namespace opentxs::factory

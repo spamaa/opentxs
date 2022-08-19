@@ -17,7 +17,7 @@
 #include "opentxs/util/Allocated.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Time.hpp"
-#include "util/ScopeGuard.hpp"
+#include "opentxs/util/Types.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -47,7 +47,6 @@ public:
     const download::JobID id_;
     const Vector<block::Hash> hashes_;
     const Time start_;
-    const std::shared_ptr<const ScopeGuard> finish_;
 
     auto get_allocator() const noexcept -> allocator_type final
     {
@@ -61,7 +60,7 @@ public:
     Imp(download::JobID id,
         Vector<block::Hash>&& hashes,
         DownloadCallback download,
-        std::shared_ptr<const ScopeGuard>&& finish,
+        SimpleCallback&& finish,
         allocator_type alloc) noexcept;
     Imp(allocator_type alloc = {}) noexcept;
 
@@ -69,6 +68,7 @@ public:
 
 private:
     const DownloadCallback callback_;
+    const SimpleCallback finish_;
     Time last_;
     std::size_t submitted_;
 };

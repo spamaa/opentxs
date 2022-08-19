@@ -25,8 +25,8 @@ auto Peer::Imp::UpdateBlockJob::operator()(std::monostate& job) noexcept
     return {false, false};
 }
 
-auto Peer::Imp::UpdateBlockJob::operator()(GetHeadersJob& job) noexcept
-    -> JobUpdate
+auto Peer::Imp::UpdateBlockJob::operator()(
+    opentxs::blockchain::node::internal::HeaderJob& job) noexcept -> JobUpdate
 {
     return {false, false};
 }

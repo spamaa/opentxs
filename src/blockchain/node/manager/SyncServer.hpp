@@ -20,8 +20,8 @@
 
 #include "blockchain/DownloadManager.hpp"
 #include "blockchain/DownloadTask.hpp"
-#include "blockchain/node/manager/Manager.hpp"
 #include "core/Worker.hpp"
+#include "internal/blockchain/node/Types.hpp"
 #include "internal/util/Mutex.hpp"
 #include "network/zeromq/socket/Socket.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -122,7 +122,7 @@ private:
 
     using Socket = std::unique_ptr<void, decltype(&::zmq_close)>;
     using OTSocket = network::zeromq::socket::implementation::Socket;
-    using Work = node::implementation::Base::Work;
+    using Work = SyncServerJobs;
 
     database::Sync& db_;
     const node::HeaderOracle& header_;
@@ -146,8 +146,8 @@ private:
         -> void;
 
     auto download() noexcept -> void;
-    auto pipeline(const zmq::Message& in) noexcept -> void;
-    auto process_position(const zmq::Message& in) noexcept -> void;
+    auto pipeline(const network::zeromq::Message& in) noexcept -> void;
+    auto process_position(const network::zeromq::Message& in) noexcept -> void;
     auto process_position(const Position& pos) noexcept -> void;
     auto process_zmq(const Lock& lock) noexcept -> void;
     auto queue_processing(DownloadedData&& data) noexcept -> void;

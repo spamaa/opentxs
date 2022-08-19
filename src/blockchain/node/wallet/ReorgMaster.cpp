@@ -18,8 +18,7 @@
 #include <utility>
 
 #include "blockchain/node/wallet/ReorgSlave.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
-#include "internal/blockchain/node/Types.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "internal/blockchain/node/wallet/ReorgSlave.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"

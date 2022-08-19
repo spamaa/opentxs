@@ -12,7 +12,6 @@
 
 #include "blockchain/database/wallet/Types.hpp"
 #include "internal/blockchain/database/Types.hpp"
-#include "internal/util/Mutex.hpp"
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 #include "opentxs/blockchain/block/Types.hpp"
@@ -42,6 +41,11 @@ class Position;
 
 namespace node
 {
+namespace internal
+{
+struct HeaderOraclePrivate;
+}  // namespace internal
+
 class HeaderOracle;
 }  // namespace node
 }  // namespace blockchain
@@ -73,7 +77,7 @@ public:
     auto GetPatterns(const SubchainIndex& subchain, alloc::Default alloc)
         const noexcept -> Patterns;
     auto Reorg(
-        const Lock& headerOracleLock,
+        const node::internal::HeaderOraclePrivate& data,
         MDB_txn* tx,
         const node::HeaderOracle& headers,
         const SubchainIndex& subchain,

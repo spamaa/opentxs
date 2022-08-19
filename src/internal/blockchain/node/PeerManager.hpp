@@ -77,7 +77,6 @@ public:
         -> opentxs::network::asio::Socket = 0;
     virtual auto Nonce() const noexcept
         -> const blockchain::p2p::bitcoin::Nonce& = 0;
-    virtual auto RequestHeaders() const noexcept -> bool = 0;
     virtual auto VerifyPeer(const int id, const UnallocatedCString& address)
         const noexcept -> void = 0;
 

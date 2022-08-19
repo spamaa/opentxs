@@ -244,7 +244,7 @@ auto Account::Imp::check_pc(const crypto::PaymentCode& subaccount) noexcept
 
 auto Account::Imp::do_reorg(
     const node::HeaderOracle& oracle,
-    const Lock& oracleLock,
+    const node::internal::HeaderOraclePrivate& data,
     Reorg::Params& params) noexcept -> bool
 {
     // NOTE no action necessary

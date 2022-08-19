@@ -55,14 +55,13 @@ public:
     auto ConnectionIDPull() const noexcept -> std::size_t;
     auto ConnectionIDSubscribe() const noexcept -> std::size_t;
     auto get_allocator() const noexcept -> alloc::Default final;
-    OPENTXS_NO_EXPORT auto Internal() const noexcept
-        -> const internal::Pipeline&;
+    auto Internal() const noexcept -> const internal::Pipeline&;
     auto PullFrom(const std::string_view endpoint) const noexcept -> bool;
     auto Push(Message&& msg) const noexcept -> bool;
     auto Send(Message&& msg) const noexcept -> bool;
     auto SubscribeTo(const std::string_view endpoint) const noexcept -> bool;
 
-    OPENTXS_NO_EXPORT auto Internal() noexcept -> internal::Pipeline&;
+    auto Internal() noexcept -> internal::Pipeline&;
 
     OPENTXS_NO_EXPORT Pipeline(Imp* imp) noexcept;
     Pipeline() = delete;

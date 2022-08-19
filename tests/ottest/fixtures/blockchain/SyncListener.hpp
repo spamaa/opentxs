@@ -8,26 +8,27 @@
 #include <opentxs/opentxs.hpp>
 #include <future>
 #include <memory>
+#include <string_view>
 
 #include "ottest/Basic.hpp"
 
 namespace ottest
 {
-class WalletListener
+class SyncListener
 {
 public:
+    class Imp;
+
     using Height = ot::blockchain::block::Height;
     using Future = std::future<Height>;
 
     auto GetFuture(const Height height) noexcept -> Future;
 
-    WalletListener(const ot::api::Session& api) noexcept;
+    SyncListener(const ot::api::Session& api, std::string_view name) noexcept;
 
-    ~WalletListener();
+    ~SyncListener();
 
 private:
-    struct Imp;
-
-    std::unique_ptr<Imp> imp_;
+    std::shared_ptr<Imp> imp_;
 };
 }  // namespace ottest

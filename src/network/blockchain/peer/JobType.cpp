@@ -15,7 +15,8 @@ auto Peer::Imp::JobType::operator()(const std::monostate&) const noexcept
     return "null job"sv;
 }
 
-auto Peer::Imp::JobType::operator()(const GetHeadersJob&) const noexcept
+auto Peer::Imp::JobType::operator()(
+    const opentxs::blockchain::node::internal::HeaderJob&) const noexcept
     -> std::string_view
 {
     return "headers job"sv;

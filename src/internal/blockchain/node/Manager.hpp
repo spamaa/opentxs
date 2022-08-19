@@ -104,18 +104,6 @@ public:
     virtual auto PeerManager() const noexcept
         -> const internal::PeerManager& = 0;
     virtual auto ShuttingDown() const noexcept -> bool = 0;
-    // NOTE workaround to prevent compiler from reordering instructions in a way
-    // that causes shutdown use-after-free crashes. This can be removed
-    // eventually once all classes are converted to Actor and hold shared
-    // pointers instead of references to parent and sibling objects.
-    virtual auto Submit(network::zeromq::Message&& work) const noexcept
-        -> void = 0;
-    virtual auto Track(network::zeromq::Message&& work) const noexcept
-        -> std::future<void> = 0;
-    virtual auto UpdateHeight(const block::Height height) const noexcept
-        -> void = 0;
-    virtual auto UpdateLocalHeight(
-        const block::Position position) const noexcept -> void = 0;
 
     virtual auto Shutdown() noexcept -> std::shared_future<void> = 0;
     virtual auto Start(std::shared_ptr<const node::Manager>) noexcept

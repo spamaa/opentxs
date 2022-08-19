@@ -14,7 +14,9 @@ auto Peer::Imp::HasJob::operator()(const std::monostate&) const noexcept -> bool
     return false;
 }
 
-auto Peer::Imp::HasJob::operator()(const GetHeadersJob&) const noexcept -> bool
+auto Peer::Imp::HasJob::operator()(
+    const opentxs::blockchain::node::internal::HeaderJob&) const noexcept
+    -> bool
 {
     return true;
 }

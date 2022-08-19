@@ -8,7 +8,6 @@
 #include "blockchain/node/blockoracle/BlockBatch.hpp"  // IWYU pragma: associated
 
 #include <algorithm>
-#include <memory>
 #include <utility>
 
 #include "internal/blockchain/node/Job.hpp"
@@ -22,16 +21,26 @@ BlockBatch::Imp::Imp(
     download::JobID id,
     Vector<block::Hash>&& hashes,
     DownloadCallback download,
-    std::shared_ptr<const ScopeGuard>&& finish,
+    SimpleCallback&& finish,
     allocator_type alloc) noexcept
     : id_(id)
     , hashes_(std::move(hashes))
     , start_(Clock::now())
-    , finish_(std::move(finish))
     , callback_(std::move(download))
+    , finish_(std::move(finish))
     , last_(start_)
     , submitted_(0)
 {
+    if (hashes_.empty()) {
+        OT_ASSERT(-1 == id_);
+        OT_ASSERT(false == finish_.operator bool());
+        OT_ASSERT(false == callback_.operator bool());
+    }
+
+    if (-1 != id_) {
+        OT_ASSERT(finish_);
+        OT_ASSERT(callback_);
+    }
 }
 
 BlockBatch::Imp::Imp(allocator_type alloc) noexcept
@@ -59,7 +68,10 @@ auto BlockBatch::Imp::Submit(const std::string_view block) noexcept -> void
     last_ = Clock::now();
 }
 
-BlockBatch::Imp::~Imp() = default;
+BlockBatch::Imp::~Imp()
+{
+    if (finish_) { std::invoke(finish_); }
+}
 }  // namespace opentxs::blockchain::node::internal
 
 namespace opentxs::blockchain::node::internal
@@ -82,9 +94,9 @@ BlockBatch::BlockBatch() noexcept
 }
 
 BlockBatch::BlockBatch(BlockBatch&& rhs) noexcept
-    : BlockBatch()
+    : imp_(rhs.imp_)
 {
-    swap(rhs);
+    rhs.imp_ = nullptr;
 }
 
 BlockBatch::operator bool() const noexcept

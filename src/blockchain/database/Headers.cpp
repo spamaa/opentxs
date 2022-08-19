@@ -116,9 +116,9 @@ Headers::Headers(
     const storage::lmdb::LMDB& lmdb,
     const blockchain::Type type) noexcept
     : api_(api)
-    , network_(network)
     , common_(common)
     , lmdb_(lmdb)
+    , chain_(type)
     , lock_()
     , publish_tip_internal_([&] {
         using Type = network::zeromq::socket::Type;
@@ -142,7 +142,7 @@ Headers::Headers(
     }())
     , last_update_(std::monostate{})
 {
-    import_genesis(type);
+    import_genesis(chain_);
 
     {
         const auto best = this->best();
@@ -305,7 +305,6 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
     }
 
     const auto tip = best(lock);
-    const auto chain = network_.Internal().Chain();
 
     if (update.HaveReorg()) {
         const auto& parent = update.ReorgParent();
@@ -313,7 +312,7 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
         auto isSame = std::visit(visitor, last_update_);
 
         if (false == isSame) {
-            LogConsole()(print(chain))(
+            LogConsole()(print(chain_))(
                 " reorg detected. Last common ancestor is ")(parent.print())
                 .Flush();
             publish_tip_internal_.Send(
@@ -331,7 +330,7 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
             publish_tip_.Send(
                 [&] {
                     auto work = MakeWork(WorkType::BlockchainReorg);
-                    work.AddFrame(chain);
+                    work.AddFrame(chain_);
                     work.AddFrame(parent.hash_);
                     work.AddFrame(parent.height_);
                     work.AddFrame(tip.hash_);
@@ -361,7 +360,7 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
             publish_tip_.Send(
                 [&] {
                     auto work = MakeWork(WorkType::BlockchainNewHeader);
-                    work.AddFrame(chain);
+                    work.AddFrame(chain_);
                     work.AddFrame(tip.hash_);
                     work.AddFrame(tip.height_);
 
@@ -372,8 +371,6 @@ auto Headers::ApplyUpdate(const node::UpdateTransaction& update) noexcept
             last_update_ = tip;
         }
     }
-
-    network_.Internal().UpdateLocalHeight(tip);
 
     return true;
 }

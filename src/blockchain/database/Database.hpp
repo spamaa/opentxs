@@ -102,6 +102,7 @@ namespace node
 {
 namespace internal
 {
+struct HeaderOraclePrivate;
 struct SpendPolicy;
 }  // namespace internal
 
@@ -451,7 +452,7 @@ public:
         return sync_.Reorg(height);
     }
     auto ReorgTo(
-        const Lock& headerOracleLock,
+        const node::internal::HeaderOraclePrivate& data,
         storage::lmdb::LMDB::Transaction& tx,
         const node::HeaderOracle& headers,
         const NodeID& account,
@@ -460,7 +461,7 @@ public:
         const UnallocatedVector<block::Position>& reorg) noexcept -> bool final
     {
         return wallet_.ReorgTo(
-            headerOracleLock, tx, headers, account, subchain, index, reorg);
+            data, tx, headers, account, subchain, index, reorg);
     }
     auto ReserveUTXO(
         const identifier::Nym& spender,

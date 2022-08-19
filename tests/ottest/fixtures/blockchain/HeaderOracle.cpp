@@ -6,14 +6,10 @@
 #include "ottest/fixtures/blockchain/HeaderOracle.hpp"  // IWYU pragma: associated
 
 #include <opentxs/opentxs.hpp>
-#include <future>
 #include <type_traits>
 
 #include "internal/blockchain/block/Header.hpp"
-#include "internal/blockchain/node/Config.hpp"
-#include "internal/blockchain/node/Factory.hpp"
-#include "internal/blockchain/node/HeaderOracle.hpp"
-#include "internal/blockchain/node/Manager.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "internal/util/LogMacros.hpp"
 
 namespace ottest
@@ -2599,7 +2595,15 @@ Test_HeaderOracle_base::Test_HeaderOracle_base(const b::Type type)
           ot::Options{}.SetBlockchainProfile(ot::BlockchainProfile::server),
           0))
     , type_(type)
-    , network_(init_network(api_, type_))
+    , handle_([&] {
+        api_.Network().Blockchain().Start(type);
+        auto handle = api_.Network().Blockchain().GetChain(type);
+
+        OT_ASSERT(handle.IsValid());
+
+        return handle;
+    }())
+    , network_(handle_.get())
     , header_oracle_(const_cast<bc::HeaderOracle&>(network_.HeaderOracle()))
     , test_blocks_()
 {
@@ -2684,32 +2688,6 @@ auto Test_HeaderOracle_base::get_test_block(const ot::UnallocatedCString& hash)
     }
 }
 
-auto Test_HeaderOracle_base::init_network(
-    const ot::api::session::Client& api,
-    const b::Type type) noexcept -> bc::Manager&
-{
-    OT_ASSERT(b::Type::Unknown != type);
-
-    static const auto config = [] {
-        auto output = ot::blockchain::node::internal::Config{};
-        output.profile_ = ot::BlockchainProfile::desktop_native;
-
-        return output;
-    }();
-    auto& ptr = network(type);
-
-    if (false == ptr.operator bool()) {
-        ptr = ot::factory::BlockchainNetworkBitcoin(
-            api, type, config, "do not init peers", "");
-
-        OT_ASSERT(ptr);
-
-        ptr->Internal().Start(ptr);
-    }
-
-    return *ptr;
-}
-
 auto Test_HeaderOracle_base::make_position(
     const bb::Height height,
     const std::string_view hash) -> bb::Position
@@ -2731,29 +2709,9 @@ auto Test_HeaderOracle_base::make_test_block(
     return true;
 }
 
-auto Test_HeaderOracle_base::network(const b::Type type) noexcept
-    -> std::shared_ptr<bc::Manager>&
-{
-    static auto map = ot::Map<b::Type, std::shared_ptr<bc::Manager>>{};
-
-    if (b::Type::Unknown == type) {
-        for (auto& [chain, ptr] : map) {
-            if (ptr) { ptr->Internal().Shutdown().get(); }
-        }
-
-        map.clear();
-        static auto null = std::shared_ptr<bc::Manager>{};
-
-        return null;
-    } else {
-
-        return map[type];
-    }
-}
-
 auto Test_HeaderOracle_base::Shutdown() noexcept -> void
 {
-    network(b::Type::Unknown);
+    // TODO
 }
 
 auto Test_HeaderOracle_base::verify_best_chain(const BestChainVector& vector)

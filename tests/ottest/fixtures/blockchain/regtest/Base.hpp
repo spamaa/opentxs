@@ -22,10 +22,11 @@ namespace ottest
 {
 class BlockListener;
 class BlockchainStartup;
+class CfilterListener;
 class MinedBlocks;
 class PeerListener;
+class SyncListener;
 class User;
-class WalletListener;
 struct TXOState;
 }  // namespace ottest
 // NOLINTEND(modernize-concat-nested-namespaces)
@@ -79,8 +80,12 @@ protected:
     BlockListener& block_sync_server_;
     BlockListener& block_1_;
     BlockListener& block_2_;
-    WalletListener& wallet_1_;
-    WalletListener& wallet_2_;
+    CfilterListener& cfilter_miner_;
+    CfilterListener& cfilter_sync_server_;
+    CfilterListener& cfilter_1_;
+    CfilterListener& cfilter_2_;
+    SyncListener& sync_client_1_;
+    SyncListener& sync_client_2_;
 
     auto Account(const User& user, ot::blockchain::Type chain) noexcept
         -> const ot::blockchain::crypto::Account&;
@@ -114,16 +119,17 @@ protected:
         ot::Options clientArgs);
 
 private:
-    using BlockListen = ot::UnallocatedMap<int, std::unique_ptr<BlockListener>>;
-    using WalletListen =
-        ot::UnallocatedMap<int, std::unique_ptr<WalletListener>>;
+    using BlockListen = ot::Map<int, std::unique_ptr<BlockListener>>;
+    using CfilterListen = ot::Map<int, std::unique_ptr<CfilterListener>>;
+    using SyncListen = ot::Map<int, std::unique_ptr<SyncListener>>;
 
     static const ot::UnallocatedSet<ot::blockchain::node::TxoState> states_;
     static std::unique_ptr<const ot::OTBlockchainAddress> listen_address_;
     static std::unique_ptr<const PeerListener> peer_listener_;
     static std::unique_ptr<MinedBlocks> mined_block_cache_;
     static BlockListen block_listener_;
-    static WalletListen wallet_listener_;
+    static CfilterListen cfilter_listener_;
+    static SyncListen wallet_listener_;
 
     static auto get_bytes(const Script& script) noexcept
         -> std::optional<ot::ReadView>;
@@ -133,6 +139,10 @@ private:
         const int index,
         const ot::api::Session& api,
         std::string_view name) noexcept -> BlockListener&;
+    static auto init_cfilter(
+        const int index,
+        const ot::api::Session& api,
+        std::string_view name) noexcept -> CfilterListener&;
     static auto init_mined() noexcept -> MinedBlocks&;
     static auto init_peer(
         const bool waitForHandshake,
@@ -142,9 +152,10 @@ private:
         const ot::api::session::Client& client1,
         const ot::api::session::Client& client2) noexcept
         -> const PeerListener&;
-    static auto init_wallet(
+    static auto init_sync_client(
         const int index,
-        const ot::api::Session& api) noexcept -> WalletListener&;
+        const ot::api::Session& api,
+        std::string_view name) noexcept -> SyncListener&;
 
     auto compare_outpoints(
         const ot::blockchain::node::Wallet& wallet,

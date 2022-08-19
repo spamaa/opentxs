@@ -243,7 +243,7 @@ auto Wallet::PublishBalance() const noexcept -> void
 }
 
 auto Wallet::ReorgTo(
-    const Lock& headerOracleLock,
+    const node::internal::HeaderOraclePrivate& data,
     storage::lmdb::LMDB::Transaction& tx,
     const node::HeaderOracle& headers,
     const NodeID& balanceNode,
@@ -258,8 +258,7 @@ auto Wallet::ReorgTo(
     const auto subchainID = subchains_.GetSubchainID(balanceNode, subchain, tx);
 
     try {
-        if (subchains_.Reorg(
-                headerOracleLock, tx, headers, index, lastGoodHeight)) {
+        if (subchains_.Reorg(data, tx, headers, index, lastGoodHeight)) {
             return true;
         }
     } catch (const std::exception& e) {

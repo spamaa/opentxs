@@ -134,16 +134,11 @@ public:
 
     const ot::api::session::Client& api_;
     const b::Type type_;
-    bc::Manager& network_;
+    ot::api::network::BlockchainHandle handle_;
+    const bc::Manager& network_;
     bc::HeaderOracle& header_oracle_;
     ot::UnallocatedMap<ot::UnallocatedCString, std::unique_ptr<bb::Header>>
         test_blocks_;
-
-    static auto network(const b::Type type) noexcept
-        -> std::shared_ptr<bc::Manager>&;
-    static auto init_network(
-        const ot::api::session::Client& api,
-        const b::Type type) noexcept -> bc::Manager&;
 
     auto apply_blocks(const ot::UnallocatedVector<Test>& vector) -> bool;
     auto apply_blocks_batch(const ot::UnallocatedVector<Test>& vector) -> bool;

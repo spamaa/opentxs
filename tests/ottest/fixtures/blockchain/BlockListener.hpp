@@ -17,6 +17,8 @@ namespace ottest
 class BlockListener
 {
 public:
+    class Imp;
+
     using Height = ot::blockchain::block::Height;
     using Position = ot::blockchain::block::Position;
     using Future = std::future<Position>;
@@ -28,8 +30,6 @@ public:
     ~BlockListener();
 
 private:
-    struct Imp;
-
-    std::unique_ptr<Imp> imp_;
+    std::shared_ptr<Imp> imp_;
 };
 }  // namespace ottest

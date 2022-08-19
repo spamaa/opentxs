@@ -17,7 +17,6 @@ enum class Job : OTZMQWorkType {
     shutdown = value(WorkType::Shutdown),
     request_blocks = OT_ZMQ_INTERNAL_SIGNAL + 0u,
     process_block = OT_ZMQ_INTERNAL_SIGNAL + 1u,
-    start_downloader = OT_ZMQ_INTERNAL_SIGNAL + 2u,
     init = OT_ZMQ_INIT_SIGNAL,
     statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };
@@ -27,8 +26,7 @@ enum class BlockFetcherJob : OTZMQWorkType {
     shutdown = value(WorkType::Shutdown),
     header = value(WorkType::BlockchainNewHeader),
     reorg = value(WorkType::BlockchainReorg),
-    block_received = OT_ZMQ_INTERNAL_SIGNAL + 0u,
-    batch_finished = OT_ZMQ_INTERNAL_SIGNAL + 1u,
+    heartbeat = OT_ZMQ_INTERNAL_SIGNAL + 0u,
     init = OT_ZMQ_INIT_SIGNAL,
     statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };

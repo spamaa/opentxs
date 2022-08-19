@@ -83,6 +83,7 @@ namespace node
 {
 namespace internal
 {
+struct HeaderOraclePrivate;
 struct SpendPolicy;
 }  // namespace internal
 
@@ -206,7 +207,7 @@ public:
         -> UnallocatedSet<identifier::Generic>;
     auto PublishBalance() const noexcept -> void;
     auto ReorgTo(
-        const Lock& headerOracleLock,
+        const node::internal::HeaderOraclePrivate& data,
         storage::lmdb::LMDB::Transaction& tx,
         const node::HeaderOracle& headers,
         const NodeID& balanceNode,

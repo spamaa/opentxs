@@ -42,7 +42,6 @@ auto print(Job state) noexcept -> std::string_view
             {Job::shutdown, "shutdown"sv},
             {Job::request_blocks, "request_blocks"sv},
             {Job::process_block, "process_block"sv},
-            {Job::start_downloader, "start_downloader"sv},
             {Job::init, "init"sv},
             {Job::statemachine, "statemachine"sv},
         };
@@ -120,6 +119,7 @@ auto BlockOracle::Start(
     OT_ASSERT(actor);
 
     actor->Init(actor);
+    shared_->StartDownloader(api, node);
 }
 
 auto BlockOracle::SubmitBlock(

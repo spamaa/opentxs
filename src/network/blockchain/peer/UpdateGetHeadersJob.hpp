@@ -13,7 +13,8 @@ class Peer::Imp::UpdateGetHeadersJob
 {
 public:
     auto operator()(std::monostate& job) const noexcept -> JobUpdate;
-    auto operator()(GetHeadersJob& job) const noexcept -> JobUpdate;
+    auto operator()(opentxs::blockchain::node::internal::HeaderJob& job)
+        const noexcept -> JobUpdate;
     auto operator()(opentxs::blockchain::node::internal::BlockBatch& job)
         const noexcept -> JobUpdate;
     auto operator()(opentxs::blockchain::node::CfheaderJob& job) const noexcept

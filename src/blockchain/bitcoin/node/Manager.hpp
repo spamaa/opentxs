@@ -58,9 +58,6 @@ namespace opentxs::blockchain::node::base
 class Bitcoin final : public node::implementation::Base
 {
 public:
-    auto instantiate_header(const ReadView payload) const noexcept
-        -> std::unique_ptr<block::Header> final;
-
     Bitcoin(
         const api::Session& api,
         const Type type,

@@ -7,7 +7,7 @@
 #include <opentxs/opentxs.hpp>
 #include <memory>
 
-#include "internal/blockchain/node/HeaderOracle.hpp"
+#include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
 #include "ottest/fixtures/blockchain/HeaderOracle.hpp"
 
 namespace ottest

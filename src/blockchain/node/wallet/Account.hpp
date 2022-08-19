@@ -77,6 +77,7 @@ namespace node
 namespace internal
 {
 class Mempool;
+struct HeaderOraclePrivate;
 }  // namespace internal
 
 namespace wallet
@@ -170,7 +171,7 @@ private:
     auto do_shutdown() noexcept -> void;
     auto do_reorg(
         const node::HeaderOracle& oracle,
-        const Lock& oracleLock,
+        const node::internal::HeaderOraclePrivate& data,
         Reorg::Params& params) noexcept -> bool;
     auto do_startup() noexcept -> bool;
     auto index_nym(const identifier::Nym& id) noexcept -> void;

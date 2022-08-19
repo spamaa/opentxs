@@ -11,6 +11,7 @@ if(OT_BLOCKCHAIN_EXPORT)
       "Actor.cpp"
       "Actor.hpp"
       "BlockFetcher.cpp"
+      "Data.cpp"
       "Shared.cpp"
       "Shared.hpp"
   )

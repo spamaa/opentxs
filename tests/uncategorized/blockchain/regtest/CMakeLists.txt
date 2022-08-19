@@ -18,10 +18,12 @@ if(NOT WIN32)
   add_opentx_test(ottest-blockchain-regtest-sync-server SyncServer.cpp)
 endif()
 
-set_tests_properties(ottest-blockchain-regtest-stress PROPERTIES DISABLED TRUE)
+add_opentx_test(ottest-blockchain-regtest-sync-client SyncClient.cpp)
 
+set_tests_properties(
+  ottest-blockchain-regtest-block-propagation PROPERTIES DISABLED TRUE
+)
 set_tests_properties(
   ottest-blockchain-regtest-payment-code PROPERTIES DISABLED TRUE
 )
-
-add_opentx_test(ottest-blockchain-regtest-sync-client SyncClient.cpp)
+set_tests_properties(ottest-blockchain-regtest-stress PROPERTIES DISABLED TRUE)

@@ -76,7 +76,6 @@ public:
         -> Balance = 0;
     virtual auto GetConfirmations(const UnallocatedCString& txid) const noexcept
         -> ChainHeight = 0;
-    virtual auto GetHeight() const noexcept -> ChainHeight = 0;
     virtual auto GetPeerCount() const noexcept -> std::size_t = 0;
     virtual auto GetType() const noexcept -> Type = 0;
     virtual auto GetVerifiedPeerCount() const noexcept -> std::size_t = 0;
