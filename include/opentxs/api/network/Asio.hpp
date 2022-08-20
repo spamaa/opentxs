@@ -55,6 +55,9 @@ class ByteArray;
 
 namespace opentxs::api::network
 {
+/**
+ The api::network::Asio API contains functions used for networking via Boost::ASIO.
+ */
 class OPENTXS_EXPORT Asio
 {
 public:

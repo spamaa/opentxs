@@ -74,6 +74,10 @@ class Options;
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
+/**
+ The top-level Context for the OT API. Child class of Periodic.
+ Both Client and Server contexts are derived from this class.
+ */
 class OPENTXS_EXPORT opentxs::api::Context : virtual public Periodic
 {
 public:
@@ -85,14 +89,19 @@ public:
     static auto SuggestFolder(std::string_view appName) noexcept
         -> std::filesystem::path;
 
+    /// Returns a handle to the ASIO API.
     virtual auto Asio() const noexcept -> const network::Asio& = 0;
     /** Throws std::out_of_range if the specified session does not exist. */
     virtual auto ClientSession(const int instance) const noexcept(false)
         -> const api::session::Client& = 0;
+    /// Returns the number of client sessions.
     virtual auto ClientSessionCount() const noexcept -> std::size_t = 0;
+    /// Returns the settings for a given config file.
     virtual auto Config(const std::filesystem::path& path) const noexcept
         -> const api::Settings& = 0;
+    /// Returns a handle to the top-level crypto API.
     virtual auto Crypto() const noexcept -> const api::Crypto& = 0;
+    /// Returns a handle to the top-level Factory API.
     virtual auto Factory() const noexcept -> const api::Factory& = 0;
     /** WARNING You must call PrepareSignalHandling() prior to initializing
      * the context if you intend to use this function */
@@ -103,10 +112,12 @@ public:
     /** Throws std::out_of_range if the specified session does not exist. */
     virtual auto NotarySession(const int instance) const noexcept(false)
         -> const session::Notary& = 0;
+    /// Returns a count of the notary sessions.
     virtual auto NotarySessionCount() const noexcept -> std::size_t = 0;
     virtual auto ProfileId() const noexcept -> std::string_view = 0;
     OPENTXS_NO_EXPORT virtual auto QtRootObject() const noexcept
         -> QObject* = 0;
+    /// Used for sending RPC requests. Returns RPC response.
     virtual auto RPC(const rpc::request::Base& command) const noexcept
         -> std::unique_ptr<rpc::response::Base> = 0;
     virtual auto RPC(const ReadView command, const AllocateOutput response)
@@ -139,6 +150,7 @@ public:
         -> const session::Notary& = 0;
     /** Access ZAP configuration API */
     virtual auto ZAP() const noexcept -> const api::network::ZAP& = 0;
+    /// Returns a handle to the top-level ZMQ API.
     virtual auto ZMQ() const noexcept
         -> const opentxs::network::zeromq::Context& = 0;
 
