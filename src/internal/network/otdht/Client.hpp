@@ -58,9 +58,9 @@ public:
     Client(const api::Session& api) noexcept;
     Client() = delete;
     Client(const Client&) = delete;
-    Client(Client&&) = delete;
+    Client(Client&& rhs) noexcept;
     auto operator=(const Client&) -> Client& = delete;
-    auto operator=(Client&&) -> Client& = delete;
+    auto operator=(Client&& rhs) noexcept -> Client&;
 
     ~Client();
 

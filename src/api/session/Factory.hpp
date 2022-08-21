@@ -388,8 +388,10 @@ public:
     auto BlockchainAddress(
         const opentxs::blockchain::p2p::Address::SerializedType& serialized)
         const -> OTBlockchainAddress final;
+#endif  // OT_BLOCKCHAIN
     auto BlockchainSyncMessage(const opentxs::network::zeromq::Message& in)
         const noexcept -> std::unique_ptr<opentxs::network::otdht::Base> final;
+#if OT_BLOCKCHAIN
     auto BlockHeader(const proto::BlockchainBlockHeader& serialized) const
         -> BlockHeaderP override
     {

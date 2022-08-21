@@ -84,10 +84,9 @@ namespace opentxs::api::network::implementation
 {
 struct Blockchain::Imp : virtual public internal::Blockchain {
     using Chain = network::Blockchain::Chain;
-    using Endpoints = network::Blockchain::Endpoints;
 
-    virtual auto AddSyncServer(
-        [[maybe_unused]] const std::string_view endpoint) const noexcept -> bool
+    auto AddSyncServer([[maybe_unused]] const std::string_view endpoint)
+        const noexcept -> bool override
     {
         return {};
     }
@@ -99,7 +98,7 @@ struct Blockchain::Imp : virtual public internal::Blockchain {
     {
         return {};
     }
-    virtual auto ConnectedSyncServers() const noexcept -> Endpoints
+    auto ConnectedSyncServers() const noexcept -> Endpoints override
     {
         return {};
     }
@@ -108,8 +107,8 @@ struct Blockchain::Imp : virtual public internal::Blockchain {
     {
         OT_FAIL;
     }
-    virtual auto DeleteSyncServer(
-        [[maybe_unused]] const std::string_view endpoint) const noexcept -> bool
+    auto DeleteSyncServer([[maybe_unused]] const std::string_view endpoint)
+        const noexcept -> bool override
     {
         return {};
     }
@@ -138,7 +137,7 @@ struct Blockchain::Imp : virtual public internal::Blockchain {
     {
         throw std::out_of_range("no blockchain support");
     }
-    virtual auto GetSyncServers(alloc::Default) const noexcept -> Endpoints
+    auto GetSyncServers(alloc::Default) const noexcept -> Endpoints override
     {
         return {};
     }
@@ -184,20 +183,7 @@ struct Blockchain::Imp : virtual public internal::Blockchain {
     {
         return {};
     }
-    virtual auto StartSyncServer(
-        [[maybe_unused]] const std::string_view syncEndpoint,
-        [[maybe_unused]] const std::string_view publicSyncEndpoint,
-        [[maybe_unused]] const std::string_view updateEndpoint,
-        [[maybe_unused]] const std::string_view publicUpdateEndpoint)
-        const noexcept -> bool
-    {
-        return {};
-    }
     virtual auto Stop([[maybe_unused]] const Chain type) const noexcept -> bool
-    {
-        return {};
-    }
-    auto SyncEndpoint() const noexcept -> std::string_view override
     {
         return {};
     }

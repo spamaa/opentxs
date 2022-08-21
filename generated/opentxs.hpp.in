@@ -26,6 +26,7 @@
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/BlockchainHandle.hpp"
 #include "opentxs/api/network/Network.hpp"
+#include "opentxs/api/network/OTDHT.hpp"
 #include "opentxs/api/network/ZAP.hpp"
 #include "opentxs/api/network/ZMQ.hpp"
 #include "opentxs/api/session/Activity.hpp"

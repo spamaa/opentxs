@@ -8,15 +8,16 @@
 #include "api/network/blockchain/Imp.hpp"  // IWYU pragma: associated
 
 #include <algorithm>
+#include <future>
 #include <iterator>
 #include <type_traits>
 #include <utility>
 
 #include "api/network/blockchain/BlockchainHandle.hpp"
 #include "blockchain/database/common/Database.hpp"
+#include "internal/api/network/OTDHT.hpp"
 #include "internal/api/session/Endpoints.hpp"
 #include "internal/blockchain/Params.hpp"
-#include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Factory.hpp"
 #include "internal/blockchain/node/Manager.hpp"
 #include "internal/network/zeromq/Batch.hpp"
@@ -24,6 +25,7 @@
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/network/Network.hpp"
+#include "opentxs/api/network/OTDHT.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
@@ -52,7 +54,6 @@ BlockchainImp::BlockchainImp(
     const opentxs::network::zeromq::Context& zmq) noexcept
     : api_(api)
     , crypto_(nullptr)
-    , db_(nullptr)
     , block_available_endpoint_(opentxs::network::zeromq::MakeArbitraryInproc())
     , block_queue_endpoint_(opentxs::network::zeromq::MakeArbitraryInproc())
     , reorg_endpoint_(opentxs::network::zeromq::MakeArbitraryInproc())
@@ -191,14 +192,11 @@ BlockchainImp::BlockchainImp(
         return out;
     }())
     , startup_publisher_(endpoints, zmq)
-    , base_config_(nullptr)
+    , base_config_()
+    , db_()
     , lock_()
     , config_()
     , networks_()
-    , sync_client_(std::nullopt)
-    , sync_server_(api_, zmq)
-    , init_promise_()
-    , init_(init_promise_.get_future())
     , running_(true)
 {
     OT_ASSERT(nullptr != thread_);
@@ -207,9 +205,7 @@ BlockchainImp::BlockchainImp(
 auto BlockchainImp::AddSyncServer(
     const std::string_view endpoint) const noexcept -> bool
 {
-    init_.get();
-
-    return db_->AddSyncServer(endpoint);
+    return db_.get().AddSyncServer(endpoint);
 }
 
 auto BlockchainImp::ConnectedSyncServers() const noexcept -> Endpoints
@@ -220,9 +216,7 @@ auto BlockchainImp::ConnectedSyncServers() const noexcept -> Endpoints
 auto BlockchainImp::DeleteSyncServer(
     const std::string_view endpoint) const noexcept -> bool
 {
-    init_.get();
-
-    return db_->DeleteSyncServer(endpoint);
+    return db_.get().DeleteSyncServer(endpoint);
 }
 
 auto BlockchainImp::Disable(const Chain type) const noexcept -> bool
@@ -243,7 +237,7 @@ auto BlockchainImp::disable(const Lock& lock, const Chain type) const noexcept
 
     stop(lock, type);
 
-    if (db_->Disable(type)) { return true; }
+    if (db_.get().Disable(type)) { return true; }
 
     LogError()(OT_PRETTY_CLASS())("Database update failure").Flush();
 
@@ -269,9 +263,7 @@ auto BlockchainImp::enable(
         return false;
     }
 
-    init_.get();
-
-    if (false == db_->Enable(type, seednode)) {
+    if (false == db_.get().Enable(type, seednode)) {
         LogError()(OT_PRETTY_CLASS())("Database error").Flush();
 
         return false;
@@ -284,11 +276,10 @@ auto BlockchainImp::EnabledChains(alloc::Default alloc) const noexcept
     -> Set<Chain>
 {
     auto out = Set<Chain>{alloc};
-    init_.get();
     const auto data = [&] {
         auto lock = Lock{lock_};
 
-        return db_->LoadEnabledChains();
+        return db_.get().LoadEnabledChains();
     }();
     std::transform(
         data.begin(),
@@ -311,9 +302,7 @@ auto BlockchainImp::GetChain(const Chain type) const noexcept(false)
 auto BlockchainImp::GetSyncServers(alloc::Default alloc) const noexcept
     -> Endpoints
 {
-    init_.get();
-
-    return db_->GetSyncServers(alloc);
+    return db_.get().GetSyncServers(alloc);
 }
 
 auto BlockchainImp::Hello(alloc::Default alloc) const noexcept
@@ -357,22 +346,13 @@ auto BlockchainImp::Init(
     const Options& options) noexcept -> void
 {
     crypto_ = &crypto;
-    db_ = std::make_unique<opentxs::blockchain::database::common::Database>(
-        api_, crypto, legacy, dataFolder, options);
-
-    OT_ASSERT(db_);
-
-    const_cast<std::unique_ptr<Config>&>(base_config_) = [&] {
-        auto out = std::make_unique<Config>();
-        auto& output = *out;
+    base_config_.set_value([&] {
+        auto output = Config{};
         output.profile_ = options.BlockchainProfile();
 
         switch (output.profile_) {
             case BlockchainProfile::mobile:
-            case BlockchainProfile::desktop: {
-                sync_client_.emplace(api_);
-                [[fallthrough]];
-            }
+            case BlockchainProfile::desktop:
             case BlockchainProfile::desktop_native: {
                 output.disable_wallet_ = !options.BlockchainWalletEnabled();
             } break;
@@ -385,55 +365,21 @@ auto BlockchainImp::Init(
                 }
             } break;
             default: {
-
-                OT_FAIL;
+                LogAbort()(OT_PRETTY_CLASS())("invalid profile").Abort();
             }
         }
 
-        return out;
-    }();
-    init_promise_.set_value();
-    static const auto defaultServers = Vector<CString>{
-        "tcp://metier1.opentransactions.org:8814",
-        "tcp://metier2.opentransactions.org:8814",
-    };
-    const auto existing = [&] {
-        auto out = Set<CString>{};
-
-        // TODO allocator
-        for (const auto& server : GetSyncServers({})) {
-            // TODO GetSyncServers should return pmr strings
-            out.emplace(server.c_str());
-        }
-
-        for (const auto& server : defaultServers) {
-            if (0 == out.count(server)) {
-                if (false == api_.GetOptions().TestMode()) {
-                    AddSyncServer(server);
-                }
-
-                out.emplace(server);
-            }
-        }
-
-        return out;
-    }();
-
-    try {
-        for (const auto& endpoint : options.RemoteBlockchainSyncServers()) {
-            if (0 == existing.count(endpoint)) { AddSyncServer(endpoint); }
-        }
-    } catch (...) {
-    }
+        return output;
+    }());
+    db_.set_value(DB{api_, crypto, legacy, dataFolder, options});
 }
 
 auto BlockchainImp::IsEnabled(
     const opentxs::blockchain::Type chain) const noexcept -> bool
 {
-    init_.get();
     auto lock = Lock{lock_};
 
-    for (const auto& [enabled, peer] : db_->LoadEnabledChains()) {
+    for (const auto& [enabled, peer] : db_.get().LoadEnabledChains()) {
         if (chain == enabled) { return true; }
     }
 
@@ -442,9 +388,7 @@ auto BlockchainImp::IsEnabled(
 
 auto BlockchainImp::Profile() const noexcept -> BlockchainProfile
 {
-    init_.get();
-
-    return base_config_->profile_;
+    return base_config_.get().profile_;
 }
 
 auto BlockchainImp::publish_chain_state(Chain type, bool state) const -> void
@@ -495,13 +439,9 @@ auto BlockchainImp::ReportProgress(
 
 auto BlockchainImp::RestoreNetworks() const noexcept -> void
 {
-    init_.get();
-
-    if (sync_client_) { sync_client_->Init(api_.Network().Blockchain()); }
-
     auto lock = Lock{lock_};
 
-    for (const auto& [chain, peer] : db_->LoadEnabledChains()) {
+    for (const auto& [chain, peer] : db_.get().LoadEnabledChains()) {
         start(lock, chain, peer, false);
     }
 
@@ -538,8 +478,6 @@ auto BlockchainImp::start(
     const std::string_view seednode,
     const bool startWallet) const noexcept -> bool
 {
-    init_.get();
-
     if (Chain::UnitTest != type) {
         if (0 == opentxs::blockchain::SupportedChains().count(type)) {
             LogError()(OT_PRETTY_CLASS())("Unsupported chain").Flush();
@@ -562,9 +500,10 @@ auto BlockchainImp::start(
         case p2p::Protocol::bitcoin: {
             auto endpoint = UnallocatedCString{};
 
-            if (base_config_->provide_sync_server_) {
-                sync_server_.Enable(type);
-                endpoint = sync_server_.Endpoint(type);
+            if (base_config_.get().provide_sync_server_) {
+                const auto& dht = api_.Network().OTDHT().Internal();
+                dht.Enable(type);
+                endpoint = dht.Endpoint(type);
             }
 
             const auto& config = [&]() -> const Config& {
@@ -574,7 +513,7 @@ auto BlockchainImp::start(
                     if (config_.end() != it) { return it->second; }
                 }
 
-                auto [it, added] = config_.emplace(type, *base_config_);
+                auto [it, added] = config_.emplace(type, base_config_);
 
                 OT_ASSERT(added);
 
@@ -617,26 +556,6 @@ auto BlockchainImp::start(
     return false;
 }
 
-auto BlockchainImp::StartSyncServer(
-    const std::string_view sync,
-    const std::string_view publicSync,
-    const std::string_view update,
-    const std::string_view publicUpdate) const noexcept -> bool
-{
-    auto lock = Lock{lock_};
-
-    if (base_config_->provide_sync_server_) {
-        return sync_server_.Start(sync, publicSync, update, publicUpdate);
-    }
-
-    LogConsole()(
-        "Blockchain sync server must be enabled at library "
-        "initialization time by using Options::SetBlockchainSyncEnabled.")
-        .Flush();
-
-    return false;
-}
-
 auto BlockchainImp::Stop(const Chain type) const noexcept -> bool
 {
     auto lock = Lock{lock_};
@@ -653,24 +572,13 @@ auto BlockchainImp::stop(const Lock& lock, const Chain type) const noexcept
 
     OT_ASSERT(it->second);
 
-    sync_server_.Disable(type);
+    api_.Network().OTDHT().Internal().Disable(type);
     it->second->Internal().Shutdown().get();
     networks_.erase(it);
     LogVerbose()(OT_PRETTY_CLASS())("stopped chain ")(print(type)).Flush();
     publish_chain_state(type, false);
 
     return true;
-}
-
-auto BlockchainImp::SyncEndpoint() const noexcept -> std::string_view
-{
-    if (sync_client_) {
-
-        return sync_client_->Endpoint();
-    } else {
-
-        return Imp::SyncEndpoint();
-    }
 }
 
 auto BlockchainImp::UpdatePeer(

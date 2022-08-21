@@ -13,6 +13,7 @@
 #include "api/network/Network.hpp"
 #include "internal/api/network/Blockchain.hpp"
 #include "internal/api/network/Factory.hpp"
+#include "internal/api/network/OTDHT.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 
@@ -44,8 +45,10 @@ Network::Network(
     : asio_(asio)
     , zmq_(zmq)
     , blockchain_(std::move(blockchain))
+    , otdht_(factory::OTDHT(api, *blockchain_))
 {
     OT_ASSERT(blockchain_);
+    OT_ASSERT(otdht_);
 }
 
 auto Network::Start(
@@ -56,6 +59,7 @@ auto Network::Start(
     const Options& args) noexcept -> void
 {
     blockchain_->Internal().Init(crypto, legacy, dataFolder, args);
+    otdht_->Internal().Start(api);
 }
 
 auto Network::Shutdown() noexcept -> void

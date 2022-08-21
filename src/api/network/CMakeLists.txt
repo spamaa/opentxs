@@ -5,6 +5,7 @@
 
 add_subdirectory(asio)
 add_subdirectory(blockchain)
+add_subdirectory(otdht)
 
 target_sources(
   opentxs-common

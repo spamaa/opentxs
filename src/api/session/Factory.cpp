@@ -608,13 +608,13 @@ auto Factory::BlockchainAddress(
     return OTBlockchainAddress{
         factory::BlockchainAddress(api_, serialized).release()};
 }
+#endif  // OT_BLOCKCHAIN
 
 auto Factory::BlockchainSyncMessage(const opentxs::network::zeromq::Message& in)
     const noexcept -> std::unique_ptr<opentxs::network::otdht::Base>
 {
     return factory::BlockchainSyncMessage(api_, in);
 }
-#endif  // OT_BLOCKCHAIN
 
 auto Factory::Cheque(const OTTransaction& receipt) const
     -> std::unique_ptr<opentxs::Cheque>

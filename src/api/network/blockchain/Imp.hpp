@@ -21,12 +21,13 @@
 #include "api/network/blockchain/Blockchain.hpp"
 #include "api/network/blockchain/StartupPublisher.hpp"
 #include "blockchain/database/common/Database.hpp"
+#include "blockchain/database/common/Database.hpp"
 #include "internal/api/network/Blockchain.hpp"
+#include "internal/blockchain/node/Config.hpp"
 #include "internal/blockchain/node/Manager.hpp"
-#include "internal/network/otdht/Client.hpp"
-#include "internal/network/otdht/Server.hpp"
 #include "internal/network/zeromq/Handle.hpp"
 #include "internal/network/zeromq/Types.hpp"
+#include "internal/util/AsyncConst.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/Version.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
@@ -140,7 +141,7 @@ struct BlockchainImp final : public Blockchain::Imp {
     auto Database() const noexcept
         -> const opentxs::blockchain::database::common::Database& final
     {
-        return *db_;
+        return db_;
     }
     auto DeleteSyncServer(const std::string_view endpoint) const noexcept
         -> bool final;
@@ -183,14 +184,7 @@ struct BlockchainImp final : public Blockchain::Imp {
     auto RestoreNetworks() const noexcept -> void final;
     auto Start(const Imp::Chain type, const std::string_view seednode)
         const noexcept -> bool final;
-    auto StartSyncServer(
-        const std::string_view syncEndpoint,
-        const std::string_view publicSyncEndpoint,
-        const std::string_view updateEndpoint,
-        const std::string_view publicUpdateEndpoint) const noexcept
-        -> bool final;
     auto Stop(const Imp::Chain type) const noexcept -> bool final;
-    auto SyncEndpoint() const noexcept -> std::string_view final;
     auto UpdatePeer(
         const opentxs::blockchain::Type chain,
         const std::string_view address) const noexcept -> void final;
@@ -218,10 +212,10 @@ private:
     using Config = opentxs::blockchain::node::internal::Config;
     using pNode = std::shared_ptr<opentxs::blockchain::node::Manager>;
     using Chains = UnallocatedVector<Chain>;
+    using DB = opentxs::blockchain::database::common::Database;
 
     const api::Session& api_;
     const api::crypto::Blockchain* crypto_;
-    std::unique_ptr<opentxs::blockchain::database::common::Database> db_;
     const CString block_available_endpoint_;
     const CString block_queue_endpoint_;
     const CString reorg_endpoint_;
@@ -243,14 +237,11 @@ private:
     OTZMQPublishSocket sync_updates_;
     OTZMQPublishSocket mempool_;
     blockchain::StartupPublisher startup_publisher_;
-    const std::unique_ptr<Config> base_config_;
+    AsyncConst<Config> base_config_;
+    AsyncConst<DB> db_;
     mutable std::mutex lock_;
     mutable UnallocatedMap<Chain, Config> config_;
     mutable UnallocatedMap<Chain, pNode> networks_;
-    mutable std::optional<opentxs::network::otdht::Client> sync_client_;
-    mutable opentxs::network::otdht::Server sync_server_;
-    std::promise<void> init_promise_;
-    std::shared_future<void> init_;
     std::atomic_bool running_;
 
     auto disable(const Lock& lock, const Chain type) const noexcept -> bool;

@@ -64,16 +64,16 @@ TEST_F(SyncServerDB, init_library) {}
 
 TEST_F(SyncServerDB, empty_db)
 {
-    const auto endpoints = api_.Network().Blockchain().GetSyncServers();
+    const auto endpoints = api_.Network().OTDHT().KnownPeers({});
 
     EXPECT_EQ(endpoints.size(), default_server_count_);
 }
 
 TEST_F(SyncServerDB, import_first_server)
 {
-    EXPECT_TRUE(api_.Network().Blockchain().AddSyncServer(first_server_));
+    EXPECT_TRUE(api_.Network().OTDHT().AddPeer(first_server_));
 
-    const auto endpoints = api_.Network().Blockchain().GetSyncServers();
+    const auto endpoints = api_.Network().OTDHT().KnownPeers({});
 
     EXPECT_EQ(endpoints.size(), default_server_count_ + 1u);
     EXPECT_EQ(count(endpoints, first_server_), 1);
@@ -91,9 +91,9 @@ TEST_F(SyncServerDB, import_first_server)
 
 TEST_F(SyncServerDB, import_second_server)
 {
-    EXPECT_TRUE(api_.Network().Blockchain().AddSyncServer(second_server_));
+    EXPECT_TRUE(api_.Network().OTDHT().AddPeer(second_server_));
 
-    const auto endpoints = api_.Network().Blockchain().GetSyncServers();
+    const auto endpoints = api_.Network().OTDHT().KnownPeers({});
 
     EXPECT_EQ(endpoints.size(), default_server_count_ + 2u);
     EXPECT_EQ(count(endpoints, first_server_), 1);
@@ -111,9 +111,9 @@ TEST_F(SyncServerDB, import_second_server)
 
 TEST_F(SyncServerDB, import_existing_server)
 {
-    EXPECT_TRUE(api_.Network().Blockchain().AddSyncServer(second_server_));
+    EXPECT_TRUE(api_.Network().OTDHT().AddPeer(second_server_));
 
-    const auto endpoints = api_.Network().Blockchain().GetSyncServers();
+    const auto endpoints = api_.Network().OTDHT().KnownPeers({});
 
     EXPECT_EQ(endpoints.size(), default_server_count_ + 2u);
     EXPECT_EQ(count(endpoints, first_server_), 1);
@@ -123,9 +123,9 @@ TEST_F(SyncServerDB, import_existing_server)
 
 TEST_F(SyncServerDB, import_empty_string)
 {
-    EXPECT_FALSE(api_.Network().Blockchain().AddSyncServer(""));
+    EXPECT_FALSE(api_.Network().OTDHT().AddPeer(""));
 
-    const auto endpoints = api_.Network().Blockchain().GetSyncServers();
+    const auto endpoints = api_.Network().OTDHT().KnownPeers({});
 
     EXPECT_EQ(endpoints.size(), default_server_count_ + 2u);
     EXPECT_EQ(count(endpoints, first_server_), 1);
@@ -135,9 +135,9 @@ TEST_F(SyncServerDB, import_empty_string)
 
 TEST_F(SyncServerDB, delete_non_existing)
 {
-    EXPECT_TRUE(api_.Network().Blockchain().DeleteSyncServer(other_server_));
+    EXPECT_TRUE(api_.Network().OTDHT().DeletePeer(other_server_));
 
-    const auto endpoints = api_.Network().Blockchain().GetSyncServers();
+    const auto endpoints = api_.Network().OTDHT().KnownPeers({});
 
     EXPECT_EQ(endpoints.size(), default_server_count_ + 2u);
     EXPECT_EQ(count(endpoints, first_server_), 1);
@@ -147,9 +147,9 @@ TEST_F(SyncServerDB, delete_non_existing)
 
 TEST_F(SyncServerDB, delete_existing)
 {
-    EXPECT_TRUE(api_.Network().Blockchain().DeleteSyncServer(first_server_));
+    EXPECT_TRUE(api_.Network().OTDHT().DeletePeer(first_server_));
 
-    const auto endpoints = api_.Network().Blockchain().GetSyncServers();
+    const auto endpoints = api_.Network().OTDHT().KnownPeers({});
 
     EXPECT_EQ(endpoints.size(), default_server_count_ + 1u);
     EXPECT_EQ(count(endpoints, first_server_), 0);
@@ -167,9 +167,9 @@ TEST_F(SyncServerDB, delete_existing)
 
 TEST_F(SyncServerDB, delete_empty_string)
 {
-    EXPECT_FALSE(api_.Network().Blockchain().DeleteSyncServer(""));
+    EXPECT_FALSE(api_.Network().OTDHT().DeletePeer(""));
 
-    const auto endpoints = api_.Network().Blockchain().GetSyncServers();
+    const auto endpoints = api_.Network().OTDHT().KnownPeers({});
 
     EXPECT_EQ(endpoints.size(), default_server_count_ + 1u);
     EXPECT_EQ(count(endpoints, first_server_), 0);

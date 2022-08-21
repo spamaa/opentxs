@@ -19,7 +19,7 @@
 #include <utility>
 
 #include "internal/api/network/Asio.hpp"
-#include "internal/api/network/Blockchain.hpp"
+#include "internal/api/network/OTDHT.hpp"
 #include "internal/api/session/Session.hpp"
 #include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
@@ -32,8 +32,8 @@
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
 #include "opentxs/api/network/Asio.hpp"
-#include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
+#include "opentxs/api/network/OTDHT.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -93,7 +93,7 @@ Requestor::Imp::Imp(
           },
           {},
           {
-              {CString{api->Network().Blockchain().Internal().SyncEndpoint()},
+              {CString{api->Network().OTDHT().Internal().Endpoint()},
                Direction::Connect},
           },
           {

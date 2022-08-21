@@ -292,12 +292,11 @@ auto Regtest_fixture_base::Connect(
 
         const auto& client = handle.get();
         const auto added = client.AddPeer(address);
-        const auto started =
-            sync_server_.Network().Blockchain().StartSyncServer(
-                sync_server_main_endpoint_,
-                sync_server_main_endpoint_,
-                sync_server_push_endpoint_,
-                sync_server_push_endpoint_);
+        const auto started = sync_server_.Network().OTDHT().StartListener(
+            sync_server_main_endpoint_,
+            sync_server_main_endpoint_,
+            sync_server_push_endpoint_,
+            sync_server_push_endpoint_);
 
         EXPECT_TRUE(added);
         EXPECT_TRUE(started);

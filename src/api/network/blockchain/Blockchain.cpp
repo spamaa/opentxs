@@ -34,23 +34,6 @@ Blockchain::Blockchain(Imp* imp) noexcept
 {
 }
 
-auto Blockchain::AddSyncServer(const std::string_view endpoint) const noexcept
-    -> bool
-{
-    return imp_->AddSyncServer(endpoint);
-}
-
-auto Blockchain::ConnectedSyncServers() const noexcept -> Endpoints
-{
-    return imp_->ConnectedSyncServers();
-}
-
-auto Blockchain::DeleteSyncServer(
-    const std::string_view endpoint) const noexcept -> bool
-{
-    return imp_->DeleteSyncServer(endpoint);
-}
-
 auto Blockchain::Disable(const Chain type) const noexcept -> bool
 {
     return imp_->Disable(type);
@@ -74,12 +57,6 @@ auto Blockchain::GetChain(const Chain type) const noexcept(false)
     return imp_->GetChain(type);
 }
 
-auto Blockchain::GetSyncServers(alloc::Default alloc) const noexcept
-    -> Endpoints
-{
-    return imp_->GetSyncServers(alloc);
-}
-
 auto Blockchain::Internal() const noexcept -> const internal::Blockchain&
 {
     return *imp_;
@@ -96,16 +73,6 @@ auto Blockchain::Start(const Chain type, const std::string_view seednode)
     const noexcept -> bool
 {
     return imp_->Start(type, seednode);
-}
-
-auto Blockchain::StartSyncServer(
-    const std::string_view syncEndpoint,
-    const std::string_view publicSyncEndpoint,
-    const std::string_view updateEndpoint,
-    const std::string_view publicUpdateEndpoint) const noexcept -> bool
-{
-    return imp_->StartSyncServer(
-        syncEndpoint, publicSyncEndpoint, updateEndpoint, publicUpdateEndpoint);
 }
 
 auto Blockchain::Stop(const Chain type) const noexcept -> bool

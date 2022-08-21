@@ -23,6 +23,7 @@ namespace network
 class Asio;
 class Blockchain;
 class Network;
+class OTDHT;
 }  // namespace network
 
 namespace session
@@ -63,4 +64,8 @@ auto NetworkAPI(
     const api::session::Endpoints& endpoints,
     std::unique_ptr<api::network::Blockchain> blockchain) noexcept
     -> std::unique_ptr<api::network::Network>;
+auto OTDHT(
+    const api::Session& api,
+    const api::network::Blockchain& blockchain) noexcept
+    -> std::unique_ptr<api::network::OTDHT>;
 }  // namespace opentxs::factory

@@ -332,6 +332,20 @@ Server::Server(const api::Session& api, const zeromq::Context& zmq) noexcept
 {
 }
 
+Server::Server(Server&& rhs) noexcept
+    : imp_(rhs.imp_)
+{
+    rhs.imp_ = nullptr;
+}
+
+auto Server::operator=(Server&& rhs) noexcept -> Server&
+{
+    using std::swap;
+    swap(imp_, rhs.imp_);
+
+    return *this;
+}
+
 auto Server::Disable(const Chain chain) noexcept -> void
 {
     try {

@@ -213,7 +213,7 @@ public:
         const Options& args) noexcept(false);
     Database() = delete;
     Database(const Database&) = delete;
-    Database(Database&&) = delete;
+    Database(Database&& rhs) noexcept;
     auto operator=(const Database&) -> Database& = delete;
     auto operator=(Database&&) -> Database& = delete;
 
@@ -222,7 +222,6 @@ public:
 private:
     struct Imp;
 
-    std::unique_ptr<Imp> imp_p_;
-    Imp& imp_;
+    std::unique_ptr<Imp> imp_;
 };
 }  // namespace opentxs::blockchain::database::common
