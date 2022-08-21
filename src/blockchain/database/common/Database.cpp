@@ -301,60 +301,65 @@ Database::Database(
     const api::Legacy& legacy,
     const fs::path& dataFolder,
     const Options& args) noexcept(false)
-    : imp_p_(std::make_unique<Imp>(api, blockchain, legacy, dataFolder, args))
-    , imp_(*imp_p_)
+    : imp_(std::make_unique<Imp>(api, blockchain, legacy, dataFolder, args))
 {
-    OT_ASSERT(imp_p_);
+    OT_ASSERT(imp_);
+}
+
+Database::Database(Database&& rhs) noexcept
+    : imp_(std::move(rhs.imp_))
+{
+    OT_ASSERT(imp_);
 }
 
 auto Database::AddOrUpdate(Address_p address) const noexcept -> bool
 {
-    return imp_.peers_.Insert(std::move(address));
+    return imp_->peers_.Insert(std::move(address));
 }
 
 auto Database::AllocateStorageFolder(
     const UnallocatedCString& dir) const noexcept -> UnallocatedCString
 {
-    return imp_.AllocateStorageFolder(dir).string();
+    return imp_->AllocateStorageFolder(dir).string();
 }
 
 auto Database::AssociateTransaction(
     const Txid& txid,
     const UnallocatedVector<PatternID>& patterns) const noexcept -> bool
 {
-    return imp_.wallet_.AssociateTransaction(txid, patterns);
+    return imp_->wallet_.AssociateTransaction(txid, patterns);
 }
 
 auto Database::AddSyncServer(std::string_view endpoint) const noexcept -> bool
 {
-    return imp_.config_.AddSyncServer(endpoint);
+    return imp_->config_.AddSyncServer(endpoint);
 }
 
 auto Database::BlockHeaderExists(const BlockHash& hash) const noexcept -> bool
 {
-    return imp_.headers_.Exists(hash);
+    return imp_->headers_.Exists(hash);
 }
 
 auto Database::BlockExists(const BlockHash& block) const noexcept -> bool
 {
-    return imp_.blocks_.Exists(block);
+    return imp_->blocks_.Exists(block);
 }
 
 auto Database::BlockLoad(const BlockHash& block) const noexcept -> BlockReader
 {
-    return imp_.blocks_.Load(block);
+    return imp_->blocks_.Load(block);
 }
 
 auto Database::BlockStore(const BlockHash& block, const std::size_t bytes)
     const noexcept -> BlockWriter
 {
-    return imp_.blocks_.Store(block, bytes);
+    return imp_->blocks_.Store(block, bytes);
 }
 
 auto Database::DeleteSyncServer(std::string_view endpoint) const noexcept
     -> bool
 {
-    return imp_.config_.DeleteSyncServer(endpoint);
+    return imp_->config_.DeleteSyncServer(endpoint);
 }
 
 auto Database::Disable(const Chain type) const noexcept -> bool
@@ -362,7 +367,7 @@ auto Database::Disable(const Chain type) const noexcept -> bool
     const auto key = std::size_t{static_cast<std::uint32_t>(type)};
     const auto value = Space{false_byte_};
 
-    return imp_.lmdb_.Store(Enabled, key, reader(value)).first;
+    return imp_->lmdb_.Store(Enabled, key, reader(value)).first;
 }
 
 auto Database::Enable(const Chain type, std::string_view seednode)
@@ -380,7 +385,7 @@ auto Database::Enable(const Chain type, std::string_view seednode)
         return output;
     }();
 
-    return imp_.lmdb_.Store(Enabled, key, reader(value)).first;
+    return imp_->lmdb_.Store(Enabled, key, reader(value)).first;
 }
 
 auto Database::Find(
@@ -389,41 +394,41 @@ auto Database::Find(
     const UnallocatedSet<Type> onNetworks,
     const UnallocatedSet<Service> withServices) const noexcept -> Address_p
 {
-    return imp_.peers_.Find(chain, protocol, onNetworks, withServices);
+    return imp_->peers_.Find(chain, protocol, onNetworks, withServices);
 }
 
 auto Database::GetSyncServers(alloc::Default alloc) const noexcept -> Endpoints
 {
-    return imp_.config_.GetSyncServers(alloc);
+    return imp_->config_.GetSyncServers(alloc);
 }
 
 auto Database::HashKey() const noexcept -> ReadView
 {
-    return reader(imp_.siphash_key_);
+    return reader(imp_->siphash_key_);
 }
 
 auto Database::HaveFilter(const cfilter::Type type, const ReadView blockHash)
     const noexcept -> bool
 {
-    return imp_.filters_.HaveFilter(type, blockHash);
+    return imp_->filters_.HaveFilter(type, blockHash);
 }
 
 auto Database::HaveFilterHeader(
     const cfilter::Type type,
     const ReadView blockHash) const noexcept -> bool
 {
-    return imp_.filters_.HaveFilterHeader(type, blockHash);
+    return imp_->filters_.HaveFilterHeader(type, blockHash);
 }
 
 auto Database::Import(UnallocatedVector<Address_p> peers) const noexcept -> bool
 {
-    return imp_.peers_.Import(std::move(peers));
+    return imp_->peers_.Import(std::move(peers));
 }
 
 auto Database::LoadBlockHeader(const BlockHash& hash) const noexcept(false)
     -> proto::BlockchainBlockHeader
 {
-    return imp_.headers_.Load(hash);
+    return imp_->headers_.Load(hash);
 }
 
 auto Database::LoadFilter(
@@ -431,14 +436,14 @@ auto Database::LoadFilter(
     const ReadView blockHash,
     alloc::Default alloc) const noexcept -> opentxs::blockchain::GCS
 {
-    return imp_.filters_.LoadFilter(type, blockHash, alloc);
+    return imp_->filters_.LoadFilter(type, blockHash, alloc);
 }
 
 auto Database::LoadFilters(
     const cfilter::Type type,
     const Vector<block::Hash>& blocks) const noexcept -> Vector<GCS>
 {
-    return imp_.filters_.LoadFilters(type, blocks);
+    return imp_->filters_.LoadFilters(type, blocks);
 }
 
 auto Database::LoadFilterHash(
@@ -446,7 +451,7 @@ auto Database::LoadFilterHash(
     const ReadView blockHash,
     const AllocateOutput filterHash) const noexcept -> bool
 {
-    return imp_.filters_.LoadFilterHash(type, blockHash, filterHash);
+    return imp_->filters_.LoadFilterHash(type, blockHash, filterHash);
 }
 
 auto Database::LoadFilterHeader(
@@ -454,13 +459,13 @@ auto Database::LoadFilterHeader(
     const ReadView blockHash,
     const AllocateOutput header) const noexcept -> bool
 {
-    return imp_.filters_.LoadFilterHeader(type, blockHash, header);
+    return imp_->filters_.LoadFilterHeader(type, blockHash, header);
 }
 
 auto Database::LoadTransaction(const ReadView txid) const noexcept
     -> std::unique_ptr<bitcoin::block::Transaction>
 {
-    return imp_.wallet_.LoadTransaction(txid);
+    return imp_->wallet_.LoadTransaction(txid);
 }
 
 auto Database::LoadTransaction(
@@ -468,13 +473,13 @@ auto Database::LoadTransaction(
     proto::BlockchainTransaction& out) const noexcept
     -> std::unique_ptr<bitcoin::block::Transaction>
 {
-    return imp_.wallet_.LoadTransaction(txid, out);
+    return imp_->wallet_.LoadTransaction(txid, out);
 }
 
 auto Database::LookupContact(const Data& pubkeyHash) const noexcept
     -> UnallocatedSet<identifier::Generic>
 {
-    return imp_.wallet_.LookupContact(pubkeyHash);
+    return imp_->wallet_.LookupContact(pubkeyHash);
 }
 
 auto Database::LoadSync(
@@ -482,13 +487,13 @@ auto Database::LoadSync(
     const Height height,
     opentxs::network::otdht::Data& output) const noexcept -> bool
 {
-    return imp_.sync_.Load(chain, height, output);
+    return imp_->sync_.Load(chain, height, output);
 }
 
 auto Database::LookupTransactions(const PatternID pattern) const noexcept
     -> UnallocatedVector<pTxid>
 {
-    return imp_.wallet_.LookupTransactions(pattern);
+    return imp_->wallet_.LookupTransactions(pattern);
 }
 
 auto Database::LoadEnabledChains() const noexcept
@@ -519,7 +524,7 @@ auto Database::LoadEnabledChains() const noexcept
 
         return true;
     };
-    imp_.lmdb_.Read(Enabled, cb, storage::lmdb::LMDB::Dir::Forward);
+    imp_->lmdb_.Read(Enabled, cb, storage::lmdb::LMDB::Dir::Forward);
 
     return output;
 }
@@ -527,33 +532,33 @@ auto Database::LoadEnabledChains() const noexcept
 auto Database::ReorgSync(const Chain chain, const Height height) const noexcept
     -> bool
 {
-    return imp_.sync_.Reorg(chain, height);
+    return imp_->sync_.Reorg(chain, height);
 }
 
 auto Database::StoreBlockHeader(
     const opentxs::blockchain::block::Header& header) const noexcept -> bool
 {
-    return imp_.headers_.Store(header);
+    return imp_->headers_.Store(header);
 }
 
 auto Database::StoreBlockHeaders(const UpdatedHeader& headers) const noexcept
     -> bool
 {
-    return imp_.headers_.Store(headers);
+    return imp_->headers_.Store(headers);
 }
 
 auto Database::StoreFilterHeaders(
     const cfilter::Type type,
     const Vector<CFHeaderParams>& headers) const noexcept -> bool
 {
-    return imp_.filters_.StoreFilterHeaders(type, headers);
+    return imp_->filters_.StoreFilterHeaders(type, headers);
 }
 
 auto Database::StoreFilters(
     const cfilter::Type type,
     Vector<CFilterParams>& filters) const noexcept -> bool
 {
-    return imp_.filters_.StoreFilters(type, filters);
+    return imp_->filters_.StoreFilters(type, filters);
 }
 
 auto Database::StoreFilters(
@@ -561,44 +566,44 @@ auto Database::StoreFilters(
     const Vector<CFHeaderParams>& headers,
     const Vector<CFilterParams>& filters) const noexcept -> bool
 {
-    return imp_.filters_.StoreFilters(type, headers, filters);
+    return imp_->filters_.StoreFilters(type, headers, filters);
 }
 
 auto Database::StoreSync(
     const Chain chain,
     const network::otdht::SyncData& items) const noexcept -> bool
 {
-    return imp_.sync_.Store(chain, items);
+    return imp_->sync_.Store(chain, items);
 }
 
 auto Database::StoreTransaction(
     const bitcoin::block::Transaction& tx) const noexcept -> bool
 {
-    return imp_.wallet_.StoreTransaction(tx);
+    return imp_->wallet_.StoreTransaction(tx);
 }
 
 auto Database::StoreTransaction(
     const bitcoin::block::Transaction& tx,
     proto::BlockchainTransaction& out) const noexcept -> bool
 {
-    return imp_.wallet_.StoreTransaction(tx, out);
+    return imp_->wallet_.StoreTransaction(tx, out);
 }
 
 auto Database::SyncTip(const Chain chain) const noexcept -> Height
 {
-    return imp_.sync_.Tip(chain);
+    return imp_->sync_.Tip(chain);
 }
 
 auto Database::UpdateContact(const Contact& contact) const noexcept
     -> UnallocatedVector<pTxid>
 {
-    return imp_.wallet_.UpdateContact(contact);
+    return imp_->wallet_.UpdateContact(contact);
 }
 
 auto Database::UpdateMergedContact(const Contact& parent, const Contact& child)
     const noexcept -> UnallocatedVector<pTxid>
 {
-    return imp_.wallet_.UpdateMergedContact(parent, child);
+    return imp_->wallet_.UpdateMergedContact(parent, child);
 }
 
 Database::~Database() = default;

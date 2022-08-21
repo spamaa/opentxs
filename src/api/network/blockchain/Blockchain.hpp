@@ -57,11 +57,6 @@ public:
     using Chain = opentxs::blockchain::Type;
     using Endpoints = Vector<CString>;
 
-    auto AddSyncServer(const std::string_view endpoint) const noexcept
-        -> bool final;
-    auto ConnectedSyncServers() const noexcept -> Endpoints final;
-    auto DeleteSyncServer(const std::string_view endpoint) const noexcept
-        -> bool final;
     auto Disable(const Chain type) const noexcept -> bool final;
     auto Enable(const Chain type, const std::string_view seednode = "")
         const noexcept -> bool final;
@@ -70,18 +65,10 @@ public:
     /// throws std::out_of_range if chain has not been started
     auto GetChain(const Chain type) const noexcept(false)
         -> BlockchainHandle final;
-    auto GetSyncServers(alloc::Default alloc = {}) const noexcept
-        -> Endpoints final;
     auto Internal() const noexcept -> const internal::Blockchain& final;
     auto Profile() const noexcept -> BlockchainProfile final;
     auto Start(const Chain type, const std::string_view seednode = "")
         const noexcept -> bool final;
-    auto StartSyncServer(
-        const std::string_view syncEndpoint,
-        const std::string_view publicSyncEndpoint,
-        const std::string_view updateEndpoint,
-        const std::string_view publicUpdateEndpoint) const noexcept
-        -> bool final;
     auto Stop(const Chain type) const noexcept -> bool final;
 
     auto Internal() noexcept -> internal::Blockchain& final;

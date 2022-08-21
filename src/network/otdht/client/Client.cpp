@@ -36,8 +36,8 @@
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Timer.hpp"
 #include "opentxs/api/network/Asio.hpp"
-#include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
+#include "opentxs/api/network/OTDHT.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -996,7 +996,8 @@ auto Client::Imp::startup(const api::network::Blockchain& parent) noexcept
     -> void
 {
     to_loopback_.modify_detach([&](auto& socket) {
-        for (const auto& ep : parent.GetSyncServers()) {
+        // TODO allocator
+        for (const auto& ep : api_.Network().OTDHT().KnownPeers({})) {
             socket.Send(
                 [&] {
                     auto out = MakeWork(Job::SyncServerUpdated);
@@ -1065,6 +1066,20 @@ Client::Client(
     zeromq::internal::Handle&& handle) noexcept
     : imp_(std::make_unique<Imp>(api, std::move(handle)).release())
 {
+}
+
+Client::Client(Client&& rhs) noexcept
+    : imp_(rhs.imp_)
+{
+    rhs.imp_ = nullptr;
+}
+
+auto Client::operator=(Client&& rhs) noexcept -> Client&
+{
+    using std::swap;
+    swap(imp_, rhs.imp_);
+
+    return *this;
 }
 
 auto Client::Endpoint() const noexcept -> std::string_view

@@ -3,12 +3,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// IWYU pragma: no_include "opentxs/blockchain/BlockchainType.hpp"
+
 #pragma once
 
 #include <string_view>
 
 #include "internal/api/network/Blockchain.hpp"
-#include "opentxs/blockchain/BlockchainType.hpp"
+#include "opentxs/blockchain/Types.hpp"
 #include "opentxs/util/Container.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
@@ -52,9 +54,9 @@ public:
     Server(const api::Session& api, const zeromq::Context& zmq) noexcept;
     Server() = delete;
     Server(const Server&) = delete;
-    Server(Server&&) = delete;
+    Server(Server&& rhs) noexcept;
     auto operator=(const Server&) -> Server& = delete;
-    auto operator=(Server&&) -> Server& = delete;
+    auto operator=(Server&& rhs) noexcept -> Server&;
 
     ~Server();
 

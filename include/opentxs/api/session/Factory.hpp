@@ -289,9 +289,11 @@ public:
     virtual auto BlockchainAddress(
         const opentxs::blockchain::p2p::Address::SerializedType& serialized)
         const -> OTBlockchainAddress = 0;
+#endif  // OT_BLOCKCHAIN
     virtual auto BlockchainSyncMessage(
         const opentxs::network::zeromq::Message& in) const noexcept
         -> std::unique_ptr<opentxs::network::otdht::Base> = 0;
+#if OT_BLOCKCHAIN
     using BlockHeaderP = std::unique_ptr<opentxs::blockchain::block::Header>;
     virtual auto BlockHeader(const ReadView protobuf) const -> BlockHeaderP = 0;
     virtual auto BlockHeader(

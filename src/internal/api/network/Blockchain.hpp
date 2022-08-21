@@ -63,14 +63,23 @@ namespace opentxs::api::network::internal
 class Blockchain
 {
 public:
+    using Endpoints = Vector<CString>;
+
+    virtual auto AddSyncServer(const std::string_view endpoint) const noexcept
+        -> bool = 0;
     virtual auto BlockAvailableEndpoint() const noexcept
         -> std::string_view = 0;
     virtual auto BlockQueueUpdateEndpoint() const noexcept
         -> std::string_view = 0;
+    virtual auto ConnectedSyncServers() const noexcept -> Endpoints = 0;
     virtual auto Database() const noexcept
         -> const opentxs::blockchain::database::common::Database& = 0;
+    virtual auto DeleteSyncServer(
+        const std::string_view endpoint) const noexcept -> bool = 0;
     virtual auto FilterUpdate() const noexcept
         -> const opentxs::network::zeromq::socket::Publish& = 0;
+    virtual auto GetSyncServers(alloc::Default alloc = {}) const noexcept
+        -> Endpoints = 0;
     virtual auto Hello(alloc::Default alloc) const noexcept
         -> opentxs::network::otdht::StateData = 0;
     virtual auto IsEnabled(const opentxs::blockchain::Type chain) const noexcept
@@ -89,7 +98,6 @@ public:
         const opentxs::blockchain::block::Height target) const noexcept
         -> void = 0;
     virtual auto RestoreNetworks() const noexcept -> void = 0;
-    virtual auto SyncEndpoint() const noexcept -> std::string_view = 0;
     virtual auto UpdatePeer(
         const opentxs::blockchain::Type chain,
         const std::string_view address) const noexcept -> void = 0;

@@ -15,6 +15,7 @@
 #include "internal/api/network/Network.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
+#include "opentxs/api/network/OTDHT.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -32,6 +33,7 @@ namespace network
 {
 class Asio;
 class Blockchain;
+class OTDHT;
 }  // namespace network
 
 namespace session
@@ -66,6 +68,10 @@ public:
     {
         return *blockchain_;
     }
+    auto OTDHT() const noexcept -> const network::OTDHT& final
+    {
+        return *otdht_;
+    }
     auto ZeroMQ() const noexcept
         -> const opentxs::network::zeromq::Context& final
     {
@@ -98,5 +104,6 @@ private:
     const network::Asio& asio_;
     const opentxs::network::zeromq::Context& zmq_;
     std::unique_ptr<network::Blockchain> blockchain_;
+    std::unique_ptr<network::OTDHT> otdht_;
 };
 }  // namespace opentxs::api::network::implementation

@@ -23,6 +23,7 @@ class Network;
 
 class Asio;
 class Blockchain;
+class OTDHT;
 }  // namespace network
 }  // namespace api
 
@@ -50,6 +51,7 @@ public:
     virtual auto Blockchain() const noexcept -> const network::Blockchain& = 0;
     OPENTXS_NO_EXPORT virtual auto Internal() const noexcept
         -> const internal::Network& = 0;
+    virtual auto OTDHT() const noexcept -> const network::OTDHT& = 0;
     virtual auto ZeroMQ() const noexcept
         -> const opentxs::network::zeromq::Context& = 0;
 
