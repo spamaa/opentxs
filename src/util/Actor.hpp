@@ -320,6 +320,8 @@ private:
         } else {
             if (topLevel) { flush_cache(); }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
             switch (work) {
                 case terminate_signal_: {
                     log_(OT_PRETTY_CLASS())(name_)(": shutting down").Flush();
@@ -337,6 +339,7 @@ private:
                 }
             }
         }
+#pragma GCC diagnostic pop
     }
     auto handle_message(const Work work, Message&& msg) noexcept -> void
     {

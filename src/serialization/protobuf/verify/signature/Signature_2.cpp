@@ -38,11 +38,11 @@ auto CheckProto_2(
         case SIGROLE_PEERREPLY:
         case SIGROLE_CONTEXT:
         case SIGROLE_ACCOUNT: {
-            break;
-        }
+        } break;
         case SIGROLE_SERVERREQUEST:
         case SIGROLE_SERVERREPLY:
         case SIGROLE_ERROR:
+        case SIGROLE_NYM:
         default: {
             FAIL_2("invalid role", input.role());
         }

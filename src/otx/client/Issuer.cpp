@@ -239,6 +239,7 @@ auto Issuer::toString() const -> UnallocatedCString
             case contract::peer::PeerRequestType::Faucet: {
                 output << "faucet";
             } break;
+            case contract::peer::PeerRequestType::Error:
             default: {
                 OT_FAIL;
             }

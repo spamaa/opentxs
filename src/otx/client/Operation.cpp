@@ -548,6 +548,8 @@ auto Operation::construct() -> std::shared_ptr<Message>
 
             return construct_withdraw_cash();
         }
+        case otx::OperationType::Invalid:
+        case otx::OperationType::RefreshAccount:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unknown message type").Flush();
         }
@@ -1862,7 +1864,12 @@ void Operation::execute()
             ++error_count_;
             state_.store(State::NymboxPre);
         } break;
+        case otx::LastReplyStatus::Invalid:
+        case otx::LastReplyStatus::None:
+        case otx::LastReplyStatus::Unknown:
+        case otx::LastReplyStatus::NotSent:
         default: {
+
             return;
         }
     }
@@ -2040,6 +2047,7 @@ void Operation::nymbox_post()
             post = true;
         } break;
         case Category::Basic:
+        case Category::Invalid:
         default: {
             state_.store(State::Idle);
         }
@@ -2120,6 +2128,7 @@ void Operation::nymbox_pre()
         } break;
         case Category::NymboxPost:
         case Category::Basic:
+        case Category::Invalid:
         default: {
             state_.store(State::Execute);
         }
@@ -2648,6 +2657,8 @@ auto Operation::state_machine() -> bool
         case State::NymboxPost: {
             nymbox_post();
         } break;
+        case State::Invalid:
+        case State::Idle:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unexpected state").Flush();
         }

@@ -507,6 +507,8 @@ auto Requestor::Imp::request_timeout() const noexcept -> std::chrono::seconds
 
             return init_timeout_;
         }
+        case State::sync:
+        case State::run:
         default: {
 
             return request_timeout_;

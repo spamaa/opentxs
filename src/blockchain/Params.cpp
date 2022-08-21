@@ -179,6 +179,8 @@ auto MerkleHash(
         case Type::Ethereum_ropsten:
         case Type::Litecoin:
         case Type::Litecoin_testnet4:
+        case Type::PKT:
+        case Type::PKT_testnet:
         case Type::BitcoinSV:
         case Type::BitcoinSV_testnet3:
         case Type::eCash:

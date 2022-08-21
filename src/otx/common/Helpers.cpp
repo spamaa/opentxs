@@ -45,30 +45,31 @@ void TranslateAccountTypeToString(
     String& acctType) noexcept
 {
     switch (type) {
-        case Account::user:
+        case Account::user: {
             acctType.Set("user");
-            break;
-        case Account::issuer:
+        } break;
+        case Account::issuer: {
             acctType.Set("issuer");
-            break;
-        case Account::basket:
+        } break;
+        case Account::basket: {
             acctType.Set("basket");
-            break;
-        case Account::basketsub:
+        } break;
+        case Account::basketsub: {
             acctType.Set("basketsub");
-            break;
-        case Account::mint:
+        } break;
+        case Account::mint: {
             acctType.Set("mint");
-            break;
-        case Account::voucher:
+        } break;
+        case Account::voucher: {
             acctType.Set("voucher");
-            break;
-        case Account::stash:
+        } break;
+        case Account::stash: {
             acctType.Set("stash");
-            break;
-        default:
+        } break;
+        case Account::err_acct:
+        default: {
             acctType.Set("err_acct");
-            break;
+        }
     }
 }
 }  // namespace opentxs

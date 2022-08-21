@@ -264,6 +264,7 @@ auto BlockchainAccountStatus::populate(
                 subchain,
                 out[Type::PaymentCode]);
         } break;
+        case Type::Error:
         default: {
 
             OT_FAIL;

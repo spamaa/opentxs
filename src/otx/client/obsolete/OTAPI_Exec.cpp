@@ -1930,17 +1930,26 @@ auto OTAPI_Exec::Variable_GetContents(
     }
 
     switch (pVar->GetType()) {
-        case OTVariable::Var_String:
+        case OTVariable::Var_String: {
+
             return pVar->GetValueString();
-        case OTVariable::Var_Integer:
+        }
+        case OTVariable::Var_Integer: {
+
             return String::LongToString(
                 static_cast<std::int64_t>(pVar->GetValueInteger()));
-        case OTVariable::Var_Bool:
+        }
+        case OTVariable::Var_Bool: {
+
             return pVar->GetValueBool() ? "true" : "false";
-        default:
+        }
+        case OTVariable::Var_Error_Type:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Error: Unknown variable type.")
                 .Flush();
+
             return {};
+        }
     }
 }
 

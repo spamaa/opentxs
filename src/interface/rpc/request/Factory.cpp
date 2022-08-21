@@ -52,6 +52,47 @@ auto Factory(const proto::RPCCommand& proto) noexcept -> std::unique_ptr<Base>
 
                 return std::make_unique<SendPayment>(proto);
             }
+            case CommandType::error:
+            case CommandType::add_client_session:
+            case CommandType::add_server_session:
+            case CommandType::list_client_sessions:
+            case CommandType::list_server_sessions:
+            case CommandType::import_hd_seed:
+            case CommandType::list_hd_seeds:
+            case CommandType::get_hd_seed:
+            case CommandType::create_nym:
+            case CommandType::get_nym:
+            case CommandType::add_claim:
+            case CommandType::delete_claim:
+            case CommandType::import_server_contract:
+            case CommandType::list_server_contracts:
+            case CommandType::register_nym:
+            case CommandType::create_unit_definition:
+            case CommandType::list_unit_definitions:
+            case CommandType::issue_unit_definition:
+            case CommandType::create_account:
+            case CommandType::move_funds:
+            case CommandType::add_contact:
+            case CommandType::list_contacts:
+            case CommandType::get_contact:
+            case CommandType::add_contact_claim:
+            case CommandType::delete_contact_claim:
+            case CommandType::verify_claim:
+            case CommandType::accept_verification:
+            case CommandType::send_contact_message:
+            case CommandType::get_contact_activity:
+            case CommandType::get_server_contract:
+            case CommandType::get_pending_payments:
+            case CommandType::accept_pending_payments:
+            case CommandType::get_compatible_accounts:
+            case CommandType::create_compatible_account:
+            case CommandType::get_workflow:
+            case CommandType::get_server_password:
+            case CommandType::get_admin_nym:
+            case CommandType::get_unit_definition:
+            case CommandType::get_transaction_data:
+            case CommandType::lookup_accountid:
+            case CommandType::rename_account:
             default: {
                 throw std::runtime_error{"unsupported type"};
             }

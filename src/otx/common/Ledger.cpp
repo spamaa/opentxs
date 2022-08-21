@@ -138,10 +138,10 @@ auto Ledger::GetTypeString(ledgerType theType) -> char const*
 auto Ledger::VerifyAccount(const identity::Nym& theNym) -> bool
 {
     switch (GetType()) {
-        case ledgerType::message:  // message ledgers do not load Box Receipts.
-                                   // (They
-                                   // store full version internally already.)
-            break;
+        case ledgerType::message: {  // message ledgers do not load Box
+                                     // Receipts. (They store full version
+                                     // internally already.)
+        } break;
         case ledgerType::nymbox:
         case ledgerType::inbox:
         case ledgerType::outbox:
@@ -152,6 +152,7 @@ auto Ledger::VerifyAccount(const identity::Nym& theNym) -> bool
             LoadBoxReceipts(&setUnloaded);  // Note: Also useful for
                                             // suppressing errors here.
         } break;
+        case ledgerType::error_state:
         default: {
             const auto nLedgerType = static_cast<std::int32_t>(GetType());
             const auto& theNymID = theNym.ID();
@@ -162,8 +163,9 @@ auto Ledger::VerifyAccount(const identity::Nym& theNym) -> bool
                 nLedgerType)(", NymID: ")(strNymID.get())(", AcctID: ")(
                 strAccountID.get())(".")
                 .Flush();
-        }
+
             return false;
+        }
     }
 
     return OTTransactionType::VerifyAccount(theNym);
@@ -688,6 +690,8 @@ auto Ledger::make_filename(const ledgerType theType) -> std::
         case ledgerType::expiredBox: {
             pszFolder = api_.Internal().Legacy().ExpiredBox();
         } break;
+        case ledgerType::message:
+        case ledgerType::error_state:
         default: {
             LogError()(OT_PRETTY_CLASS())(
                 "Error: unknown box type. (This should never happen).")
@@ -910,6 +914,7 @@ auto Ledger::generate_ledger(
             m_Type = theType;
             return true;
         }
+        case ledgerType::error_state:
         default: {
             OT_FAIL_MSG("OTLedger::GenerateLedger: GenerateLedger is only for "
                         "message, nymbox, inbox, outbox, and paymentInbox "
@@ -1686,13 +1691,15 @@ void Ledger::UpdateContents(const PasswordPrompt& reason)  // Before
         case ledgerType::outbox:
         case ledgerType::paymentInbox:
         case ledgerType::recordBox:
-        case ledgerType::expiredBox:
-            break;
-        default:
+        case ledgerType::expiredBox: {
+        } break;
+        case ledgerType::error_state:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Error: unexpected box type (1st "
                                           "block). (This should never happen).")
                 .Flush();
             return;
+        }
     }
 
     // Abbreviated for all types but OTLedger::message.
@@ -1757,40 +1764,34 @@ void Ledger::UpdateContents(const PasswordPrompt& reason)  // Before
             tag.add_tag("transaction", ascTransaction->Get());
         } else  // true == bSavingAbbreviated
         {
-            // ALL OTHER ledger types are
-            // saved here in abbreviated form.
-
+            // ALL OTHER ledger types are saved here in abbreviated form.
             switch (GetType()) {
-
-                case ledgerType::nymbox:
+                case ledgerType::nymbox: {
                     pTransaction->SaveAbbreviatedNymboxRecord(tag, reason);
-                    break;
-                case ledgerType::inbox:
+                } break;
+                case ledgerType::inbox: {
                     pTransaction->SaveAbbreviatedInboxRecord(tag, reason);
-                    break;
-                case ledgerType::outbox:
+                } break;
+                case ledgerType::outbox: {
                     pTransaction->SaveAbbreviatedOutboxRecord(tag, reason);
-                    break;
-                case ledgerType::paymentInbox:
+                } break;
+                case ledgerType::paymentInbox: {
                     pTransaction->SaveAbbrevPaymentInboxRecord(tag, reason);
-                    break;
-                case ledgerType::recordBox:
+                } break;
+                case ledgerType::recordBox: {
                     pTransaction->SaveAbbrevRecordBoxRecord(tag, reason);
-                    break;
-                case ledgerType::expiredBox:
+                } break;
+                case ledgerType::expiredBox: {
                     pTransaction->SaveAbbrevExpiredBoxRecord(tag, reason);
-                    break;
-
-                default:  // todo: possibly change this to an OT_ASSERT.
-                          // security.
-                    LogError()(OT_PRETTY_CLASS())(
-                        "Error: unexpected box "
-                        "type (2nd block). (This should never happen. "
-                        "Skipping).")
-                        .Flush();
-
-                    OT_FAIL_MSG("ASSERT: OTLedger::UpdateContents: Unexpected "
-                                "ledger type.");
+                } break;
+                case ledgerType::message:
+                case ledgerType::error_state:
+                default: {
+                    LogAbort()(OT_PRETTY_CLASS())(
+                        "Error: unexpected box type (2nd block). (This should "
+                        "never happen)")
+                        .Abort();
+                }
             }
         }
     }
@@ -1900,28 +1901,28 @@ auto Ledger::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                                                // different name for each box.
         NumList theNumList;
         NumList* pNumList = nullptr;
+
         switch (m_Type) {
-            case ledgerType::nymbox:
+            case ledgerType::nymbox: {
                 strExpected->Set("nymboxRecord");
                 pNumList = &theNumList;
-                break;
-            case ledgerType::inbox:
+            } break;
+            case ledgerType::inbox: {
                 strExpected->Set("inboxRecord");
-                break;
-            case ledgerType::outbox:
+            } break;
+            case ledgerType::outbox: {
                 strExpected->Set("outboxRecord");
-                break;
-            case ledgerType::paymentInbox:
+            } break;
+            case ledgerType::paymentInbox: {
                 strExpected->Set("paymentInboxRecord");
-                break;
-            case ledgerType::recordBox:
+            } break;
+            case ledgerType::recordBox: {
                 strExpected->Set("recordBoxRecord");
-                break;
-            case ledgerType::expiredBox:
+            } break;
+            case ledgerType::expiredBox: {
                 strExpected->Set("expiredBoxRecord");
-                break;
-            /* --- BREAK --- */
-            case ledgerType::message:
+            } break;
+            case ledgerType::message: {
                 if (nPartialRecordCount > 0) {
                     LogError()(OT_PRETTY_CLASS())("Error: There are ")(
                         nPartialRecordCount)(" unexpected abbreviated records "
@@ -1932,14 +1933,15 @@ auto Ledger::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                         .Flush();
                     return (-1);
                 }
-
-                break;
-            default:
+            } break;
+            case ledgerType::error_state:
+            default: {
                 LogError()(OT_PRETTY_CLASS())("Unexpected ledger type (")(
                     strType.get())("). (Failed loading ledger for account: ")(
                     strLedgerAcctID.get())(").")
                     .Flush();
                 return (-1);
+            }
         }  // switch (to set strExpected to the abbreviated record type.)
 
         if (nPartialRecordCount > 0)  // message ledger will never enter this
@@ -2284,8 +2286,8 @@ auto Ledger::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                 transaction->SetParent(*this);
 
                 switch (GetType()) {
-                    case ledgerType::message:
-                        break;
+                    case ledgerType::message: {
+                    } break;
                     case ledgerType::nymbox:
                     case ledgerType::inbox:
                     case ledgerType::outbox:
@@ -2346,6 +2348,7 @@ auto Ledger::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                             }
                         }
                     } break;
+                    case ledgerType::error_state:
                     default:
                         LogError()(OT_PRETTY_CLASS())(
                             "Unknown ledger type while loading "

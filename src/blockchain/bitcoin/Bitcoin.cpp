@@ -715,6 +715,7 @@ SigHash::SigHash(
         case SigOption::None: {
             flags_ = None;
         } break;
+        case SigOption::All:
         default: {
         }
     }

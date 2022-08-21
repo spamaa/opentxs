@@ -733,8 +733,12 @@ auto SubchainStateData::get_targets(const TXOs& utxos, Targets& targets)
                 targets.emplace_back(outpoint.Bytes());
             }
         } break;
-        case cfilter::Type::Basic_BIP158:
+        case cfilter::Type::Basic_BIP158: {
+        } break;
+        case cfilter::Type::Unknown:
         default: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": invalid cfilter type")
+                .Abort();
         }
     }
 }
@@ -794,11 +798,15 @@ auto SubchainStateData::IndexElement(
             }
         } break;
         case cfilter::Type::Basic_BIP158:
-        case cfilter::Type::Basic_BCHVariant:
-        default: {
+        case cfilter::Type::Basic_BCHVariant: {
             for (const auto& [sw, p, s, e, script] : scripts) {
                 script->Serialize(writer(list.emplace_back()));
             }
+        } break;
+        case cfilter::Type::Unknown:
+        default: {
+            LogAbort()(OT_PRETTY_CLASS())(name_)(": invalid cfilter type")
+                .Abort();
         }
     }
 }
@@ -1573,30 +1581,27 @@ auto SubchainStateData::state_normal(const Work work, Message&& msg) noexcept
         case Work::rescan: {
             process_rescan(std::move(msg));
         } break;
-        case Work::init: {
-            do_init();
-        } break;
         case Work::prepare_shutdown: {
             transition_state_pre_shutdown();
         } break;
-        case Work::statemachine: {
-            do_work();
-        } break;
-        case Work::shutdown:
         case Work::finish_reorg: {
             LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
                 print(work))(" message")
                 .Abort();
         }
+        case Work::shutdown:
         case Work::filter:
         case Work::mempool:
         case Work::block:
         case Work::start_scan:
         case Work::update:
+        case Work::process:
         case Work::watchdog:
         case Work::reprocess:
         case Work::do_rescan:
+        case Work::init:
         case Work::key:
+        case Work::statemachine:
         default: {
             LogAbort()(OT_PRETTY_CLASS())("unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))
@@ -1610,31 +1615,30 @@ auto SubchainStateData::state_pre_shutdown(
     Message&& msg) noexcept -> void
 {
     switch (work) {
-        case Work::shutdown: {
-            shutdown_actor();
-        } break;
         case Work::watchdog_ack:
-        case Work::rescan:
-        case Work::statemachine: {
+        case Work::rescan: {
             // NOTE ignore message
         } break;
         case Work::prepare_reorg:
         case Work::finish_reorg:
-        case Work::init:
         case Work::prepare_shutdown: {
             LogAbort()(OT_PRETTY_CLASS())(name_)(" wrong state for ")(
                 print(work))(" message")
                 .Abort();
         }
+        case Work::shutdown:
         case Work::filter:
         case Work::mempool:
         case Work::block:
         case Work::start_scan:
         case Work::update:
+        case Work::process:
         case Work::watchdog:
         case Work::reprocess:
         case Work::do_rescan:
+        case Work::init:
         case Work::key:
+        case Work::statemachine:
         default: {
             LogAbort()(OT_PRETTY_CLASS())("unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))
@@ -1648,8 +1652,7 @@ auto SubchainStateData::state_reorg(const Work work, Message&& msg) noexcept
 {
     switch (work) {
         case Work::prepare_reorg:
-        case Work::rescan:
-        case Work::statemachine: {
+        case Work::rescan: {
             defer(std::move(msg));
         } break;
         case Work::watchdog_ack: {
@@ -1658,22 +1661,24 @@ auto SubchainStateData::state_reorg(const Work work, Message&& msg) noexcept
         case Work::finish_reorg: {
             transition_state_normal();
         } break;
-        case Work::shutdown:
-        case Work::init:
         case Work::prepare_shutdown: {
             LogAbort()(OT_PRETTY_CLASS())("wrong state for ")(print(work))(
                 " message")
                 .Abort();
         }
+        case Work::shutdown:
         case Work::filter:
         case Work::mempool:
         case Work::block:
         case Work::start_scan:
         case Work::update:
+        case Work::process:
         case Work::watchdog:
         case Work::reprocess:
         case Work::do_rescan:
+        case Work::init:
         case Work::key:
+        case Work::statemachine:
         default: {
             LogAbort()(OT_PRETTY_CLASS())("unhandled message type ")(
                 static_cast<OTZMQWorkType>(work))

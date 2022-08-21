@@ -886,20 +886,26 @@ auto OTPacker::Create(PackType ePackType) -> OTPacker*
 
     switch (ePackType) {
 #if defined(OTDB_MESSAGE_PACK)
-        case PACK_MESSAGE_PACK:
+        case PACK_MESSAGE_PACK: {
             pPacker = new PackerMsgpack;
             OT_ASSERT(nullptr != pPacker);
-            break;
+        } break;
 #endif
 #if defined(OTDB_PROTOCOL_BUFFERS)
-        case PACK_PROTOCOL_BUFFERS:
+        case PACK_PROTOCOL_BUFFERS: {
             pPacker = new PackerPB;
             OT_ASSERT(nullptr != pPacker);
-            break;
+        } break;
+#endif
+#if !defined(OTDB_MESSAGE_PACK)
+        case PACK_MESSAGE_PACK:
+#endif
+#if !defined(OTDB_PROTOCOL_BUFFERS)
+        case PACK_PROTOCOL_BUFFERS:
 #endif
         case PACK_TYPE_ERROR:
-        default:
-            break;
+        default: {
+        }
     }
 
     return pPacker;  // May return nullptr...
@@ -2160,19 +2166,16 @@ auto Storage::Create(const StorageType& eStorageType, const PackType& ePackType)
     Storage* pStore = nullptr;
 
     switch (eStorageType) {
-        case STORE_FILESYSTEM:
+        case STORE_FILESYSTEM: {
             pStore = StorageFS::Instantiate();
             OT_ASSERT(nullptr != pStore);
-            break;
-        //            case STORE_COUCH_DB:
-        //                pStore = new StorageCouchDB; OT_ASSERT(nullptr !=
-        //                pStore);
-        // break;
-        default:
+        } break;
+        case STORE_TYPE_SUBCLASS:
+        default: {
             LogError()(OT_PRETTY_STATIC(Storage))(
                 "Failed: Unknown storage type.")
                 .Flush();
-            break;
+        }
     }
 
     // IF we successfully created the storage context, now let's

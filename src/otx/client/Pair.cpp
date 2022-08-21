@@ -482,6 +482,10 @@ void Pair::callback_peer_reply(const zmq::Message& in) noexcept
             Lock lock(decision_lock_);
             trigger = process_store_secret(lock, nymID, reply);
         } break;
+        case contract::peer::PeerRequestType::Error:
+        case contract::peer::PeerRequestType::PendingBailment:
+        case contract::peer::PeerRequestType::VerificationOffer:
+        case contract::peer::PeerRequestType::Faucet:
         default: {
         }
     }

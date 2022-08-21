@@ -138,6 +138,10 @@ auto ChequeBalanceItem::startup(
                 case proto::PAYMENTEVENTTYPE_ACCEPT:
                 case proto::PAYMENTEVENTTYPE_CANCEL:
                 case proto::PAYMENTEVENTTYPE_COMPLETE:
+                case proto::PAYMENTEVENTTYPE_ABORT:
+                case proto::PAYMENTEVENTTYPE_ACKNOWLEDGE:
+                case proto::PAYMENTEVENTTYPE_EXPIRE:
+                case proto::PAYMENTEVENTTYPE_REJECT:
                 default: {
                     LogError()(OT_PRETTY_CLASS())("Invalid event state (")(
                         event.type())(")")
@@ -163,6 +167,10 @@ auto ChequeBalanceItem::startup(
                 case proto::PAYMENTEVENTTYPE_CONVEY:
                 case proto::PAYMENTEVENTTYPE_CANCEL:
                 case proto::PAYMENTEVENTTYPE_COMPLETE:
+                case proto::PAYMENTEVENTTYPE_ABORT:
+                case proto::PAYMENTEVENTTYPE_ACKNOWLEDGE:
+                case proto::PAYMENTEVENTTYPE_EXPIRE:
+                case proto::PAYMENTEVENTTYPE_REJECT:
                 default: {
                     LogError()(OT_PRETTY_CLASS())("Invalid event state (")(
                         event.type())(")")
@@ -186,6 +194,8 @@ auto ChequeBalanceItem::startup(
         case otx::client::StorageBox::INTERNALTRANSFER:
         case otx::client::StorageBox::DRAFT:
         case otx::client::StorageBox::UNKNOWN:
+        case otx::client::StorageBox::RESERVED_1:
+        case otx::client::StorageBox::PENDING_SEND:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid item type (")(
                 static_cast<std::uint8_t>(type_))(")")

@@ -274,11 +274,12 @@ auto Activity::Cheque(
         case otx::client::PaymentWorkflowType::OutgoingInvoice:
         case otx::client::PaymentWorkflowType::IncomingInvoice: {
         } break;
-
         case otx::client::PaymentWorkflowType::Error:
         case otx::client::PaymentWorkflowType::OutgoingTransfer:
         case otx::client::PaymentWorkflowType::IncomingTransfer:
         case otx::client::PaymentWorkflowType::InternalTransfer:
+        case otx::client::PaymentWorkflowType::OutgoingCash:
+        case otx::client::PaymentWorkflowType::IncomingCash:
         default: {
             LogError()(OT_PRETTY_CLASS())("Wrong workflow type.").Flush();
 
@@ -335,6 +336,8 @@ auto Activity::Transfer(
         case otx::client::PaymentWorkflowType::IncomingCheque:
         case otx::client::PaymentWorkflowType::OutgoingInvoice:
         case otx::client::PaymentWorkflowType::IncomingInvoice:
+        case otx::client::PaymentWorkflowType::OutgoingCash:
+        case otx::client::PaymentWorkflowType::IncomingCash:
         default: {
             LogError()(OT_PRETTY_CLASS())("Wrong workflow type").Flush();
 
@@ -575,6 +578,8 @@ auto Activity::PaymentText(
         case otx::client::PaymentWorkflowType::Error:
         case otx::client::PaymentWorkflowType::OutgoingInvoice:
         case otx::client::PaymentWorkflowType::IncomingInvoice:
+        case otx::client::PaymentWorkflowType::OutgoingCash:
+        case otx::client::PaymentWorkflowType::IncomingCash:
         default: {
 
             return std::move(output);
@@ -634,8 +639,9 @@ auto Activity::PaymentText(
                 }
             }
         } break;
-
         case otx::client::PaymentWorkflowType::Error:
+        case otx::client::PaymentWorkflowType::OutgoingCash:
+        case otx::client::PaymentWorkflowType::IncomingCash:
         default: {
 
             return nullptr;

@@ -1353,6 +1353,7 @@ auto Factory::Keypair(
         case opentxs::crypto::key::asymmetric::Role::Sign: {
             roleIndex = HDIndex{Bip32Child::SIGN_KEY, Bip32Child::HARDENED};
         } break;
+        case opentxs::crypto::key::asymmetric::Role::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid key role").Flush();
 
@@ -1477,6 +1478,7 @@ auto Factory::Mint(const otx::blind::CashType type) const noexcept
 
             return factory::MintLucre(api_);
         }
+        case otx::blind::CashType::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("unsupported cash type: ")(
                 opentxs::print(type))
@@ -1502,6 +1504,7 @@ auto Factory::Mint(
 
             return factory::MintLucre(api_, notary, unit);
         }
+        case otx::blind::CashType::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("unsupported cash type: ")(
                 opentxs::print(type))
@@ -1530,6 +1533,7 @@ auto Factory::Mint(
 
             return factory::MintLucre(api_, notary, serverNym, unit);
         }
+        case otx::blind::CashType::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("unsupported cash type: ")(
                 opentxs::print(type))

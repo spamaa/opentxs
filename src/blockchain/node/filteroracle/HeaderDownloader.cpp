@@ -152,6 +152,7 @@ auto FilterOracle::HeaderDownloader::pipeline(const zmq::Message& in) noexcept
         case FilterOracle::Work::statemachine: {
             run_if_enabled();
         } break;
+        case FilterOracle::Work::full_block:
         default: {
             OT_FAIL;
         }

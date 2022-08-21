@@ -3043,6 +3043,7 @@ auto OTScriptable::ProcessXMLNode(irr::io::IrrXMLReader*& xml) -> std::int32_t
                                             str_var_value,
                                             theVarAccess);
                                     } break;
+                                    case OTVariable::Var_Error_Type:
                                     default:
                                         LogError()(OT_PRETTY_CLASS())(
                                             "Wrong variable type... "

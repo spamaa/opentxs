@@ -183,6 +183,9 @@ private:
             case Work::statemachine: {
                 run_if_enabled();
             } break;
+            case Work::block:
+            case Work::reorg:
+            case Work::full_block:
             default: {
                 OT_FAIL;
             }

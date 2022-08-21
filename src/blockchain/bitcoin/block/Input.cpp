@@ -707,6 +707,7 @@ auto Input::ExtractElements(const cfilter::Type style) const noexcept
             output.emplace_back(it, it + sizeof(previous_));
         } break;
         case cfilter::Type::Basic_BIP158:
+        case cfilter::Type::Unknown:
         default: {
             LogTrace()(OT_PRETTY_CLASS())("skipping input").Flush();
         }

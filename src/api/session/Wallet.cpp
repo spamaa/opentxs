@@ -848,6 +848,8 @@ auto Wallet::context(
         case otx::ConsensusType::Client: {
             instantiate_client_context(serialized, localNym, remoteNym, entry);
         } break;
+        case otx::ConsensusType::Error:
+        case otx::ConsensusType::Peer:
         default: {
             return nullptr;
         }
@@ -2076,6 +2078,7 @@ auto Wallet::process_p2p_publish_contract(
 
                     return (unit->ID() == id);
                 }
+                case contract::Type::invalid:
                 default: {
                     throw std::runtime_error{
                         UnallocatedCString{
@@ -2157,6 +2160,7 @@ auto Wallet::process_p2p_query_contract(
                         return factory::BlockchainSyncQueryContractReply(
                             UnitDefinition(unitID));
                     }
+                    case contract::Type::invalid:
                     default: {
                         throw std::runtime_error{
                             UnallocatedCString{
@@ -2251,6 +2255,7 @@ auto Wallet::process_p2p_response(
 
                             return (unit->ID() == id);
                         }
+                        case contract::Type::invalid:
                         default: {
                             throw std::runtime_error{
                                 UnallocatedCString{

@@ -413,6 +413,7 @@ auto Workflow::UUID(
         case PaymentWorkflowType::IncomingCash: {
             // TODO
         } break;
+        case PaymentWorkflowType::Error:
         default: {
             LogError()(OT_PRETTY_STATIC(Workflow))("Unknown workflow type")
                 .Flush();
@@ -713,6 +714,10 @@ auto Workflow::add_cheque_event(
         } break;
         case proto::PAYMENTEVENTTYPE_ERROR:
         case proto::PAYMENTEVENTTYPE_CREATE:
+        case proto::PAYMENTEVENTTYPE_ABORT:
+        case proto::PAYMENTEVENTTYPE_ACKNOWLEDGE:
+        case proto::PAYMENTEVENTTYPE_EXPIRE:
+        case proto::PAYMENTEVENTTYPE_REJECT:
         default: {
             OT_FAIL;
         }
@@ -800,6 +805,8 @@ auto Workflow::add_transfer_event(
         case proto::PAYMENTEVENTTYPE_ERROR:
         case proto::PAYMENTEVENTTYPE_CREATE:
         case proto::PAYMENTEVENTTYPE_CANCEL:
+        case proto::PAYMENTEVENTTYPE_EXPIRE:
+        case proto::PAYMENTEVENTTYPE_REJECT:
         default: {
             OT_FAIL;
         }
@@ -848,6 +855,8 @@ auto Workflow::add_transfer_event(
         case proto::PAYMENTEVENTTYPE_ERROR:
         case proto::PAYMENTEVENTTYPE_CREATE:
         case proto::PAYMENTEVENTTYPE_CANCEL:
+        case proto::PAYMENTEVENTTYPE_EXPIRE:
+        case proto::PAYMENTEVENTTYPE_REJECT:
         default: {
             OT_FAIL;
         }

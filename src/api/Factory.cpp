@@ -256,6 +256,7 @@ auto Factory::id_from_preimage(
 
                     return Hash::Blake2b256;
                 }
+                case Type::invalid:
                 default: {
 
                     throw std::runtime_error("unknown algorithm");
@@ -574,6 +575,9 @@ auto Factory::NotaryIDConvertSafe(
                 in.Bytes(),
                 std::move(alloc));
         }
+        case identifier::Type::invalid:
+        case identifier::Type::nym:
+        case identifier::Type::unitdefinition:
         default: {
 
             return factory::IdentifierInvalid(std::move(alloc));
@@ -669,6 +673,9 @@ auto Factory::NymIDConvertSafe(
                 in.Bytes(),
                 std::move(alloc));
         }
+        case identifier::Type::invalid:
+        case identifier::Type::unitdefinition:
+        case identifier::Type::notary:
         default: {
 
             return factory::IdentifierInvalid(std::move(alloc));
@@ -762,6 +769,9 @@ auto Factory::UnitIDConvertSafe(
                 in.Bytes(),
                 std::move(alloc));
         }
+        case identifier::Type::invalid:
+        case identifier::Type::nym:
+        case identifier::Type::notary:
         default: {
 
             return factory::IdentifierInvalid(std::move(alloc));

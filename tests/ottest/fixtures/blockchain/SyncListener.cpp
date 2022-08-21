@@ -88,6 +88,9 @@ private:
             case Work::sync: {
                 process_sync(std::move(msg));
             } break;
+            case Work::shutdown:
+            case Work::init:
+            case Work::statemachine:
             default: {
                 ot::LogAbort()(OT_PRETTY_CLASS())(
                     name_)(" unhandled message type ")(

@@ -27,25 +27,23 @@ void OTVariable::Serialize(Tag& parent, bool bCalculatingID) const
     UnallocatedCString str_access(""), str_type("");
 
     switch (m_Access) {
-        // This cannot be changed from inside the
-        // script.
-        case OTVariable::Var_Constant:
+        // This cannot be changed from inside the script.
+        case OTVariable::Var_Constant: {
             str_access = "constant";
-            break;
-        // This can be changed without notifying
-        // the parties.
-        case OTVariable::Var_Persistent:
+        } break;
+        // This can be changed without notifying the parties.
+        case OTVariable::Var_Persistent: {
             str_access = "persistent";
-            break;
-        // This cannot be changed without notifying
-        // the parties.
-        case OTVariable::Var_Important:
+        } break;
+        // This cannot be changed without notifying the parties.
+        case OTVariable::Var_Important: {
             str_access = "important";
-            break;
-        default:
+        } break;
+        case OTVariable::Var_Error_Access:
+        default: {
             LogError()(OT_PRETTY_CLASS())("ERROR: Bad variable access.")
                 .Flush();
-            break;
+        }
     }
 
     TagPtr pTag(new Tag("variable"));
@@ -68,19 +66,20 @@ void OTVariable::Serialize(Tag& parent, bool bCalculatingID) const
                 pTag->add_attribute("value", "none");
             }
         } break;
-        case OTVariable::Var_Integer:
+        case OTVariable::Var_Integer: {
             str_type = "integer";
             pTag->add_attribute(
                 "value", std::to_string(bCalculatingID ? 0 : m_nValue));
-            break;
-        case OTVariable::Var_Bool:
+        } break;
+        case OTVariable::Var_Bool: {
             str_type = "bool";
             pTag->add_attribute(
                 "value", bCalculatingID ? "false" : formatBool(m_bValue));
-            break;
-        default:
+        } break;
+        case OTVariable::Var_Error_Type:
+        default: {
             LogError()(OT_PRETTY_CLASS())("ERROR: Bad variable type.").Flush();
-            break;
+        }
     }
 
     pTag->add_attribute("type", str_type);
@@ -227,31 +226,32 @@ auto OTVariable::IsDirty() const -> bool
     bool bReturnVal = false;
 
     switch (m_Type) {
-        case OTVariable::Var_String:
+        case OTVariable::Var_String: {
             if (0 != m_str_Value.compare(m_str_ValueBackup)) {  // If they do
                                                                 // NOT
                 // match, then it's
                 // dirty.
                 bReturnVal = true;
             }
-            break;
-        case OTVariable::Var_Integer:
+        } break;
+        case OTVariable::Var_Integer: {
             if (m_nValue != m_nValueBackup) {  // If they do NOT match, then
                                                // it's dirty.
                 bReturnVal = true;
             }
-            break;
-        case OTVariable::Var_Bool:
+        } break;
+        case OTVariable::Var_Bool: {
             if (m_bValue != m_bValueBackup) {  // If they do NOT match, then
                                                // it's dirty.
                 bReturnVal = true;
             }
-            break;
-        default:
+        } break;
+        case OTVariable::Var_Error_Type:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Error: Unknown type for variable: ")(
                 m_strName.get())(".")
                 .Flush();
-            break;
+        }
     }
 
     return bReturnVal;
@@ -262,29 +262,30 @@ auto OTVariable::IsDirty() const -> bool
 void OTVariable::SetAsClean()
 {
     switch (m_Type) {
-        case OTVariable::Var_String:
+        case OTVariable::Var_String: {
             m_str_ValueBackup = m_str_Value;  // Save a copy of the current
                                               // value, so we can check later
                                               // and see if they're different.
-            break;
-        case OTVariable::Var_Integer:
+        } break;
+        case OTVariable::Var_Integer: {
             m_nValueBackup = m_nValue;  // Save a copy of the current value, so
                                         // we can check later and see if they're
                                         // different.
-            break;
-        case OTVariable::Var_Bool:
+        } break;
+        case OTVariable::Var_Bool: {
             m_bValueBackup = m_bValue;  // Save a copy of the current value, so
                                         // we can check later and see if they're
                                         // different.
-            break;
-        default:
+        } break;
+        case OTVariable::Var_Error_Type:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Error: Unknown type for variable: ")(
                 m_strName.get())(".")
                 .Flush();
             m_str_ValueBackup = m_str_Value;
             m_nValueBackup = m_nValue;
             m_bValueBackup = m_bValue;
-            break;
+        }
     }
 }
 
@@ -340,20 +341,21 @@ auto OTVariable::Compare(OTVariable& rhs) -> bool
     bool bMatch = false;
 
     switch (GetType()) {
-        case OTVariable::Var_Integer:
+        case OTVariable::Var_Integer: {
             bMatch = (GetValueInteger() == rhs.GetValueInteger());
-            break;
-        case OTVariable::Var_Bool:
+        } break;
+        case OTVariable::Var_Bool: {
             bMatch = (GetValueBool() == rhs.GetValueBool());
-            break;
-        case OTVariable::Var_String:
+        } break;
+        case OTVariable::Var_String: {
             bMatch = (GetValueString().compare(rhs.GetValueString()) == 0);
-            break;
-        default:
+        } break;
+        case OTVariable::Var_Error_Type:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Unknown type in variable ")(
                 m_strName.get())(".")
                 .Flush();
-            break;
+        }
     }
 
     return bMatch;

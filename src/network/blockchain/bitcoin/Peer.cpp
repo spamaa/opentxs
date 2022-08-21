@@ -111,6 +111,10 @@ auto BlockchainPeerBitcoin(
         case Network::ipv4:
         case Network::zmq: {
         } break;
+        case Network::onion2:
+        case Network::onion3:
+        case Network::eep:
+        case Network::cjdns:
         default: {
             OT_FAIL;
         }
@@ -1205,6 +1209,10 @@ auto Peer::process_protocol_inv(
                 add_known_tx(Txid{hash.Bytes()});
                 txReceived.emplace_back(inv);
             } break;
+            case Kind::None:
+            case Kind::MsgFilteredBlock:
+            case Kind::MsgFilteredWitnessBlock:
+            case Kind::MsgCmpctBlock:
             default: {
             }
         }

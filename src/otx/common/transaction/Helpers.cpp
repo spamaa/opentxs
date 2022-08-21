@@ -610,30 +610,32 @@ auto SetupBoxReceiptFilename(
     std::int64_t lLedgerType = 0;
 
     switch (theLedger.GetType()) {
-        case ledgerType::nymbox:
+        case ledgerType::nymbox: {
             lLedgerType = 0;
-            break;
-        case ledgerType::inbox:
+        } break;
+        case ledgerType::inbox: {
             lLedgerType = 1;
-            break;
-        case ledgerType::outbox:
+        } break;
+        case ledgerType::outbox: {
             lLedgerType = 2;
-            break;
-        //        case OTledgerType::message:         lLedgerType = 3;    break;
-        case ledgerType::paymentInbox:
+        } break;
+        case ledgerType::paymentInbox: {
             lLedgerType = 4;
-            break;
-        case ledgerType::recordBox:
+        } break;
+        case ledgerType::recordBox: {
             lLedgerType = 5;
-            break;
-        case ledgerType::expiredBox:
+        } break;
+        case ledgerType::expiredBox: {
             lLedgerType = 6;
-            break;
-        default:
+        } break;
+        case ledgerType::message:
+        case ledgerType::error_state:
+        default: {
             LogError()(__func__)("Error: unknown box type. "
                                  "(This should never happen).")
                 .Flush();
             return false;
+        }
     }
 
     return SetupBoxReceiptFilename(

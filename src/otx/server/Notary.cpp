@@ -2680,6 +2680,71 @@ void Notary::NotarizeDeposit(
                 *responseItem,
                 *responseBalanceItem);
         } break;
+        case itemType::transfer:
+        case itemType::atTransfer:
+        case itemType::acceptTransaction:
+        case itemType::atAcceptTransaction:
+        case itemType::acceptMessage:
+        case itemType::atAcceptMessage:
+        case itemType::acceptNotice:
+        case itemType::atAcceptNotice:
+        case itemType::acceptPending:
+        case itemType::atAcceptPending:
+        case itemType::rejectPending:
+        case itemType::atRejectPending:
+        case itemType::acceptCronReceipt:
+        case itemType::atAcceptCronReceipt:
+        case itemType::acceptItemReceipt:
+        case itemType::atAcceptItemReceipt:
+        case itemType::disputeCronReceipt:
+        case itemType::atDisputeCronReceipt:
+        case itemType::disputeItemReceipt:
+        case itemType::atDisputeItemReceipt:
+        case itemType::acceptFinalReceipt:
+        case itemType::atAcceptFinalReceipt:
+        case itemType::acceptBasketReceipt:
+        case itemType::atAcceptBasketReceipt:
+        case itemType::disputeFinalReceipt:
+        case itemType::atDisputeFinalReceipt:
+        case itemType::disputeBasketReceipt:
+        case itemType::atDisputeBasketReceipt:
+        case itemType::serverfee:
+        case itemType::atServerfee:
+        case itemType::issuerfee:
+        case itemType::atIssuerfee:
+        case itemType::balanceStatement:
+        case itemType::atBalanceStatement:
+        case itemType::transactionStatement:
+        case itemType::atTransactionStatement:
+        case itemType::withdrawal:
+        case itemType::atWithdrawal:
+        case itemType::deposit:
+        case itemType::withdrawVoucher:
+        case itemType::atWithdrawVoucher:
+        case itemType::depositCheque:
+        case itemType::payDividend:
+        case itemType::atPayDividend:
+        case itemType::marketOffer:
+        case itemType::atMarketOffer:
+        case itemType::paymentPlan:
+        case itemType::atPaymentPlan:
+        case itemType::smartContract:
+        case itemType::atSmartContract:
+        case itemType::cancelCronItem:
+        case itemType::atCancelCronItem:
+        case itemType::exchangeBasket:
+        case itemType::atExchangeBasket:
+        case itemType::chequeReceipt:
+        case itemType::voucherReceipt:
+        case itemType::marketReceipt:
+        case itemType::paymentReceipt:
+        case itemType::transferReceipt:
+        case itemType::finalReceipt:
+        case itemType::basketReceipt:
+        case itemType::replyNotice:
+        case itemType::successNotice:
+        case itemType::notice:
+        case itemType::error_state:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid deposit item type.").Flush();
 

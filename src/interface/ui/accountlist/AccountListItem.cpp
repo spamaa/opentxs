@@ -40,6 +40,7 @@ auto AccountListItem(
             return AccountListItemCustodial(
                 parent, api, rowID, sortKey, custom);
         }
+        case AccountType::Error:
         default: {
             OT_FAIL;
         }

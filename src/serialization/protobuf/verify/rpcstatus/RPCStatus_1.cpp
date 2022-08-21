@@ -48,6 +48,7 @@ auto CheckProto_1(const RPCStatus& input, const bool silent) -> bool
         case RPCRESPONSE_SEND_PAYMENT_FAILED:
         case RPCRESPONSE_TRANSACTION_FAILED:
         case RPCRESPONSE_UNIMPLEMENTED:
+        case RPCRESPONSE_TXID:
         default: {
             FAIL_1("invalid success code");
         }

@@ -103,9 +103,6 @@ auto Wallet::Actor::do_shutdown() noexcept -> void
 auto Wallet::Actor::pipeline(const Work work, Message&& msg) noexcept -> void
 {
     switch (work) {
-        case Work::shutdown: {
-            shutdown_actor();
-        } break;
         case Work::start_wallet: {
             wallet::Accounts{api_p_, node_p_}.Init();
             running_ = true;
@@ -116,9 +113,9 @@ auto Wallet::Actor::pipeline(const Work work, Message&& msg) noexcept -> void
                     MakeWork(wallet::AccountsJobs::rescan), __FILE__, __LINE__);
             }
         } break;
-        case Work::statemachine: {
-            do_work();
-        } break;
+        case Work::shutdown:
+        case Work::init:
+        case Work::statemachine:
         default: {
             LogError()(OT_PRETTY_CLASS())(name_)(": unhandled type").Flush();
 

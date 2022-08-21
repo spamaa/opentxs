@@ -95,35 +95,40 @@ auto Hash::Digest(
     const ReadView data,
     const AllocateOutput destination) const noexcept -> bool
 {
+    using Type = opentxs::crypto::HashType;
+
     switch (type) {
-        case opentxs::crypto::HashType::Sha1:
-        case opentxs::crypto::HashType::Sha256:
-        case opentxs::crypto::HashType::Sha512: {
+        case Type::Sha1:
+        case Type::Sha256:
+        case Type::Sha512: {
 
             return sha_.Digest(type, data, destination);
         }
-        case opentxs::crypto::HashType::Blake2b160:
-        case opentxs::crypto::HashType::Blake2b256:
-        case opentxs::crypto::HashType::Blake2b512: {
+        case Type::Blake2b160:
+        case Type::Blake2b256:
+        case Type::Blake2b512: {
 
             return blake_.Digest(type, data, destination);
         }
-        case opentxs::crypto::HashType::Ripemd160: {
+        case Type::Ripemd160: {
 
             return ripe_.RIPEMD160(data, destination);
         }
-        case opentxs::crypto::HashType::Sha256D: {
+        case Type::Sha256D: {
 
             return sha_256_double(data, destination);
         }
-        case opentxs::crypto::HashType::Sha256DC: {
+        case Type::Sha256DC: {
 
             return sha_256_double_checksum(data, destination);
         }
-        case opentxs::crypto::HashType::Bitcoin: {
+        case Type::Bitcoin: {
 
             return bitcoin_hash_160(data, destination);
         }
+        case Type::Error:
+        case Type::None:
+        case Type::SipHash24:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported hash type.").Flush();
 
@@ -177,19 +182,28 @@ auto Hash::HMAC(
     const ReadView data,
     const AllocateOutput output) const noexcept -> bool
 {
+    using Type = opentxs::crypto::HashType;
+
     switch (type) {
-        case opentxs::crypto::HashType::Sha256:
-        case opentxs::crypto::HashType::Sha512: {
+        case Type::Sha256:
+        case Type::Sha512: {
 
             return sha_.HMAC(type, key, data, output);
         }
-        case opentxs::crypto::HashType::Blake2b160:
-        case opentxs::crypto::HashType::Blake2b256:
-        case opentxs::crypto::HashType::Blake2b512:
-        case opentxs::crypto::HashType::SipHash24: {
+        case Type::Blake2b160:
+        case Type::Blake2b256:
+        case Type::Blake2b512:
+        case Type::SipHash24: {
 
             return blake_.HMAC(type, key, data, output);
         }
+        case Type::Sha1:
+        case Type::Ripemd160:
+        case Type::Sha256D:
+        case Type::Sha256DC:
+        case Type::Bitcoin:
+        case Type::Error:
+        case Type::None:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported hash type.").Flush();
 

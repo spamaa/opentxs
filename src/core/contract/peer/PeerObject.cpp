@@ -285,6 +285,7 @@ Object::Object(
         case (contract::peer::PeerObjectType::Cash): {
             purse_ = factory::Purse(api_, serialized.purse());
         } break;
+        case contract::peer::PeerObjectType::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Incorrect type.").Flush();
         }
@@ -455,6 +456,7 @@ auto Object::Serialize(proto::PeerObject& output) const noexcept -> bool
                 purse_.Internal().Serialize(*output.mutable_purse());
             }
         } break;
+        case contract::peer::PeerObjectType::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unknown type.").Flush();
             return false;
@@ -490,6 +492,7 @@ auto Object::Validate() const noexcept -> bool
         case (contract::peer::PeerObjectType::Cash): {
             validChildren = purse_;
         } break;
+        case contract::peer::PeerObjectType::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unknown type.").Flush();
         }

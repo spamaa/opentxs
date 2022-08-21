@@ -298,6 +298,7 @@ auto Bip32::Imp::provider(const EcdsaCurve& curve) const noexcept
 
             return crypto_.Internal().EllipticProvider(Key::Secp256k1);
         }
+        case EcdsaCurve::invalid:
         default: {
 
             return crypto_.Internal().EllipticProvider(Key::Error);

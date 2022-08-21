@@ -39,8 +39,7 @@ namespace opentxs::crypto
 auto AsymmetricProvider::CurveToKeyType(const EcdsaCurve& curve)
     -> crypto::key::asymmetric::Algorithm
 {
-    crypto::key::asymmetric::Algorithm output =
-        crypto::key::asymmetric::Algorithm::Error;
+    auto output = crypto::key::asymmetric::Algorithm::Error;
 
     switch (curve) {
         case (EcdsaCurve::secp256k1): {
@@ -53,6 +52,7 @@ auto AsymmetricProvider::CurveToKeyType(const EcdsaCurve& curve)
 
             break;
         }
+        case EcdsaCurve::invalid:
         default: {
         }
     }
@@ -63,19 +63,19 @@ auto AsymmetricProvider::CurveToKeyType(const EcdsaCurve& curve)
 auto AsymmetricProvider::KeyTypeToCurve(
     const crypto::key::asymmetric::Algorithm& type) -> EcdsaCurve
 {
-    EcdsaCurve output = EcdsaCurve::invalid;
+    auto output = EcdsaCurve::invalid;
+    using Type = key::asymmetric::Algorithm;
 
     switch (type) {
-        case (key::asymmetric::Algorithm::Secp256k1): {
+        case Type::Secp256k1: {
             output = EcdsaCurve::secp256k1;
-
-            break;
-        }
-        case (key::asymmetric::Algorithm::ED25519): {
+        } break;
+        case Type::ED25519: {
             output = EcdsaCurve::ed25519;
-
-            break;
-        }
+        } break;
+        case Type::Error:
+        case Type::Null:
+        case Type::Legacy:
         default: {
         }
     }

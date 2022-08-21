@@ -322,6 +322,7 @@ auto Unit::DisplayStatistics(String& strContents) const -> bool
 
                 return "basket currency"sv;
             }
+            case contract::UnitType::Error:
             default: {
 
                 return "error"sv;

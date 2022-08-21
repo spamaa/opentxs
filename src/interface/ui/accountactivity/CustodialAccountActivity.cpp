@@ -205,6 +205,9 @@ auto CustodialAccountActivity::extract_rows(
                 } break;
                 case otx::client::PaymentWorkflowState::Error:
                 case otx::client::PaymentWorkflowState::Initiated:
+                case otx::client::PaymentWorkflowState::Aborted:
+                case otx::client::PaymentWorkflowState::Acknowledged:
+                case otx::client::PaymentWorkflowState::Rejected:
                 default: {
                     LogError()(OT_PRETTY_STATIC(CustodialAccountActivity))(
                         "Invalid workflow state (")(workflow.state())(")")
@@ -227,6 +230,9 @@ auto CustodialAccountActivity::extract_rows(
                 case otx::client::PaymentWorkflowState::Cancelled:
                 case otx::client::PaymentWorkflowState::Accepted:
                 case otx::client::PaymentWorkflowState::Initiated:
+                case otx::client::PaymentWorkflowState::Aborted:
+                case otx::client::PaymentWorkflowState::Acknowledged:
+                case otx::client::PaymentWorkflowState::Rejected:
                 default: {
                     LogError()(OT_PRETTY_STATIC(CustodialAccountActivity))(
                         "Invalid workflow state (")(workflow.state())(")")
@@ -261,6 +267,7 @@ auto CustodialAccountActivity::extract_rows(
                 case otx::client::PaymentWorkflowState::Conveyed:
                 case otx::client::PaymentWorkflowState::Cancelled:
                 case otx::client::PaymentWorkflowState::Expired:
+                case otx::client::PaymentWorkflowState::Rejected:
                 default: {
                     LogError()(OT_PRETTY_STATIC(CustodialAccountActivity))(
                         "Invalid workflow state (")(workflow.state())(")")
@@ -294,6 +301,7 @@ auto CustodialAccountActivity::extract_rows(
                 case otx::client::PaymentWorkflowState::Initiated:
                 case otx::client::PaymentWorkflowState::Aborted:
                 case otx::client::PaymentWorkflowState::Acknowledged:
+                case otx::client::PaymentWorkflowState::Rejected:
                 default: {
                     LogError()(OT_PRETTY_STATIC(CustodialAccountActivity))(
                         "Invalid workflow state (")(workflow.state())(")")
@@ -328,6 +336,7 @@ auto CustodialAccountActivity::extract_rows(
                 case otx::client::PaymentWorkflowState::Unsent:
                 case otx::client::PaymentWorkflowState::Cancelled:
                 case otx::client::PaymentWorkflowState::Expired:
+                case otx::client::PaymentWorkflowState::Rejected:
                 default: {
                     LogError()(OT_PRETTY_STATIC(CustodialAccountActivity))(
                         "Invalid workflow state (")(workflow.state())(")")
@@ -338,6 +347,8 @@ auto CustodialAccountActivity::extract_rows(
         case otx::client::PaymentWorkflowType::Error:
         case otx::client::PaymentWorkflowType::OutgoingInvoice:
         case otx::client::PaymentWorkflowType::IncomingInvoice:
+        case otx::client::PaymentWorkflowType::OutgoingCash:
+        case otx::client::PaymentWorkflowType::IncomingCash:
         default: {
             LogError()(OT_PRETTY_STATIC(CustodialAccountActivity))(
                 "Unsupported workflow type (")(workflow.type())(")")

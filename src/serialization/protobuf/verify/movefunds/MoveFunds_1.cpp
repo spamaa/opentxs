@@ -27,7 +27,8 @@ auto CheckProto_1(const MoveFunds& input, const bool silent) -> bool
         case RPCPAYMENTTYPE_INVOICE:
         case RPCPAYMENTTYPE_BLINDED:
         case RPCPAYMENTTYPE_ERROR:
-            break;
+        case RPCPAYMENTTYPE_BLOCKCHAIN: {
+        } break;
         default: {
             FAIL_2("Invalid type", input.type());
         }

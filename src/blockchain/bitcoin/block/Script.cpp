@@ -682,6 +682,7 @@ auto Script::ExtractElements(const cfilter::Type style) const noexcept
         } break;
         case cfilter::Type::Basic_BIP158:
         case cfilter::Type::Basic_BCHVariant:
+        case cfilter::Type::Unknown:
         default: {
             if (OP::RETURN == elements_.at(0).opcode_) {
                 LogTrace()(OT_PRETTY_CLASS())("skipping null data script")
@@ -902,6 +903,10 @@ auto Script::LikelyPubkeyHashes(const api::Session& api) const noexcept
         case Pattern::Custom:
         case Pattern::NullData:
         case Pattern::Input:
+        case Pattern::PayToWitnessPubkeyHash:  // TODO
+        case Pattern::PayToWitnessScriptHash:
+        case Pattern::PayToTaproot:
+        case Pattern::None:
         default: {
             for (const auto& element : elements_) {
                 if (is_hash160(element)) {
@@ -1004,6 +1009,178 @@ auto Script::potential_segwit(const ScriptElements& script) noexcept -> bool
         case OP::FIFTEEN:
         case OP::SIXTEEN: {
         } break;
+        case OP::PUSHDATA_1:
+        case OP::PUSHDATA_2:
+        case OP::PUSHDATA_3:
+        case OP::PUSHDATA_4:
+        case OP::PUSHDATA_5:
+        case OP::PUSHDATA_6:
+        case OP::PUSHDATA_7:
+        case OP::PUSHDATA_8:
+        case OP::PUSHDATA_9:
+        case OP::PUSHDATA_10:
+        case OP::PUSHDATA_11:
+        case OP::PUSHDATA_12:
+        case OP::PUSHDATA_13:
+        case OP::PUSHDATA_14:
+        case OP::PUSHDATA_15:
+        case OP::PUSHDATA_16:
+        case OP::PUSHDATA_17:
+        case OP::PUSHDATA_18:
+        case OP::PUSHDATA_19:
+        case OP::PUSHDATA_20:
+        case OP::PUSHDATA_21:
+        case OP::PUSHDATA_22:
+        case OP::PUSHDATA_23:
+        case OP::PUSHDATA_24:
+        case OP::PUSHDATA_25:
+        case OP::PUSHDATA_26:
+        case OP::PUSHDATA_27:
+        case OP::PUSHDATA_28:
+        case OP::PUSHDATA_29:
+        case OP::PUSHDATA_30:
+        case OP::PUSHDATA_31:
+        case OP::PUSHDATA_32:
+        case OP::PUSHDATA_33:
+        case OP::PUSHDATA_34:
+        case OP::PUSHDATA_35:
+        case OP::PUSHDATA_36:
+        case OP::PUSHDATA_37:
+        case OP::PUSHDATA_38:
+        case OP::PUSHDATA_39:
+        case OP::PUSHDATA_40:
+        case OP::PUSHDATA_41:
+        case OP::PUSHDATA_42:
+        case OP::PUSHDATA_43:
+        case OP::PUSHDATA_44:
+        case OP::PUSHDATA_45:
+        case OP::PUSHDATA_46:
+        case OP::PUSHDATA_47:
+        case OP::PUSHDATA_48:
+        case OP::PUSHDATA_49:
+        case OP::PUSHDATA_50:
+        case OP::PUSHDATA_51:
+        case OP::PUSHDATA_52:
+        case OP::PUSHDATA_53:
+        case OP::PUSHDATA_54:
+        case OP::PUSHDATA_55:
+        case OP::PUSHDATA_56:
+        case OP::PUSHDATA_57:
+        case OP::PUSHDATA_58:
+        case OP::PUSHDATA_59:
+        case OP::PUSHDATA_60:
+        case OP::PUSHDATA_61:
+        case OP::PUSHDATA_62:
+        case OP::PUSHDATA_63:
+        case OP::PUSHDATA_64:
+        case OP::PUSHDATA_65:
+        case OP::PUSHDATA_66:
+        case OP::PUSHDATA_67:
+        case OP::PUSHDATA_68:
+        case OP::PUSHDATA_69:
+        case OP::PUSHDATA_70:
+        case OP::PUSHDATA_71:
+        case OP::PUSHDATA_72:
+        case OP::PUSHDATA_73:
+        case OP::PUSHDATA_74:
+        case OP::PUSHDATA_75:
+        case OP::PUSHDATA1:
+        case OP::PUSHDATA2:
+        case OP::PUSHDATA4:
+        case OP::ONE_NEGATE:
+        case OP::RESERVED:
+        case OP::NOP:
+        case OP::VER:
+        case OP::IF:
+        case OP::NOTIF:
+        case OP::VERIF:
+        case OP::VERNOTIF:
+        case OP::ELSE:
+        case OP::ENDIF:
+        case OP::VERIFY:
+        case OP::RETURN:
+        case OP::TOALTSTACK:
+        case OP::FROMALTSTACK:
+        case OP::TWO_DROP:
+        case OP::TWO_DUP:
+        case OP::THREE_DUP:
+        case OP::TWO_OVER:
+        case OP::TWO_ROT:
+        case OP::TWO_SWAP:
+        case OP::IFDUP:
+        case OP::DEPTH:
+        case OP::DROP:
+        case OP::DUP:
+        case OP::NIP:
+        case OP::OVER:
+        case OP::PICK:
+        case OP::ROLL:
+        case OP::ROT:
+        case OP::SWAP:
+        case OP::TUCK:
+        case OP::CAT:
+        case OP::SUBSTR:
+        case OP::LEFT:
+        case OP::RIGHT:
+        case OP::SIZE:
+        case OP::INVERT:
+        case OP::AND:
+        case OP::OR:
+        case OP::XOR:
+        case OP::EQUAL:
+        case OP::EQUALVERIFY:
+        case OP::RESERVED1:
+        case OP::RESERVED2:
+        case OP::ONE_ADD:
+        case OP::ONE_SUB:
+        case OP::TWO_MUL:
+        case OP::TWO_DIV:
+        case OP::NEGATE:
+        case OP::ABS:
+        case OP::NOT:
+        case OP::ZERO_NOTEQUAL:
+        case OP::ADD:
+        case OP::SUB:
+        case OP::MUL:
+        case OP::DIV:
+        case OP::MOD:
+        case OP::LSHIFT:
+        case OP::RSHIFT:
+        case OP::BOOLAND:
+        case OP::BOOLOR:
+        case OP::NUMEQUAL:
+        case OP::NUMEQUALVERIFY:
+        case OP::NUMNOTEQUAL:
+        case OP::LESSTHAN:
+        case OP::GREATERTHAN:
+        case OP::LESSTHANOREQUAL:
+        case OP::GREATERTHANOREQUAL:
+        case OP::MIN:
+        case OP::MAX:
+        case OP::WITHIN:
+        case OP::RIPEMD160:
+        case OP::SHA1:
+        case OP::SHA256:
+        case OP::HASH160:
+        case OP::HASH256:
+        case OP::CODESEPARATOR:
+        case OP::CHECKSIG:
+        case OP::CHECKSIGVERIFY:
+        case OP::CHECKMULTISIG:
+        case OP::CHECKMULTISIGVERIFY:
+        case OP::NOP1:
+        case OP::NOP2:
+        case OP::NOP3:
+        case OP::NOP4:
+        case OP::NOP5:
+        case OP::NOP6:
+        case OP::NOP7:
+        case OP::NOP8:
+        case OP::NOP9:
+        case OP::NOP10:
+        case OP::PUBKEYHASH:
+        case OP::PUBKEY:
+        case OP::INVALIDOPCODE:
         default: {
 
             return false;

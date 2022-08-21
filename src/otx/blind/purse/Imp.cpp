@@ -481,6 +481,7 @@ auto Purse::deserialize_secondary_key(
         }
         case blind::PurseType::Normal: {
         } break;
+        case blind::PurseType::Error:
         default: {
             LogError()(OT_PRETTY_STATIC(Imp))("Invalid purse state").Flush();
 
@@ -514,6 +515,7 @@ auto Purse::deserialize_secondary_password(
         }
         case blind::PurseType::Normal: {
         } break;
+        case blind::PurseType::Error:
         default: {
             LogError()(OT_PRETTY_STATIC(Imp))("Invalid purse state").Flush();
 
@@ -690,6 +692,9 @@ auto Purse::Push(Token&& original, const opentxs::PasswordPrompt& reason)
             total_value_ += copy.Value();
             apply_times(copy);
         } break;
+        case blind::TokenState::Error:
+        case blind::TokenState::Spent:
+        case blind::TokenState::Expired:
         default: {
         }
     }
@@ -794,6 +799,7 @@ auto Purse::Serialize(proto::Purse& output) const noexcept -> bool
             } break;
             case blind::PurseType::Normal: {
             } break;
+            case blind::PurseType::Error:
             default: {
                 throw std::runtime_error("invalid purse state");
             }
@@ -891,6 +897,7 @@ auto Purse::Verify(const api::session::Notary& server) const -> bool
             allowedStates.insert(blind::TokenState::Spent);
             allowedStates.insert(blind::TokenState::Expired);
         } break;
+        case blind::PurseType::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid purse state.").Flush();
 
@@ -977,6 +984,7 @@ auto Purse::Verify(const api::session::Notary& server) const -> bool
             case blind::TokenState::Spent:
             case blind::TokenState::Expired: {
             } break;
+            case blind::TokenState::Error:
             default: {
                 LogError()(OT_PRETTY_CLASS())("Invalid token state").Flush();
 

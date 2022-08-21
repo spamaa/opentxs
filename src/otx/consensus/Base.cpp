@@ -306,6 +306,8 @@ auto Base::IDVersion(const Lock& lock) const -> proto::Context
             output.set_localnymboxhash(
                 remote_nymbox_hash_.asBase58(api_.Crypto()));
         } break;
+        case otx::ConsensusType::Error:
+        case otx::ConsensusType::Peer:
         default: {
             OT_FAIL;
         }

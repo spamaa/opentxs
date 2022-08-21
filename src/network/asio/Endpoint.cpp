@@ -49,6 +49,7 @@ Endpoint::Imp::Imp(Type type, ReadView raw, Port port) noexcept(false)
 
                     return tcp::endpoint{address, port};
                 }
+                case Type::none:
                 default: {
                 }
             }

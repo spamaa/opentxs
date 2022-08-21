@@ -92,6 +92,9 @@ private:
             case Work::reorg: {
                 process_reorg(std::move(msg));
             } break;
+            case Work::shutdown:
+            case Work::init:
+            case Work::statemachine:
             default: {
                 ot::LogAbort()(OT_PRETTY_CLASS())(
                     name_)(" unhandled message type ")(
