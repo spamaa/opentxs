@@ -687,13 +687,14 @@ auto Client::Imp::process_internal(Message&& msg) noexcept -> void
         case Job::PublishContract:
         case Job::QueryContract:
         case Job::Processed:
+        case Job::ReorgInternal:
+        case Job::NewHeaderTip:
+        case Job::NewCFilterTip:
         default: {
-            LogError()(OT_PRETTY_CLASS())(
+            LogAbort()(OT_PRETTY_CLASS())(
                 "Unsupported message type on internal socket: ")(
                 static_cast<OTZMQWorkType>(type))
-                .Flush();
-
-            OT_FAIL;
+                .Abort();
         }
     }
 }
@@ -838,6 +839,7 @@ auto Client::Imp::process_response(Message&& msg) noexcept -> void
             case Type::query:
             case Type::publish_contract:
             case Type::contract_query:
+            case Type::pushtx:
             default: {
                 const auto error =
                     CString{"Unsupported response type "}.append(print(type));

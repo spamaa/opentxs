@@ -183,6 +183,8 @@ auto PeerManager::JobReady(const PeerManagerJobs type) const noexcept -> void
         case PeerManagerJobs::JobAvailableCfilters: {
             jobs_.Dispatch(jobs_.Work(PeerManagerJobs::JobAvailableCfilters));
         } break;
+        case PeerManagerJobs::BroadcastTransaction:
+        case PeerManagerJobs::Heartbeat:
         default: {
         }
     }

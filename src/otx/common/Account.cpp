@@ -1126,17 +1126,24 @@ auto Account::IsInternalServerAcct() const -> bool
 {
     switch (acctType_) {
         case Account::user:
-        case Account::issuer:
+        case Account::issuer: {
+
             return false;
+        }
         case Account::basket:
         case Account::basketsub:
         case Account::mint:
         case Account::voucher:
-        case Account::stash:
+        case Account::stash: {
+
             return true;
-        default:
+        }
+        case Account::err_acct:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Unknown account type.").Flush();
+
             return false;
+        }
     }
 }
 
@@ -1144,17 +1151,24 @@ auto Account::IsOwnedByUser() const -> bool
 {
     switch (acctType_) {
         case Account::user:
-        case Account::issuer:
+        case Account::issuer: {
+
             return true;
+        }
         case Account::basket:
         case Account::basketsub:
         case Account::mint:
         case Account::voucher:
-        case Account::stash:
+        case Account::stash: {
+
             return false;
-        default:
+        }
+        case Account::err_acct:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Unknown account type.").Flush();
+
             return false;
+        }
     }
 }
 
@@ -1168,8 +1182,10 @@ auto Account::IsAllowedToGoNegative() const -> bool
         // issuer acct controlled by a user
         case Account::issuer:
         // basket issuer acct controlled by the server (for a basket currency)
-        case Account::basket:
+        case Account::basket: {
+
             return true;
+        }
         // user asset acct
         case Account::user:
         // internal server acct for storing reserves for basket sub currencies
@@ -1181,10 +1197,14 @@ auto Account::IsAllowedToGoNegative() const -> bool
         case Account::voucher:
         // internal server acct for storing reserves for
         // smart contract stashes. (Money stashed IN the contract.)
-        case Account::stash:
+        case Account::stash: {
+
             return false;
+        }
+        case Account::err_acct:
         default:
             LogError()(OT_PRETTY_CLASS())("Unknown account type.").Flush();
+
             return false;
     }
 }

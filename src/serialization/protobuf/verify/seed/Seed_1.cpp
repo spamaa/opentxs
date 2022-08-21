@@ -90,11 +90,14 @@ auto CheckProto_4(const Seed& input, const bool silent) -> bool
                 case SEEDLANG_EN: {
                     break;
                 }
+                case SEEDLANG_ERROR:
+                case SEEDLANG_NONE:
                 default: {
                     FAIL_1("Invalid language");
                 }
             }
         } break;
+        case SEEDTYPE_ERROR:
         default: {
             FAIL_1("Invalid type");
         }

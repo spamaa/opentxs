@@ -36,13 +36,13 @@ auto CheckProto_1(
         case SIGROLE_UNITDEFINITION:
         case SIGROLE_PEERREQUEST:
         case SIGROLE_PEERREPLY: {
-
         } break;
         case SIGROLE_CONTEXT:
         case SIGROLE_ACCOUNT:
         case SIGROLE_SERVERREQUEST:
         case SIGROLE_SERVERREPLY:
         case SIGROLE_ERROR:
+        case SIGROLE_NYM:
         default: {
             FAIL_2("invalid role", input.role());
         }

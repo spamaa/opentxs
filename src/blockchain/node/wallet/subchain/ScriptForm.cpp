@@ -119,6 +119,17 @@ ScriptForm::ScriptForm(
 
                 return out;
             }
+            case Type::Custom:
+            case Type::Coinbase:
+            case Type::NullData:
+            case Type::PayToMultisig:
+            case Type::PayToScriptHash:
+            case Type::PayToWitnessScriptHash:
+            case Type::PayToTaproot:
+            case Type::None:
+            case Type::Input:
+            case Type::Empty:
+            case Type::Malformed:
             default: {
             }
         }
@@ -132,8 +143,21 @@ ScriptForm::ScriptForm(
                     return api.Factory().BitcoinScriptP2PKH(
                         chain, *input.Key());
                 }
+                case Type::Custom:
+                case Type::Coinbase:
+                case Type::NullData:
+                case Type::PayToMultisig:
+                case Type::PayToScriptHash:
+                case Type::PayToWitnessPubkeyHash:
+                case Type::PayToWitnessScriptHash:
+                case Type::PayToTaproot:
+                case Type::None:
+                case Type::Input:
+                case Type::Empty:
+                case Type::Malformed:
                 default: {
-                    OT_FAIL;
+                    LogAbort()(OT_PRETTY_CLASS())("invalid script type")
+                        .Abort();
                 }
             }
         }();

@@ -196,7 +196,7 @@ auto OTPayment::SetTempValues(const PasswordPrompt& reason)
         switch (m_Type) {
             case CHEQUE:
             case VOUCHER:
-            case INVOICE:
+            case INVOICE: {
                 pCheque = dynamic_cast<Cheque*>(pTrackable);
                 if (nullptr == pCheque) {
                     LogError()(OT_PRETTY_CLASS())(
@@ -209,9 +209,8 @@ auto OTPayment::SetTempValues(const PasswordPrompt& reason)
                 } else {  // success
                     return SetTempValuesFromCheque(*pCheque);
                 }
-                break;
-
-            case PAYMENT_PLAN:
+            } break;
+            case PAYMENT_PLAN: {
                 pPaymentPlan = dynamic_cast<OTPaymentPlan*>(pTrackable);
                 if (nullptr == pPaymentPlan) {
                     LogError()(OT_PRETTY_CLASS())(
@@ -224,9 +223,8 @@ auto OTPayment::SetTempValues(const PasswordPrompt& reason)
                 } else {  // success
                     return SetTempValuesFromPaymentPlan(*pPaymentPlan);
                 }
-                break;
-
-            case SMART_CONTRACT:
+            } break;
+            case SMART_CONTRACT: {
                 pSmartContract = dynamic_cast<OTSmartContract*>(pTrackable);
                 if (nullptr == pSmartContract) {
                     LogError()(OT_PRETTY_CLASS())(
@@ -239,14 +237,16 @@ auto OTPayment::SetTempValues(const PasswordPrompt& reason)
                 } else {  // success
                     return SetTempValuesFromSmartContract(*pSmartContract);
                 }
-                break;
-
-            default:
+            } break;
+            case NOTICE:
+            case ERROR_STATE:
+            default: {
                 LogError()(OT_PRETTY_CLASS())(
                     "Failure: Wrong m_Type. "
                     "Contents: ")(m_strPayment.get())(".")
                     .Flush();
                 return false;
+            }
         }
     }
 
@@ -258,8 +258,7 @@ auto OTPayment::SetTempValuesFromCheque(const Cheque& theInput) -> bool
     switch (m_Type) {
         case OTPayment::CHEQUE:
         case OTPayment::VOUCHER:
-        case OTPayment::INVOICE:
-
+        case OTPayment::INVOICE: {
             m_bAreTempValuesSet = true;
 
             m_lAmount = theInput.GetAmount();
@@ -306,7 +305,11 @@ auto OTPayment::SetTempValuesFromCheque(const Cheque& theInput) -> bool
             m_VALID_TO = theInput.GetValidTo();
 
             return true;
-
+        }
+        case OTPayment::ERROR_STATE:
+        case OTPayment::PAYMENT_PLAN:
+        case OTPayment::SMART_CONTRACT:
+        case OTPayment::NOTICE:
         default:
             LogError()(OT_PRETTY_CLASS())("Error: Wrong type. "
                                           "(Returning false).")
@@ -562,22 +565,21 @@ auto OTPayment::GetMemo(String& strOutput) const -> bool
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
         case OTPayment::PAYMENT_PLAN:
-        case OTPayment::NOTICE:
+        case OTPayment::NOTICE: {
             if (m_strMemo->Exists()) {
                 strOutput.Set(m_strMemo);
                 bSuccess = true;
             } else {
                 bSuccess = false;
             }
-            break;
-
-        case OTPayment::SMART_CONTRACT:
+        } break;
+        case OTPayment::SMART_CONTRACT: {
             bSuccess = false;
-            break;
-
-        default:
+        } break;
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -595,20 +597,19 @@ auto OTPayment::GetAmount(Amount& lOutput) const -> bool
         case OTPayment::CHEQUE:
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
-        case OTPayment::PAYMENT_PLAN:
+        case OTPayment::PAYMENT_PLAN: {
             lOutput = m_lAmount;
             bSuccess = true;
-            break;
-
+        } break;
         case OTPayment::NOTICE:
-        case OTPayment::SMART_CONTRACT:
+        case OTPayment::SMART_CONTRACT: {
             lOutput = 0;
             bSuccess = false;
-            break;
-
-        default:
+        } break;
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -730,20 +731,20 @@ auto OTPayment::GetAllTransactionNumbers(
     switch (m_Type) {
         case OTPayment::CHEQUE:
         case OTPayment::VOUCHER:
-        case OTPayment::INVOICE:
+        case OTPayment::INVOICE: {
             if (m_lTransactionNum > 0) { numlistOutput.Add(m_lTransactionNum); }
             bSuccess = true;
-            break;
-
-        default:
+        } break;
         case OTPayment::PAYMENT_PLAN:  // Should never happen. (Handled already
                                        // above.)
         case OTPayment::SMART_CONTRACT:  // Should never happen. (Handled
                                          // already above.)
         case OTPayment::NOTICE:  // Should never happen. (Handled already
                                  // above.)
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -852,19 +853,18 @@ auto OTPayment::HasTransactionNum(
     switch (m_Type) {
         case OTPayment::CHEQUE:
         case OTPayment::VOUCHER:
-        case OTPayment::INVOICE:
+        case OTPayment::INVOICE: {
             if (lInput == m_lTransactionNum) { bSuccess = true; }
-            break;
-
-        default:
+        } break;
         case OTPayment::PAYMENT_PLAN:  // Should never happen. (Handled already
                                        // above.)
         case OTPayment::SMART_CONTRACT:  // Should never happen. (Handled
                                          // already above.)
-        case OTPayment::NOTICE:  // Should never happen. (Handled already
-                                 // above.)
+        case OTPayment::NOTICE:
+        case OTPayment::ERROR_STATE:
+        default: {  // Should never happen. (Handled already above.)
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -972,20 +972,19 @@ auto OTPayment::GetClosingNum(
     bool bSuccess = false;
 
     switch (m_Type) {
-
         case OTPayment::CHEQUE:
         case OTPayment::VOUCHER:
-        case OTPayment::INVOICE:
+        case OTPayment::INVOICE: {
             lOutput = 0;  // Redundant, but just making sure.
             bSuccess = false;
-            break;
-
-        default:
+        } break;
         case OTPayment::PAYMENT_PLAN:
         case OTPayment::SMART_CONTRACT:
         case OTPayment::NOTICE:
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -1094,9 +1093,8 @@ auto OTPayment::GetOpeningNum(
     bool bSuccess = false;
 
     switch (m_Type) {
-
         case OTPayment::CHEQUE:
-        case OTPayment::INVOICE:
+        case OTPayment::INVOICE: {
             if (m_SenderNymID == theNymID) {
                 lOutput =
                     m_lTransactionNum;  // The "opening" number for a cheque is
@@ -1106,9 +1104,8 @@ auto OTPayment::GetOpeningNum(
                 lOutput = 0;
                 bSuccess = false;
             }
-            break;
-
-        case OTPayment::VOUCHER:
+        } break;
+        case OTPayment::VOUCHER: {
             if (m_RemitterNymID == theNymID) {
                 lOutput =
                     m_lTransactionNum;  // The "opening" number for a cheque is
@@ -1118,14 +1115,14 @@ auto OTPayment::GetOpeningNum(
                 lOutput = 0;
                 bSuccess = false;
             }
-            break;
-
-        default:
+        } break;
         case OTPayment::PAYMENT_PLAN:
         case OTPayment::SMART_CONTRACT:
         case OTPayment::NOTICE:
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -1142,21 +1139,20 @@ auto OTPayment::GetTransNumDisplay(std::int64_t& lOutput) const -> bool
     switch (m_Type) {
         case OTPayment::CHEQUE:
         case OTPayment::VOUCHER:
-        case OTPayment::INVOICE:
+        case OTPayment::INVOICE: {
             lOutput = m_lTransactionNum;
             bSuccess = true;
-            break;
-
-        case OTPayment::PAYMENT_PLAN:  // For payment plans, this is the opening
+        } break;
+        case OTPayment::PAYMENT_PLAN: {  // For payment plans, this is the
+                                         // opening
             // transaction FOR THE RECIPIENT NYM (The merchant.)
             lOutput = m_lTransNumDisplay;
             bSuccess = true;
-            break;
-
-        case OTPayment::SMART_CONTRACT:  // For smart contracts, this is the
-                                         // opening
-                                         // transaction number FOR THE NYM who
-                                         // first proposed the contract.
+        } break;
+        case OTPayment::SMART_CONTRACT: {  // For smart contracts, this is the
+                                           // opening
+                                           // transaction number FOR THE NYM who
+                                           // first proposed the contract.
             // NOTE: We need a consistent number we can use for display
             // purposes, so all
             // the parties can cross-reference the smart contract in their GUIs.
@@ -1175,16 +1171,15 @@ auto OTPayment::GetTransNumDisplay(std::int64_t& lOutput) const -> bool
             // set.
             lOutput = m_lTransNumDisplay;
             bSuccess = true;
-            break;
-
-        case OTPayment::NOTICE:
+        } break;
+        case OTPayment::NOTICE: {
             lOutput = m_lTransNumDisplay;
             bSuccess = true;
-            break;
-
-        default:
+        } break;
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -1203,20 +1198,19 @@ auto OTPayment::GetTransactionNum(std::int64_t& lOutput) const -> bool
         case OTPayment::CHEQUE:
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
-        case OTPayment::PAYMENT_PLAN:  // For payment plans, this is the opening
-        // transaction FOR THE NYM who activated the
-        // contract (probably the customer.)
-        case OTPayment::SMART_CONTRACT:  // For smart contracts, this is the
-                                         // opening
-                                         // transaction number FOR THE NYM who
-                                         // activated the contract.
+        // For payment plans, this is the opening transaction FOR THE NYM who
+        // activated the contract (probably the customer.)
+        case OTPayment::PAYMENT_PLAN:
+        // For smart contracts, this is the opening transaction number FOR THE
+        // NYM who activated the contract.
+        case OTPayment::SMART_CONTRACT: {
             lOutput = m_lTransactionNum;
             bSuccess = true;
-            break;
-
-        default:
+        } break;
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -1236,14 +1230,14 @@ auto OTPayment::GetValidFrom(Time& tOutput) const -> bool
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
         case OTPayment::PAYMENT_PLAN:
-        case OTPayment::SMART_CONTRACT:
+        case OTPayment::SMART_CONTRACT: {
             tOutput = m_VALID_FROM;
             bSuccess = true;
-            break;
-
-        default:
+        } break;
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -1263,14 +1257,14 @@ auto OTPayment::GetValidTo(Time& tOutput) const -> bool
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
         case OTPayment::PAYMENT_PLAN:
-        case OTPayment::SMART_CONTRACT:
+        case OTPayment::SMART_CONTRACT: {
             tOutput = m_VALID_TO;
             bSuccess = true;
-            break;
-
-        default:
+        } break;
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -1334,18 +1328,17 @@ auto OTPayment::GetInstrumentDefinitionID(identifier::Generic& theOutput) const
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
         case OTPayment::PAYMENT_PLAN:
-        case OTPayment::NOTICE:
+        case OTPayment::NOTICE: {
             theOutput.Assign(m_InstrumentDefinitionID);
             bSuccess = !m_InstrumentDefinitionID.empty();
-            break;
-
-        case OTPayment::SMART_CONTRACT:
+        } break;
+        case OTPayment::SMART_CONTRACT: {
             bSuccess = false;
-            break;
-
-        default:
+        } break;
+        case OTPayment::ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -1369,11 +1362,11 @@ auto OTPayment::GetNotaryID(identifier::Generic& theOutput) const -> bool
         case OTPayment::INVOICE:
         case OTPayment::PAYMENT_PLAN:
         case OTPayment::SMART_CONTRACT:
-        case OTPayment::NOTICE:
+        case OTPayment::NOTICE: {
             theOutput.Assign(m_NotaryID);
             bSuccess = !m_NotaryID.empty();
-            break;
-
+        } break;
+        case ERROR_STATE:
         default:
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
             break;
@@ -1467,11 +1460,11 @@ auto OTPayment::GetSenderNymID(identifier::Nym& theOutput) const -> bool
         case OTPayment::INVOICE:
         case OTPayment::PAYMENT_PLAN:
         case OTPayment::SMART_CONTRACT:
-        case OTPayment::NOTICE:
+        case OTPayment::NOTICE: {
             theOutput.Assign(m_SenderNymID);
             bSuccess = !m_SenderNymID.empty();
-            break;
-
+        } break;
+        case ERROR_STATE:
         default:
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
             break;
@@ -1493,18 +1486,17 @@ auto OTPayment::GetSenderAcctID(identifier::Generic& theOutput) const -> bool
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
         case OTPayment::PAYMENT_PLAN:
-        case OTPayment::NOTICE:
+        case OTPayment::NOTICE: {
             theOutput.Assign(m_SenderAcctID);
             bSuccess = !m_SenderAcctID.empty();
-            break;
-
-        case OTPayment::SMART_CONTRACT:
+        } break;
+        case OTPayment::SMART_CONTRACT: {
             bSuccess = false;
-            break;
-
-        default:
+        } break;
+        case ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
-            break;
+        }
     }
 
     return bSuccess;
@@ -1523,7 +1515,7 @@ auto OTPayment::GetRecipientNymID(identifier::Nym& theOutput) const -> bool
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
         case OTPayment::PAYMENT_PLAN:
-        case OTPayment::NOTICE:
+        case OTPayment::NOTICE: {
             if (m_bHasRecipient) {
                 theOutput.Assign(m_RecipientNymID);
                 bSuccess = !m_RecipientNymID.empty();
@@ -1531,12 +1523,11 @@ auto OTPayment::GetRecipientNymID(identifier::Nym& theOutput) const -> bool
                 bSuccess = false;
             }
 
-            break;
-
-        case OTPayment::SMART_CONTRACT:
+        } break;
+        case OTPayment::SMART_CONTRACT: {
             bSuccess = false;
-            break;
-
+        } break;
+        case ERROR_STATE:
         default:
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
             break;
@@ -1563,23 +1554,21 @@ auto OTPayment::GetRecipientAcctID(identifier::Generic& theOutput) const -> bool
 
     switch (m_Type) {
         case OTPayment::PAYMENT_PLAN:
-        case OTPayment::NOTICE:
+        case OTPayment::NOTICE: {
             if (m_bHasRecipient) {
                 theOutput.Assign(m_RecipientAcctID);
                 bSuccess = !m_RecipientAcctID.empty();
             } else {
                 bSuccess = false;
             }
-
-            break;
-
+        } break;
         case OTPayment::CHEQUE:
         case OTPayment::VOUCHER:
         case OTPayment::INVOICE:
-        case OTPayment::SMART_CONTRACT:
+        case OTPayment::SMART_CONTRACT: {
             bSuccess = false;
-            break;
-
+        } break;
+        case ERROR_STATE:
         default:
             LogError()(OT_PRETTY_CLASS())("Bad payment type!").Flush();
             break;
@@ -1615,7 +1604,7 @@ auto OTPayment::Instantiate() const -> OTTrackable*
     switch (m_Type) {
         case CHEQUE:
         case VOUCHER:
-        case INVOICE:
+        case INVOICE: {
             pContract = api_.Factory().InternalSession().Contract(m_strPayment);
 
             if (false != bool(pContract)) {
@@ -1636,9 +1625,8 @@ auto OTPayment::Instantiate() const -> OTTrackable*
                     "factory returned nullptr: ")(m_strPayment.get())(".")
                     .Flush();
             }
-            break;
-
-        case PAYMENT_PLAN:
+        } break;
+        case PAYMENT_PLAN: {
             pContract = api_.Factory().InternalSession().Contract(m_strPayment);
 
             if (false != bool(pContract)) {
@@ -1661,9 +1649,8 @@ auto OTPayment::Instantiate() const -> OTTrackable*
                     ".")
                     .Flush();
             }
-            break;
-
-        case SMART_CONTRACT:
+        } break;
+        case SMART_CONTRACT: {
             pContract = api_.Factory().InternalSession().Contract(m_strPayment);
 
             if (false != bool(pContract)) {
@@ -1686,22 +1673,23 @@ auto OTPayment::Instantiate() const -> OTTrackable*
                     m_strPayment.get())(".")
                     .Flush();
             }
-            break;
-
-        case NOTICE:
+        } break;
+        case NOTICE: {
             LogError()(OT_PRETTY_CLASS())(
                 "ERROR: Tried to instantiate a notice, "
                 "but should have called OTPayment::InstantiateNotice.")
                 .Flush();
+        }
             return nullptr;
-
-        default:
+        case ERROR_STATE:
+        default: {
             LogError()(OT_PRETTY_CLASS())(
                 "ERROR: Tried to instantiate payment "
                 "object, but had a bad type. Contents: ")(m_strPayment.get())(
                 ".")
                 .Flush();
             return nullptr;
+        }
     }
 
     return pTrackable;

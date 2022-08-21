@@ -32,6 +32,8 @@ auto CheckProto_1(const AccountEvent& input, const bool silent) -> bool
             OPTIONAL_IDENTIFIER(contact);
         } break;
         case ACCOUNTEVENT_ERROR:
+        case ACCOUNTEVENT_INCOMINGBLOCKCHAIN:
+        case ACCOUNTEVENT_OUTGOINGBLOCKCHAIN:
         default: {
             FAIL_2("Invalid type", input.type());
         }

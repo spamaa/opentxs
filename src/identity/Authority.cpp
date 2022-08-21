@@ -922,6 +922,8 @@ auto Authority::LoadChildKeyCredential(const proto::Credential& serializedCred)
             auto id{child->ID()};
             verification_credentials_.emplace(std::move(id), child.release());
         } break;
+        case proto::CREDROLE_ERROR:
+        case proto::CREDROLE_MASTERKEY:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid credential type").Flush();
 

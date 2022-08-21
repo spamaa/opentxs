@@ -1610,13 +1610,11 @@ auto RPC::move_funds(const proto::RPCCommand& command) const
             evaluate_move_funds(client, future.get(), output);
         } break;
         case proto::RPCPAYMENTTYPE_CHEQUE:
-            [[fallthrough]];
         case proto::RPCPAYMENTTYPE_VOUCHER:
-            [[fallthrough]];
         case proto::RPCPAYMENTTYPE_INVOICE:
-            [[fallthrough]];
         case proto::RPCPAYMENTTYPE_BLINDED:
-            [[fallthrough]];
+        case proto::RPCPAYMENTTYPE_ERROR:
+        case proto::RPCPAYMENTTYPE_BLOCKCHAIN:
         default: {
             add_output_status(output, proto::RPCRESPONSE_INVALID);
         }

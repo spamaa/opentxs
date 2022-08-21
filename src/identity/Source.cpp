@@ -264,6 +264,7 @@ auto Source::NymID() const noexcept -> identifier::Nym
 
             return payment_code_.ID();
         }
+        case identity::SourceType::Error:
         default: {
 
             return {};
@@ -293,6 +294,7 @@ auto Source::Serialize(proto::NymIDSource& source) const noexcept -> bool
             }
 
         } break;
+        case identity::SourceType::Error:
         default: {
         }
     }
@@ -393,6 +395,7 @@ auto Source::Verify(
                 return false;
             }
         } break;
+        case identity::SourceType::Error:
         default: {
             return false;
         }
@@ -409,13 +412,14 @@ auto Source::Sign(
     bool goodsig = false;
 
     switch (type_) {
-        case (identity::SourceType::PubKey): {
+        case identity::SourceType::PubKey: {
             OT_ASSERT_MSG(false, "This is not implemented yet.");
 
         } break;
-        case (identity::SourceType::Bip47): {
+        case identity::SourceType::Bip47: {
             goodsig = payment_code_.Internal().Sign(credential, sig, reason);
         } break;
+        case identity::SourceType::Error:
         default: {
         }
     }
@@ -434,16 +438,17 @@ auto Source::Description() const noexcept -> OTString
     auto keyID = identifier::Generic{};
 
     switch (type_) {
-        case (identity::SourceType::PubKey): {
+        case identity::SourceType::PubKey: {
             if (pubkey_.get()) {
                 pubkey_->CalculateID(keyID);
                 description = String::Factory(keyID);
             }
         } break;
-        case (identity::SourceType::Bip47): {
+        case identity::SourceType::Bip47: {
             description = String::Factory(payment_code_.asBase58());
 
         } break;
+        case identity::SourceType::Error:
         default: {
         }
     }

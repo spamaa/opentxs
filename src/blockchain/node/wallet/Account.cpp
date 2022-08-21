@@ -367,6 +367,9 @@ auto Account::Imp::process_subaccount(
         case crypto::SubaccountType::PaymentCode: {
             check_pc(id);
         } break;
+        case crypto::SubaccountType::Error:
+        case crypto::SubaccountType::Imported:
+        case crypto::SubaccountType::Notification:
         default: {
             LogAbort()(OT_PRETTY_CLASS())(name_)(": invalid subaccount type")
                 .Abort();

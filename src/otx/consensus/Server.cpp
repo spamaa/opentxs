@@ -1006,6 +1006,9 @@ auto Server::attempt_delivery(
                 .Flush();
             ++failure_counter_;
         } break;
+        case client::SendResult::SHUTDOWN:
+        case client::SendResult::TRANSACTION_NUMBERS:
+        case client::SendResult::UNNECESSARY:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unknown error").Flush();
             ++failure_counter_;
@@ -1775,6 +1778,8 @@ auto Server::harvest_unused(
                 continue;
             }
             case client::PaymentWorkflowType::Error:
+            case client::PaymentWorkflowType::OutgoingCash:
+            case client::PaymentWorkflowType::IncomingCash:
             default: {
                 LogError()(OT_PRETTY_CLASS())(
                     "Warning: Unhandled workflow type.")
@@ -1825,6 +1830,8 @@ auto Server::harvest_unused(
             case client::PaymentWorkflowType::IncomingTransfer:
             case client::PaymentWorkflowType::IncomingCheque:
             case client::PaymentWorkflowType::IncomingInvoice:
+            case client::PaymentWorkflowType::OutgoingCash:
+            case client::PaymentWorkflowType::IncomingCash:
             default: {
                 LogError()(OT_PRETTY_CLASS())(
                     "Warning: unhandled workflow type.")
@@ -2395,6 +2402,9 @@ void Server::need_box_items(
             }
             case client::SendResult::TIMEOUT:
             case client::SendResult::INVALID_REPLY:
+            case client::SendResult::Error:
+            case client::SendResult::TRANSACTION_NUMBERS:
+            case client::SendResult::UNNECESSARY:
             default: {
                 LogError()(OT_PRETTY_CLASS())("Error downloading box item")
                     .Flush();
@@ -2452,6 +2462,9 @@ void Server::need_nymbox(
         }
         case client::SendResult::TIMEOUT:
         case client::SendResult::INVALID_REPLY:
+        case client::SendResult::Error:
+        case client::SendResult::TRANSACTION_NUMBERS:
+        case client::SendResult::UNNECESSARY:
         default: {
             LogError()(OT_PRETTY_CLASS())("Error downloading nymbox").Flush();
 
@@ -2614,6 +2627,9 @@ void Server::need_process_nymbox(
         }
         case client::SendResult::TIMEOUT:
         case client::SendResult::INVALID_REPLY:
+        case client::SendResult::Error:
+        case client::SendResult::TRANSACTION_NUMBERS:
+        case client::SendResult::UNNECESSARY:
         default: {
             // If processing a nymbox fails, then it must have changed since
             // the last time we downloaded it. Also if the reply was dropped
@@ -2725,6 +2741,9 @@ void Server::pending_send(
                     otx::LastReplyStatus::Unknown);
             }
         } break;
+        case client::SendResult::Error:
+        case client::SendResult::TRANSACTION_NUMBERS:
+        case client::SendResult::UNNECESSARY:
         default: {
         }
     }
@@ -2810,6 +2829,8 @@ auto Server::ProcessNotification(
         case proto::OTXPUSH_INBOX: {
             return process_account_push(lock, client, push, reason);
         }
+        case proto::OTXPUSH_ERROR:
+        case proto::OTXPUSH_OUTBOX:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported push type").Flush();
 
@@ -3179,6 +3200,71 @@ void Server::process_accept_item_receipt_reply(
                 LogError()(OT_PRETTY_CLASS())("Invalid transfer").Flush();
             }
         } break;
+        case itemType::transfer:
+        case itemType::atTransfer:
+        case itemType::acceptTransaction:
+        case itemType::atAcceptTransaction:
+        case itemType::acceptMessage:
+        case itemType::atAcceptMessage:
+        case itemType::acceptNotice:
+        case itemType::atAcceptNotice:
+        case itemType::atAcceptPending:
+        case itemType::rejectPending:
+        case itemType::atRejectPending:
+        case itemType::acceptCronReceipt:
+        case itemType::atAcceptCronReceipt:
+        case itemType::acceptItemReceipt:
+        case itemType::atAcceptItemReceipt:
+        case itemType::disputeCronReceipt:
+        case itemType::atDisputeCronReceipt:
+        case itemType::disputeItemReceipt:
+        case itemType::atDisputeItemReceipt:
+        case itemType::acceptFinalReceipt:
+        case itemType::atAcceptFinalReceipt:
+        case itemType::acceptBasketReceipt:
+        case itemType::atAcceptBasketReceipt:
+        case itemType::disputeFinalReceipt:
+        case itemType::atDisputeFinalReceipt:
+        case itemType::disputeBasketReceipt:
+        case itemType::atDisputeBasketReceipt:
+        case itemType::serverfee:
+        case itemType::atServerfee:
+        case itemType::issuerfee:
+        case itemType::atIssuerfee:
+        case itemType::balanceStatement:
+        case itemType::atBalanceStatement:
+        case itemType::transactionStatement:
+        case itemType::atTransactionStatement:
+        case itemType::withdrawal:
+        case itemType::atWithdrawal:
+        case itemType::deposit:
+        case itemType::atDeposit:
+        case itemType::withdrawVoucher:
+        case itemType::atWithdrawVoucher:
+        case itemType::atDepositCheque:
+        case itemType::payDividend:
+        case itemType::atPayDividend:
+        case itemType::marketOffer:
+        case itemType::atMarketOffer:
+        case itemType::paymentPlan:
+        case itemType::atPaymentPlan:
+        case itemType::smartContract:
+        case itemType::atSmartContract:
+        case itemType::cancelCronItem:
+        case itemType::atCancelCronItem:
+        case itemType::exchangeBasket:
+        case itemType::atExchangeBasket:
+        case itemType::chequeReceipt:
+        case itemType::voucherReceipt:
+        case itemType::marketReceipt:
+        case itemType::paymentReceipt:
+        case itemType::transferReceipt:
+        case itemType::finalReceipt:
+        case itemType::basketReceipt:
+        case itemType::replyNotice:
+        case itemType::successNotice:
+        case itemType::notice:
+        case itemType::error_state:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unexpected original item type: ")(
                 originalType.get())
@@ -3479,6 +3565,7 @@ auto Server::process_box_item(
         case proto::OTXPUSH_OUTBOX: {
             box = BoxType::Outbox;
         } break;
+        case proto::OTXPUSH_ERROR:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid box type").Flush();
 
@@ -3780,6 +3867,7 @@ auto Server::process_get_box_receipt_response(
                     otx.ProcessInbox(nymID, server_id_, accountID);
                 }
             } break;
+            case BoxType::Invalid:
             default: {
             }
         }
@@ -4273,6 +4361,7 @@ void Server::process_incoming_message(
             case (contract::peer::PeerObjectType::Response): {
                 api_.Wallet().PeerReplyReceive(recipientNymId, peerObject);
             } break;
+            case contract::peer::PeerObjectType::Error:
             default: {
                 LogError()(OT_PRETTY_CLASS())(
                     "Unable to decode peer object: unknown peer object type.")
@@ -7505,8 +7594,9 @@ auto Server::state_machine() noexcept -> bool
             need_process_nymbox(client, reason);
         } break;
         case proto::DELIVERTYSTATE_IDLE:
+        case proto::DELIVERTYSTATE_ERROR:
         default: {
-            LogError()(OT_PRETTY_CLASS())("Unexpected state").Flush();
+            LogAbort()(OT_PRETTY_CLASS())("Unexpected state").Abort();
         }
     }
 
@@ -7671,6 +7761,10 @@ auto Server::update_request_number(
         case client::SendResult::VALID_REPLY: {
             sendStatus = true;
         } break;
+        case client::SendResult::Error:
+        case client::SendResult::TRANSACTION_NUMBERS:
+        case client::SendResult::UNNECESSARY:
+        case client::SendResult::SHUTDOWN:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unknown error.").Flush();
 

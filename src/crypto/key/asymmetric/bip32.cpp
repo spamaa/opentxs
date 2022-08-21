@@ -102,6 +102,9 @@ auto HD::ChildKey(const Bip32Index index, const PasswordPrompt& reason)
                     version_,
                     reason);
             }
+            case crypto::key::asymmetric::Algorithm::Error:
+            case crypto::key::asymmetric::Algorithm::Null:
+            case crypto::key::asymmetric::Algorithm::Legacy:
             default: {
                 throw std::runtime_error{"Unsupported key type"};
             }

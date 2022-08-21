@@ -553,6 +553,8 @@ auto Seed::ImportSeed(
         case opentxs::crypto::SeedStyle::BIP39:
         case opentxs::crypto::SeedStyle::PKT: {
         } break;
+        case opentxs::crypto::SeedStyle::Error:
+        case opentxs::crypto::SeedStyle::BIP32:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported seed type").Flush();
 
@@ -589,16 +591,19 @@ auto Seed::LongestWord(
     const opentxs::crypto::SeedStyle type,
     const opentxs::crypto::Language lang) const noexcept -> std::size_t
 {
+    using Type = opentxs::crypto::SeedStyle;
+
     switch (type) {
-        case opentxs::crypto::SeedStyle::BIP39:
-        case opentxs::crypto::SeedStyle::PKT: {
+        case Type::BIP39:
+        case Type::PKT: {
 
             return bip39_.LongestWord(lang);
         }
-        case opentxs::crypto::SeedStyle::BIP32: {
+        case Type::BIP32: {
 
             return 130_uz;
         }
+        case Type::Error:
         default: {
 
             return {};
@@ -629,6 +634,9 @@ auto Seed::new_seed(
     switch (type) {
         case opentxs::crypto::SeedStyle::BIP39: {
         } break;
+        case opentxs::crypto::SeedStyle::Error:
+        case opentxs::crypto::SeedStyle::BIP32:
+        case opentxs::crypto::SeedStyle::PKT:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported seed type").Flush();
 
@@ -844,6 +852,8 @@ auto Seed::ValidateWord(
 
             return bip39_.GetSuggestions(lang, word);
         }
+        case opentxs::crypto::SeedStyle::Error:
+        case opentxs::crypto::SeedStyle::BIP32:
         default: {
 
             return {};
@@ -859,6 +869,8 @@ auto Seed::WordCount(
         case opentxs::crypto::SeedStyle::BIP39:
         case opentxs::crypto::SeedStyle::PKT: {
         } break;
+        case opentxs::crypto::SeedStyle::Error:
+        case opentxs::crypto::SeedStyle::BIP32:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported seed type").Flush();
 

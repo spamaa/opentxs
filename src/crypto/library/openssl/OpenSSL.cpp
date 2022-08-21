@@ -202,26 +202,37 @@ auto OpenSSL::MD::init_verify(
 auto OpenSSL::HashTypeToOpenSSLType(const crypto::HashType hashType) noexcept
     -> const EVP_MD*
 {
+    using Type = crypto::HashType;
+
     switch (hashType) {
         // NOTE: libressl doesn't support these yet
-        // case crypto::HashType::Blake2b256: {
+        // case Type::Blake2b256: {
         //     return ::EVP_blake2s256();
         // }
-        // case crypto::HashType::Blake2b512: {
+        // case Type::Blake2b512: {
         //     return ::EVP_blake2b512();
         // }
-        case crypto::HashType::Ripemd160: {
+        case Type::Ripemd160: {
             return ::EVP_ripemd160();
         }
-        case crypto::HashType::Sha256: {
+        case Type::Sha256: {
             return ::EVP_sha256();
         }
-        case crypto::HashType::Sha512: {
+        case Type::Sha512: {
             return ::EVP_sha512();
         }
-        case crypto::HashType::Sha1: {
+        case Type::Sha1: {
             return ::EVP_sha1();
         }
+        case Type::Error:
+        case Type::None:
+        case Type::Blake2b160:
+        case Type::Blake2b256:
+        case Type::Blake2b512:
+        case Type::Sha256D:
+        case Type::Sha256DC:
+        case Type::Bitcoin:
+        case Type::SipHash24:
         default: {
             return nullptr;
         }

@@ -40,8 +40,9 @@ auto AccountTreeItem(
             return AccountTreeItemCustodial(
                 parent, api, rowID, sortKey, custom);
         }
+        case AccountType::Error:
         default: {
-            OT_FAIL;
+            LogAbort()(__FUNCTION__)(": invalid account type").Abort();
         }
     }
 }

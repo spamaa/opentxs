@@ -134,8 +134,8 @@ auto NymFile::deserialize_nymfile(
             case irr::io::EXN_TEXT:
             case irr::io::EXN_COMMENT:
             case irr::io::EXN_ELEMENT_END:
-            case irr::io::EXN_CDATA:
-                break;
+            case irr::io::EXN_CDATA: {
+            } break;
             case irr::io::EXN_ELEMENT: {
                 const auto strNodeName = String::Factory(xml->getNodeName());
 
@@ -302,11 +302,11 @@ auto NymFile::deserialize_nymfile(
                 }
                 break;
             }
+            case irr::io::EXN_UNKNOWN:
             default: {
                 LogInsane()(OT_PRETTY_CLASS())("Unknown XML type in ")(
                     xml->getNodeName())
                     .Flush();
-                break;
             }
         }  // switch
     }      // while

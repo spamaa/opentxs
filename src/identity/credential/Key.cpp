@@ -171,6 +171,7 @@ auto Key::addKeytoSerializedKeyCredential(
         case proto::KEYROLE_SIGN: {
             pKey = &signing_key_.get();
         } break;
+        case proto::KEYROLE_ERROR:
         default: {
             return false;
         }
@@ -225,6 +226,7 @@ auto Key::GetKeypair(
         case opentxs::crypto::key::asymmetric::Role::Sign: {
             output = &signing_key_.get();
         } break;
+        case opentxs::crypto::key::asymmetric::Role::Error:
         default: {
             throw std::out_of_range("wrong key type");
         }
@@ -335,20 +337,21 @@ auto Key::GetPublicKeysBySignature(
 auto Key::hasCapability(const NymCapability& capability) const -> bool
 {
     switch (capability) {
-        case (NymCapability::SIGN_MESSAGE): {
+        case NymCapability::SIGN_MESSAGE: {
             return signing_key_->CheckCapability(capability);
         }
-        case (NymCapability::ENCRYPT_MESSAGE): {
+        case NymCapability::ENCRYPT_MESSAGE: {
             return encryption_key_->CheckCapability(capability);
         }
-        case (NymCapability::AUTHENTICATE_CONNECTION): {
+        case NymCapability::AUTHENTICATE_CONNECTION: {
             return authentication_key_->CheckCapability(capability);
         }
+        case NymCapability::SIGN_CHILDCRED:
         default: {
+
+            return false;
         }
     }
-
-    return false;
 }
 
 auto Key::new_key(
@@ -543,17 +546,20 @@ auto Key::Verify(
     const crypto::key::Keypair* keyToUse = nullptr;
 
     switch (key) {
-        case (crypto::key::asymmetric::Role::Auth):
+        case crypto::key::asymmetric::Role::Auth: {
             keyToUse = &authentication_key_.get();
-            break;
-        case (crypto::key::asymmetric::Role::Sign):
+        } break;
+        case crypto::key::asymmetric::Role::Sign: {
             keyToUse = &signing_key_.get();
-            break;
-        default:
+        } break;
+        case crypto::key::asymmetric::Role::Error:
+        case crypto::key::asymmetric::Role::Encrypt:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Can not verify signatures with the "
                                           "specified key.")
                 .Flush();
             return false;
+        }
     }
 
     OT_ASSERT(nullptr != keyToUse);

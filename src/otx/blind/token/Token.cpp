@@ -37,6 +37,7 @@ auto Token(
 
             return TokenLucre(token, purse);
         }
+        case otx::blind::CashType::Error:
         default: {
             LogError()("opentxs::factory::")(__func__)(
                 ": unknown or unsupported token type: ")(opentxs::print(type))
@@ -59,6 +60,7 @@ auto Token(
 
             return TokenLucre(api, purse, serialized);
         }
+        case otx::blind::CashType::Error:
         default: {
             LogError()("opentxs::factory::")(__func__)(
                 ": unknown or unsupported token type: ")(opentxs::print(type))
@@ -84,6 +86,7 @@ auto Token(
 
             return TokenLucre(api, owner, mint, value, purse, reason);
         }
+        case otx::blind::CashType::Error:
         default: {
             LogError()("opentxs::factory::")(__func__)(
                 ": unknown or unsupported token type: ")(opentxs::print(type))

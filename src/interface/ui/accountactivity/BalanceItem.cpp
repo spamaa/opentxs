@@ -95,6 +95,8 @@ auto BalanceItem(
                 parent, api, rowID, sortKey, custom, nymID, accountID);
         }
         case otx::client::PaymentWorkflowType::Error:
+        case otx::client::PaymentWorkflowType::OutgoingCash:
+        case otx::client::PaymentWorkflowType::IncomingCash:
         default: {
             LogError()("opentxs::factory::")(__func__)(
                 "Unhandled workflow type (")(type)(")")
@@ -186,6 +188,8 @@ auto BalanceItem::extract_type(const proto::PaymentWorkflow& workflow) noexcept
         case otx::client::PaymentWorkflowType::Error:
         case otx::client::PaymentWorkflowType::OutgoingInvoice:
         case otx::client::PaymentWorkflowType::IncomingInvoice:
+        case otx::client::PaymentWorkflowType::OutgoingCash:
+        case otx::client::PaymentWorkflowType::IncomingCash:
         default: {
 
             return otx::client::StorageBox::UNKNOWN;

@@ -481,6 +481,8 @@ auto Bip39::WordsToSeed(
 
             return words_to_root_pkt(api, lang, words, seed, passphrase);
         }
+        case SeedStyle::BIP32:
+        case SeedStyle::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("unsupported type").Flush();
 

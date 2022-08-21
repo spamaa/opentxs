@@ -104,6 +104,9 @@ auto Asymmetric::instantiate_hd_key(
                 version,
                 reason);
         }
+        case opentxs::crypto::key::asymmetric::Algorithm::Error:
+        case opentxs::crypto::key::asymmetric::Algorithm::Null:
+        case opentxs::crypto::key::asymmetric::Algorithm::Legacy:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid key type").Flush();
 
@@ -134,6 +137,9 @@ auto Asymmetric::instantiate_serialized_key(
                 api_.Crypto().Internal().EllipticProvider(type),
                 serialized);
         }
+        case Type::Error:
+        case Type::Null:
+        case Type::Legacy:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid key type").Flush();
 
@@ -151,11 +157,14 @@ auto Asymmetric::InstantiateECKey(const proto::AsymmetricKey& serialized)
     switch (serialized.type()) {
         case proto::AKEYTYPE_ED25519:
         case proto::AKEYTYPE_SECP256K1: {
+
             return instantiate_serialized_key<ReturnType, NullType>(serialized);
         }
-        case (proto::AKEYTYPE_LEGACY): {
+        case proto::AKEYTYPE_LEGACY: {
             LogError()(OT_PRETTY_CLASS())("Wrong key type (RSA)").Flush();
         } break;
+        case proto::AKEYTYPE_ERROR:
+        case proto::AKEYTYPE_NULL:
         default: {
         }
     }
@@ -172,11 +181,14 @@ auto Asymmetric::InstantiateHDKey(const proto::AsymmetricKey& serialized)
     switch (serialized.type()) {
         case proto::AKEYTYPE_ED25519:
         case proto::AKEYTYPE_SECP256K1: {
+
             return instantiate_serialized_key<ReturnType, NullType>(serialized);
         }
-        case (proto::AKEYTYPE_LEGACY): {
+        case proto::AKEYTYPE_LEGACY: {
             LogError()(OT_PRETTY_CLASS())("Wrong key type (RSA)").Flush();
         } break;
+        case proto::AKEYTYPE_ERROR:
+        case proto::AKEYTYPE_NULL:
         default: {
         }
     }
@@ -269,6 +281,8 @@ auto Asymmetric::InstantiateKey(const proto::AsymmetricKey& serialized)
                 api_.Crypto().Internal().AsymmetricProvider(type),
                 serialized);
         }
+        case Type::Error:
+        case Type::Null:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid key type").Flush();
 
@@ -531,6 +545,8 @@ auto Asymmetric::NewKey(
                 params,
                 reason);
         }
+        case Type::Error:
+        case Type::Null:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid key type").Flush();
 

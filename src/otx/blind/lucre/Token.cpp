@@ -706,6 +706,7 @@ auto Lucre::Serialize(proto::Token& output) const noexcept -> bool
 
                 if (spend_) { serialize_spendable(lucre); }
             } break;
+            case blind::TokenState::Error:
             default: {
                 throw std::runtime_error("invalid token state");
             }

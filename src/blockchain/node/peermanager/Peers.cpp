@@ -375,6 +375,7 @@ auto Peers::get_dns_peer() const noexcept -> Endpoint
                 case network::asio::Endpoint::Type::ipv6: {
                     network = blockchain::p2p::Network::ipv6;
                 } break;
+                case network::asio::Endpoint::Type::none:
                 default: {
                     LogVerbose()(OT_PRETTY_CLASS())("unknown endpoint type")
                         .Flush();

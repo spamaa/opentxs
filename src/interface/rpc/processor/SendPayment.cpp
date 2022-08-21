@@ -225,6 +225,8 @@ auto RPC::send_payment_custodial(
         case PaymentType::voucher:
         case PaymentType::invoice:
         case PaymentType::blinded:
+        case PaymentType::error:
+        case PaymentType::blockchain:
         default: {
             return std::make_unique<response::SendPayment>(
                 in,

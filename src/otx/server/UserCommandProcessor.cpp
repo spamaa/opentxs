@@ -1009,6 +1009,7 @@ auto UserCommandProcessor::cmd_get_instrument_definition(
             } catch (...) {
             }
         } break;
+        case contract::Type::invalid:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid type: ")(msgIn.enum_)
                 .Flush();
@@ -2086,6 +2087,7 @@ auto UserCommandProcessor::cmd_register_contract(ReplyMessage& reply) const
                 reply.SetSuccess(false);
             }
         } break;
+        case contract::Type::invalid:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid contract type: ")(
                 msgIn.enum_)

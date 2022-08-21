@@ -89,7 +89,7 @@ auto Sodium::Decrypt(
     }
 
     switch (ciphertext.mode()) {
-        case (proto::SMODE_CHACHA20POLY1305): {
+        case proto::SMODE_CHACHA20POLY1305: {
             return (
                 0 == crypto_aead_chacha20poly1305_ietf_decrypt_detached(
                          plaintext,
@@ -102,6 +102,7 @@ auto Sodium::Decrypt(
                          reinterpret_cast<const unsigned char*>(nonce.data()),
                          key));
         }
+        case proto::SMODE_ERROR:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported encryption mode (")(
                 mode)(").")
@@ -126,15 +127,20 @@ auto Sodium::Derive(
 {
     try {
         const auto minOps = [&] {
+            using Type = key::symmetric::Source;
+
             switch (type) {
-                case key::symmetric::Source::Argon2i: {
+                case Type::Argon2i: {
 
                     return crypto_pwhash_argon2i_OPSLIMIT_MIN;
                 }
-                case key::symmetric::Source::Argon2id: {
+                case Type::Argon2id: {
 
                     return crypto_pwhash_argon2id_OPSLIMIT_MIN;
                 }
+                case Type::Error:
+                case Type::Raw:
+                case Type::ECDH:
                 default: {
 
                     throw std::runtime_error{"unsupported algorithm"};
@@ -219,6 +225,9 @@ auto Sodium::Derive(
                             output,
                             outputSize);
                     }
+                    case crypto::key::symmetric::Source::Error:
+                    case crypto::key::symmetric::Source::Raw:
+                    case crypto::key::symmetric::Source::ECDH:
                     default: {
 
                         throw std::runtime_error{"unsupported algorithm"};
@@ -257,6 +266,9 @@ auto Sodium::Derive(
                             difficulty,
                             crypto_pwhash_ALG_ARGON2ID13);
                     }
+                    case crypto::key::symmetric::Source::Error:
+                    case crypto::key::symmetric::Source::Raw:
+                    case crypto::key::symmetric::Source::ECDH:
                     default: {
 
                         throw std::runtime_error{"unsupported algorithm"};
@@ -382,8 +394,10 @@ auto Sodium::Encrypt(
     OT_ASSERT(false == nonce.empty());
     OT_ASSERT(false == tag.empty());
 
+    using Type = opentxs::crypto::key::symmetric::Algorithm;
+
     switch (mode) {
-        case (opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305): {
+        case Type::ChaCha20Poly1305: {
             return (
                 0 == crypto_aead_chacha20poly1305_ietf_encrypt_detached(
                          reinterpret_cast<unsigned char*>(output.data()),
@@ -397,6 +411,7 @@ auto Sodium::Encrypt(
                          reinterpret_cast<const unsigned char*>(nonce.data()),
                          key));
         }
+        case Type::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported encryption mode (")(
                 value(mode))(").")
@@ -604,10 +619,13 @@ auto Sodium::HMAC(
 auto Sodium::IvSize(const opentxs::crypto::key::symmetric::Algorithm mode) const
     -> std::size_t
 {
+    using Type = opentxs::crypto::key::symmetric::Algorithm;
+
     switch (mode) {
-        case (opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305): {
+        case Type::ChaCha20Poly1305: {
             return crypto_aead_chacha20poly1305_IETF_NPUBBYTES;
         }
+        case Type::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported encryption mode (")(
                 value(mode))(").")
@@ -620,10 +638,13 @@ auto Sodium::IvSize(const opentxs::crypto::key::symmetric::Algorithm mode) const
 auto Sodium::KeySize(
     const opentxs::crypto::key::symmetric::Algorithm mode) const -> std::size_t
 {
+    using Type = opentxs::crypto::key::symmetric::Algorithm;
+
     switch (mode) {
-        case (opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305): {
+        case Type::ChaCha20Poly1305: {
             return crypto_aead_chacha20poly1305_IETF_KEYBYTES;
         }
+        case Type::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported encryption mode (")(
                 value(mode))(").")
@@ -650,6 +671,9 @@ auto Sodium::SaltSize(const crypto::key::symmetric::Source type) const
 
             return crypto_pwhash_SALTBYTES;
         }
+        case crypto::key::symmetric::Source::Error:
+        case crypto::key::symmetric::Source::Raw:
+        case crypto::key::symmetric::Source::ECDH:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported key type (")(
                 value(type))(").")
@@ -692,10 +716,13 @@ auto Sodium::sha1(const ReadView data, WritableView& output) const -> bool
 auto Sodium::TagSize(
     const opentxs::crypto::key::symmetric::Algorithm mode) const -> std::size_t
 {
+    using Type = opentxs::crypto::key::symmetric::Algorithm;
+
     switch (mode) {
-        case (opentxs::crypto::key::symmetric::Algorithm::ChaCha20Poly1305): {
+        case Type::ChaCha20Poly1305: {
             return crypto_aead_chacha20poly1305_IETF_ABYTES;
         }
+        case Type::Error:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported encryption mode (")(
                 value(mode))(").")

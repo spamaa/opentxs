@@ -3162,30 +3162,32 @@ auto OTTransaction::SaveBoxReceipt(Ledger& theLedger) -> bool
     std::int64_t lLedgerType = 0;
 
     switch (theLedger.GetType()) {
-        case ledgerType::nymbox:
+        case ledgerType::nymbox: {
             lLedgerType = 0;
-            break;
-        case ledgerType::inbox:
+        } break;
+        case ledgerType::inbox: {
             lLedgerType = 1;
-            break;
-        case ledgerType::outbox:
+        } break;
+        case ledgerType::outbox: {
             lLedgerType = 2;
-            break;
-        //  case OTledgerType::message:         lLedgerType = 3;    break;
-        case ledgerType::paymentInbox:
+        } break;
+        case ledgerType::paymentInbox: {
             lLedgerType = 4;
-            break;
-        case ledgerType::recordBox:
+        } break;
+        case ledgerType::recordBox: {
             lLedgerType = 5;
-            break;
-        case ledgerType::expiredBox:
+        } break;
+        case ledgerType::expiredBox: {
             lLedgerType = 6;
-            break;
-        default:
+        } break;
+        case ledgerType::message:
+        case ledgerType::error_state:
+        default: {
             LogError()(OT_PRETTY_CLASS())("Error: unknown box type. "
                                           "(This should never happen).")
                 .Flush();
             return false;
+        }
     }
     return SaveBoxReceipt(lLedgerType);
 }
@@ -4319,40 +4321,38 @@ void OTTransaction::UpdateContents(const PasswordPrompt& reason)
     if (IsAbbreviated()) {
         if (nullptr != m_pParent) {
             switch (m_pParent->GetType()) {
-                case ledgerType::nymbox:
+                case ledgerType::nymbox: {
                     SaveAbbreviatedNymboxRecord(tag, reason);
-                    break;
-                case ledgerType::inbox:
+                } break;
+                case ledgerType::inbox: {
                     SaveAbbreviatedInboxRecord(tag, reason);
-                    break;
-                case ledgerType::outbox:
+                } break;
+                case ledgerType::outbox: {
                     SaveAbbreviatedOutboxRecord(tag, reason);
-                    break;
-                case ledgerType::paymentInbox:
+                } break;
+                case ledgerType::paymentInbox: {
                     SaveAbbrevPaymentInboxRecord(tag, reason);
-                    break;
-                case ledgerType::recordBox:
+                } break;
+                case ledgerType::recordBox: {
                     SaveAbbrevRecordBoxRecord(tag, reason);
-                    break;
-                case ledgerType::expiredBox:
+                } break;
+                case ledgerType::expiredBox: {
                     SaveAbbrevExpiredBoxRecord(tag, reason);
-                    break;
-                /* --- BREAK --- */
+                } break;
                 case ledgerType::message: {
-                    LogError()(OT_PRETTY_CLASS())(
+                    LogAbort()(OT_PRETTY_CLASS())(
                         "Unexpected message ledger type in 'abbreviated' "
                         "block. (Error).")
-                        .Flush();
-
-                    OT_FAIL;
+                        .Abort();
                 }
+                case ledgerType::error_state:
                 default:
                     LogError()(OT_PRETTY_CLASS())(
                         "Unexpected ledger type in 'abbreviated' block. "
                         "(Error).")
                         .Flush();
                     break;
-            } /*switch*/
+            }
         } else {
             LogError()(OT_PRETTY_CLASS())(
                 "Error: Unable to save abbreviated receipt here, since "
@@ -5944,10 +5944,10 @@ void OTTransaction::CalculateNumberOfOrigin()
                                             // payment (to all shareholders...)
         case transactionType::atPayDividend:  // reply from the server regarding
                                               // said dividend payment.
-
-        default:
+        case transactionType::error_state:
+        default: {
             SetNumberOfOrigin(GetTransactionNum());
-            break;
+        }
     }  // switch
 }
 

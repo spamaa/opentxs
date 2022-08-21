@@ -401,6 +401,282 @@ auto Blockchain::Imp::bip44_type(const UnitType type) const noexcept
         case UnitType::Regtest: {
             return Bip44Type::TESTNET;
         }
+        case UnitType::Error:
+        case UnitType::Eth:
+        case UnitType::Xrp:
+        case UnitType::Dao:
+        case UnitType::Xem:
+        case UnitType::Maid:
+        case UnitType::Lsk:
+        case UnitType::Dgd:
+        case UnitType::Xmr:
+        case UnitType::Waves:
+        case UnitType::Nxt:
+        case UnitType::Sc:
+        case UnitType::Steem:
+        case UnitType::Amp:
+        case UnitType::Xlm:
+        case UnitType::Fct:
+        case UnitType::Bts:
+        case UnitType::Usd:
+        case UnitType::Eur:
+        case UnitType::Gbp:
+        case UnitType::Inr:
+        case UnitType::Aud:
+        case UnitType::Cad:
+        case UnitType::Sgd:
+        case UnitType::Chf:
+        case UnitType::Myr:
+        case UnitType::Jpy:
+        case UnitType::Cny:
+        case UnitType::Nzd:
+        case UnitType::Thb:
+        case UnitType::Huf:
+        case UnitType::Aed:
+        case UnitType::Hkd:
+        case UnitType::Mxn:
+        case UnitType::Zar:
+        case UnitType::Php:
+        case UnitType::Sek:
+        case UnitType::Ethereum_olympic:
+        case UnitType::Ethereum_classic:
+        case UnitType::Ethereum_expanse:
+        case UnitType::Ethereum_morden:
+        case UnitType::Ethereum_ropsten:
+        case UnitType::Ethereum_rinkeby:
+        case UnitType::Ethereum_kovan:
+        case UnitType::Ethereum_sokol:
+        case UnitType::Ethereum_poa:
+        case UnitType::Bnb:
+        case UnitType::Sol:
+        case UnitType::Usdt:
+        case UnitType::Ada:
+        case UnitType::Dot:
+        case UnitType::Usdc:
+        case UnitType::Shib:
+        case UnitType::Luna:
+        case UnitType::Avax:
+        case UnitType::Uni:
+        case UnitType::Link:
+        case UnitType::Wbtc:
+        case UnitType::Busd:
+        case UnitType::MatiC:
+        case UnitType::Algo:
+        case UnitType::Vet:
+        case UnitType::Axs:
+        case UnitType::Icp:
+        case UnitType::Cro:
+        case UnitType::Atom:
+        case UnitType::Theta:
+        case UnitType::Fil:
+        case UnitType::Trx:
+        case UnitType::Ftt:
+        case UnitType::Etc:
+        case UnitType::Ftm:
+        case UnitType::Dai:
+        case UnitType::Btcb:
+        case UnitType::Egld:
+        case UnitType::Hbar:
+        case UnitType::Xtz:
+        case UnitType::Mana:
+        case UnitType::Near:
+        case UnitType::Grt:
+        case UnitType::Cake:
+        case UnitType::Eos:
+        case UnitType::Flow:
+        case UnitType::Aave:
+        case UnitType::Klay:
+        case UnitType::Ksm:
+        case UnitType::Miota:
+        case UnitType::Hnt:
+        case UnitType::Rune:
+        case UnitType::Leo:
+        case UnitType::Neo:
+        case UnitType::One:
+        case UnitType::Qnt:
+        case UnitType::Ust:
+        case UnitType::Mkr:
+        case UnitType::Enj:
+        case UnitType::Chz:
+        case UnitType::Ar:
+        case UnitType::Stx:
+        case UnitType::Btt:
+        case UnitType::Hot:
+        case UnitType::Sand:
+        case UnitType::Omg:
+        case UnitType::Celo:
+        case UnitType::Zec:
+        case UnitType::Comp:
+        case UnitType::Tfuel:
+        case UnitType::Kda:
+        case UnitType::Lrc:
+        case UnitType::Qtum:
+        case UnitType::Crv:
+        case UnitType::Ht:
+        case UnitType::Nexo:
+        case UnitType::Sushi:
+        case UnitType::Kcs:
+        case UnitType::Bat:
+        case UnitType::Okb:
+        case UnitType::Dcr:
+        case UnitType::Icx:
+        case UnitType::Rvn:
+        case UnitType::Scrt:
+        case UnitType::Rev:
+        case UnitType::Audio:
+        case UnitType::Zil:
+        case UnitType::Tusd:
+        case UnitType::Yfi:
+        case UnitType::Mina:
+        case UnitType::Perp:
+        case UnitType::Xdc:
+        case UnitType::Tel:
+        case UnitType::Snx:
+        case UnitType::Btg:
+        case UnitType::Afn:
+        case UnitType::All:
+        case UnitType::Amd:
+        case UnitType::Ang:
+        case UnitType::Aoa:
+        case UnitType::Ars:
+        case UnitType::Awg:
+        case UnitType::Azn:
+        case UnitType::Bam:
+        case UnitType::Bbd:
+        case UnitType::Bdt:
+        case UnitType::Bgn:
+        case UnitType::Bhd:
+        case UnitType::Bif:
+        case UnitType::Bmd:
+        case UnitType::Bnd:
+        case UnitType::Bob:
+        case UnitType::Brl:
+        case UnitType::Bsd:
+        case UnitType::Btn:
+        case UnitType::Bwp:
+        case UnitType::Byn:
+        case UnitType::Bzd:
+        case UnitType::Cdf:
+        case UnitType::Clp:
+        case UnitType::Cop:
+        case UnitType::Crc:
+        case UnitType::Cuc:
+        case UnitType::Cup:
+        case UnitType::Cve:
+        case UnitType::Czk:
+        case UnitType::Djf:
+        case UnitType::Dkk:
+        case UnitType::Dop:
+        case UnitType::Dzd:
+        case UnitType::Egp:
+        case UnitType::Ern:
+        case UnitType::Etb:
+        case UnitType::Fjd:
+        case UnitType::Fkp:
+        case UnitType::Gel:
+        case UnitType::Ggp:
+        case UnitType::Ghs:
+        case UnitType::Gip:
+        case UnitType::Gmd:
+        case UnitType::Gnf:
+        case UnitType::Gtq:
+        case UnitType::Gyd:
+        case UnitType::Hnl:
+        case UnitType::Hrk:
+        case UnitType::Htg:
+        case UnitType::Idr:
+        case UnitType::Ils:
+        case UnitType::Imp:
+        case UnitType::Iqd:
+        case UnitType::Irr:
+        case UnitType::Isk:
+        case UnitType::Jep:
+        case UnitType::Jmd:
+        case UnitType::Jod:
+        case UnitType::Kes:
+        case UnitType::Kgs:
+        case UnitType::Khr:
+        case UnitType::Kmf:
+        case UnitType::Kpw:
+        case UnitType::Krw:
+        case UnitType::Kwd:
+        case UnitType::Kyd:
+        case UnitType::Kzt:
+        case UnitType::Lak:
+        case UnitType::Lbp:
+        case UnitType::Lkr:
+        case UnitType::Lrd:
+        case UnitType::Lsl:
+        case UnitType::Lyd:
+        case UnitType::Mad:
+        case UnitType::Mdl:
+        case UnitType::Mga:
+        case UnitType::Mkd:
+        case UnitType::Mmk:
+        case UnitType::Mnt:
+        case UnitType::Mop:
+        case UnitType::Mru:
+        case UnitType::Mur:
+        case UnitType::Mvr:
+        case UnitType::Mwk:
+        case UnitType::Mzn:
+        case UnitType::Nad:
+        case UnitType::Ngn:
+        case UnitType::Nio:
+        case UnitType::Nok:
+        case UnitType::Npr:
+        case UnitType::Omr:
+        case UnitType::Pab:
+        case UnitType::Pen:
+        case UnitType::Pgk:
+        case UnitType::Pkr:
+        case UnitType::Pln:
+        case UnitType::Pyg:
+        case UnitType::Qar:
+        case UnitType::Ron:
+        case UnitType::Rsd:
+        case UnitType::Rub:
+        case UnitType::Rwf:
+        case UnitType::Sar:
+        case UnitType::Sbd:
+        case UnitType::Scr:
+        case UnitType::Sdg:
+        case UnitType::Shp:
+        case UnitType::Sll:
+        case UnitType::Sos:
+        case UnitType::Spl:
+        case UnitType::Srd:
+        case UnitType::Stn:
+        case UnitType::Svc:
+        case UnitType::Syp:
+        case UnitType::Szl:
+        case UnitType::Tjs:
+        case UnitType::Tmt:
+        case UnitType::Tnd:
+        case UnitType::Top:
+        case UnitType::Try:
+        case UnitType::Ttd:
+        case UnitType::Tvd:
+        case UnitType::Twd:
+        case UnitType::Tzs:
+        case UnitType::Uah:
+        case UnitType::Ugx:
+        case UnitType::Uyu:
+        case UnitType::Uzs:
+        case UnitType::Vef:
+        case UnitType::Vnd:
+        case UnitType::Vuv:
+        case UnitType::Wst:
+        case UnitType::Xaf:
+        case UnitType::Xcd:
+        case UnitType::Xdr:
+        case UnitType::Xof:
+        case UnitType::Xpf:
+        case UnitType::Yer:
+        case UnitType::Zmw:
+        case UnitType::Zwd:
+        case UnitType::Custom:
+        case UnitType::Unknown:
         default: {
             OT_FAIL;
         }
@@ -425,6 +701,10 @@ auto Blockchain::Imp::CalculateAddress(
                 return {};
             }
         } break;
+        case Style::Unknown:
+        case Style::P2SH:
+        case Style::P2WSH:
+        case Style::P2TR:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported address style (")(
                 static_cast<std::uint16_t>(format))(")")
@@ -636,6 +916,9 @@ auto Blockchain::Imp::EncodeAddress(
 
             return p2sh(chain, data);
         }
+        case Style::Unknown:
+        case Style::P2WSH:
+        case Style::P2TR:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported address style (")(
                 static_cast<std::uint16_t>(style))(")")
@@ -667,11 +950,11 @@ auto Blockchain::Imp::GetKey(const Key& id) const noexcept(false)
         }
         case Type::Imported:
         case Type::Error:
+        case Type::Notification:
         default: {
+            throw std::out_of_range("key not found");
         }
     }
-
-    throw std::out_of_range("key not found");
 }
 
 auto Blockchain::Imp::get_node(const identifier::Generic& accountID) const
@@ -710,6 +993,7 @@ auto Blockchain::Imp::get_node(const identifier::Generic& accountID) const
             }
             case opentxs::blockchain::crypto::SubaccountType::Imported:
             case opentxs::blockchain::crypto::SubaccountType::Error:
+            case opentxs::blockchain::crypto::SubaccountType::Notification:
             default: {
                 throw std::out_of_range("subaccount type not supported");
             }
@@ -788,6 +1072,7 @@ auto Blockchain::Imp::init_path(
             path.add_child(HDIndex{bip44_type(chain), Bip32Child::HARDENED});
             path.add_child(account);
         } break;
+        case Standard::Error:
         default: {
             OT_FAIL;
         }

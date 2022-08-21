@@ -187,7 +187,6 @@ auto OTScriptChai::ExecuteScript(OTVariable* pReturnVar) -> bool
                             var_name.c_str());
                     }
                 } break;
-
                 case OTVariable::Var_Bool: {
                     bool& bValue = pVar->GetValueBool();
 
@@ -204,7 +203,6 @@ auto OTScriptChai::ExecuteScript(OTVariable* pReturnVar) -> bool
                             var_name.c_str());
                     }
                 } break;
-
                 case OTVariable::Var_String: {
                     UnallocatedCString& str_Value = pVar->GetValueString();
 
@@ -232,7 +230,7 @@ auto OTScriptChai::ExecuteScript(OTVariable* pReturnVar) -> bool
                         // var added to script: %s \n\n\n", str_Value.c_str());
                     }
                 } break;
-
+                case OTVariable::Var_Error_Type:
                 default:
                     LogError()(OT_PRETTY_CLASS())(
                         "Failure: Unknown "
@@ -267,7 +265,6 @@ auto OTScriptChai::ExecuteScript(OTVariable* pReturnVar) -> bool
                             m_str_display_filename);
                         pReturnVar->SetValue(nResult);
                     } break;
-
                     case OTVariable::Var_Bool: {
                         bool bResult = chai_->eval<bool>(
                             m_str_script.c_str(),
@@ -275,7 +272,6 @@ auto OTScriptChai::ExecuteScript(OTVariable* pReturnVar) -> bool
                             m_str_display_filename);
                         pReturnVar->SetValue(bResult);
                     } break;
-
                     case OTVariable::Var_String: {
                         auto str_Result = chai_->eval<UnallocatedCString>(
                             m_str_script.c_str(),
@@ -283,7 +279,7 @@ auto OTScriptChai::ExecuteScript(OTVariable* pReturnVar) -> bool
                             m_str_display_filename);
                         pReturnVar->SetValue(str_Result);
                     } break;
-
+                    case OTVariable::Var_Error_Type:
                     default:
                         LogError()(OT_PRETTY_CLASS())("Unknown return "
                                                       "type passed in, "

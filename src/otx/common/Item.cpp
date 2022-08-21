@@ -1134,10 +1134,10 @@ void Item::CalculateNumberOfOrigin()
                                         // basket currency.
         case itemType::atExchangeBasket:  // reply from the server regarding
                                           // said exchange.
-
-        default:
+        case itemType::error_state:
+        default: {
             SetNumberOfOrigin(GetTransactionNum());
-            break;
+        }
     }  // switch
 }  // namespace opentxs
 
@@ -1647,234 +1647,223 @@ void Item::SetClosingNum(std::int64_t lClosingNum)
 void Item::GetStringFromType(itemType theType, String& strType)
 {
     switch (theType) {
-        case itemType::transfer:
+        case itemType::transfer: {
             strType.Set("transfer");
-            break;
-        case itemType::acceptTransaction:
+        } break;
+        case itemType::acceptTransaction: {
             strType.Set("acceptTransaction");
-            break;
-        case itemType::acceptMessage:
+        } break;
+        case itemType::acceptMessage: {
             strType.Set("acceptMessage");
-            break;
-        case itemType::acceptNotice:
+        } break;
+        case itemType::acceptNotice: {
             strType.Set("acceptNotice");
-            break;
-        case itemType::acceptPending:
+        } break;
+        case itemType::acceptPending: {
             strType.Set("acceptPending");
-            break;
-        case itemType::rejectPending:
+        } break;
+        case itemType::rejectPending: {
             strType.Set("rejectPending");
-            break;
-        case itemType::acceptCronReceipt:
+        } break;
+        case itemType::acceptCronReceipt: {
             strType.Set("acceptCronReceipt");
-            break;
-        case itemType::disputeCronReceipt:
+        } break;
+        case itemType::disputeCronReceipt: {
             strType.Set("disputeCronReceipt");
-            break;
-        case itemType::acceptItemReceipt:
+        } break;
+        case itemType::acceptItemReceipt: {
             strType.Set("acceptItemReceipt");
-            break;
-        case itemType::disputeItemReceipt:
+        } break;
+        case itemType::disputeItemReceipt: {
             strType.Set("disputeItemReceipt");
-            break;
-        case itemType::acceptFinalReceipt:
+        } break;
+        case itemType::acceptFinalReceipt: {
             strType.Set("acceptFinalReceipt");
-            break;
-        case itemType::acceptBasketReceipt:
+        } break;
+        case itemType::acceptBasketReceipt: {
             strType.Set("acceptBasketReceipt");
-            break;
-        case itemType::disputeFinalReceipt:
+        } break;
+        case itemType::disputeFinalReceipt: {
             strType.Set("disputeFinalReceipt");
-            break;
-        case itemType::disputeBasketReceipt:
+        } break;
+        case itemType::disputeBasketReceipt: {
             strType.Set("disputeBasketReceipt");
-            break;
-        case itemType::serverfee:
+        } break;
+        case itemType::serverfee: {
             strType.Set("serverfee");
-            break;
-        case itemType::issuerfee:
+        } break;
+        case itemType::issuerfee: {
             strType.Set("issuerfee");
-            break;
-        case itemType::withdrawal:
+        } break;
+        case itemType::withdrawal: {
             strType.Set("withdrawal");
-            break;
-        case itemType::deposit:
+        } break;
+        case itemType::deposit: {
             strType.Set("deposit");
-            break;
-        case itemType::withdrawVoucher:
+        } break;
+        case itemType::withdrawVoucher: {
             strType.Set("withdrawVoucher");
-            break;
-        case itemType::depositCheque:
+        } break;
+        case itemType::depositCheque: {
             strType.Set("depositCheque");
-            break;
-        case itemType::payDividend:
+        } break;
+        case itemType::payDividend: {
             strType.Set("payDividend");
-            break;
-        case itemType::marketOffer:
+        } break;
+        case itemType::marketOffer: {
             strType.Set("marketOffer");
-            break;
-        case itemType::paymentPlan:
+        } break;
+        case itemType::paymentPlan: {
             strType.Set("paymentPlan");
-            break;
-        case itemType::smartContract:
+        } break;
+        case itemType::smartContract: {
             strType.Set("smartContract");
-            break;
-        case itemType::balanceStatement:
+        } break;
+        case itemType::balanceStatement: {
             strType.Set("balanceStatement");
-            break;
-        case itemType::transactionStatement:
+        } break;
+        case itemType::transactionStatement: {
             strType.Set("transactionStatement");
-            break;
-
-        case itemType::cancelCronItem:
+        } break;
+        case itemType::cancelCronItem: {
             strType.Set("cancelCronItem");
-            break;
-        case itemType::exchangeBasket:
+        } break;
+        case itemType::exchangeBasket: {
             strType.Set("exchangeBasket");
-            break;
-
-        case itemType::atCancelCronItem:
+        } break;
+        case itemType::atCancelCronItem: {
             strType.Set("atCancelCronItem");
-            break;
-        case itemType::atExchangeBasket:
+        } break;
+        case itemType::atExchangeBasket: {
             strType.Set("atExchangeBasket");
-            break;
-
-        case itemType::chequeReceipt:  // used for inbox statements in balance
-                                       // agreement.
+        } break;
+        // used for inbox statements in balance agreement.
+        case itemType::chequeReceipt: {
             strType.Set("chequeReceipt");
-            break;
-        case itemType::voucherReceipt:  // used for inbox statements in balance
-                                        // agreement.
+        } break;
+        // used for inbox statements in balance agreement.
+        case itemType::voucherReceipt: {
             strType.Set("voucherReceipt");
-            break;
-        case itemType::marketReceipt:  // used as market receipt, and also for
-                                       // inbox
-            // statement containing market receipt will use
-            // this as well.
+        } break;
+        // used as market receipt, and also for inbox statement containing
+        // market receipt will use this as well.
+        case itemType::marketReceipt: {
             strType.Set("marketReceipt");
-            break;
-        case itemType::paymentReceipt:  // used as payment receipt, also used in
-                                        // inbox
-                                        // statement as payment receipt.
+        } break;
+        // used as payment receipt, also used in inbox statement as payment
+        // receipt.
+        case itemType::paymentReceipt: {
             strType.Set("paymentReceipt");
-            break;
-        case itemType::transferReceipt:  // used in inbox statement as transfer
-                                         // receipt.
+        } break;
+        // used in inbox statement as transfer receipt.
+        case itemType::transferReceipt: {
             strType.Set("transferReceipt");
-            break;
-
-        case itemType::finalReceipt:  // used for final receipt. Also used in
-                                      // inbox
-            // statement as final receipt. (For expiring or
-            // cancelled Cron Item.)
+        } break;
+        // used for final receipt. Also used in inbox statement as final
+        // receipt. (For expiring or cancelled Cron Item.)
+        case itemType::finalReceipt: {
             strType.Set("finalReceipt");
-            break;
-        case itemType::basketReceipt:  // used in inbox statement as basket
-                                       // receipt. (For exchange.)
+        } break;
+        // used in inbox statement as basket receipt. (For exchange.)
+        case itemType::basketReceipt: {
             strType.Set("basketReceipt");
-            break;
-
-        case itemType::notice:  // used in Nymbox statement as notification from
-                                // server.
+        } break;
+        case itemType::notice: {  // used in Nymbox statement as notification
+                                  // from erver.
             strType.Set("notice");
-            break;
-        case itemType::replyNotice:  // some server replies (to your request)
-                                     // have a
-            // copy dropped into your nymbox, to make sure you
-            // received it.
+        } break;
+        // some server replies (to your request) have a copy dropped into your
+        // nymbox, to make sure you received it.
+        case itemType::replyNotice: {
             strType.Set("replyNotice");
-            break;
-        case itemType::successNotice:  // used in Nymbox statement as
-                                       // notification from server of successful
-                                       // sign-out of a trans#.
+        } break;
+        // used in Nymbox statement as notification from server of successful
+        // sign-out of a trans#.
+        case itemType::successNotice: {
             strType.Set("successNotice");
-            break;
-
-        case itemType::atTransfer:
+        } break;
+        case itemType::atTransfer: {
             strType.Set("atTransfer");
-            break;
-        case itemType::atAcceptTransaction:
+        } break;
+        case itemType::atAcceptTransaction: {
             strType.Set("atAcceptTransaction");
-            break;
-        case itemType::atAcceptMessage:
+        } break;
+        case itemType::atAcceptMessage: {
             strType.Set("atAcceptMessage");
-            break;
-        case itemType::atAcceptNotice:
+        } break;
+        case itemType::atAcceptNotice: {
             strType.Set("atAcceptNotice");
-            break;
-        case itemType::atAcceptPending:
+        } break;
+        case itemType::atAcceptPending: {
             strType.Set("atAcceptPending");
-            break;
-        case itemType::atRejectPending:
+        } break;
+        case itemType::atRejectPending: {
             strType.Set("atRejectPending");
-            break;
-        case itemType::atAcceptCronReceipt:
+        } break;
+        case itemType::atAcceptCronReceipt: {
             strType.Set("atAcceptCronReceipt");
-            break;
-        case itemType::atDisputeCronReceipt:
+        } break;
+        case itemType::atDisputeCronReceipt: {
             strType.Set("atDisputeCronReceipt");
-            break;
-        case itemType::atAcceptItemReceipt:
+        } break;
+        case itemType::atAcceptItemReceipt: {
             strType.Set("atAcceptItemReceipt");
-            break;
-        case itemType::atDisputeItemReceipt:
+        } break;
+        case itemType::atDisputeItemReceipt: {
             strType.Set("atDisputeItemReceipt");
-            break;
-
-        case itemType::atAcceptFinalReceipt:
+        } break;
+        case itemType::atAcceptFinalReceipt: {
             strType.Set("atAcceptFinalReceipt");
-            break;
-        case itemType::atAcceptBasketReceipt:
+        } break;
+        case itemType::atAcceptBasketReceipt: {
             strType.Set("atAcceptBasketReceipt");
-            break;
-        case itemType::atDisputeFinalReceipt:
+        } break;
+        case itemType::atDisputeFinalReceipt: {
             strType.Set("atDisputeFinalReceipt");
-            break;
-        case itemType::atDisputeBasketReceipt:
+        } break;
+        case itemType::atDisputeBasketReceipt: {
             strType.Set("atDisputeBasketReceipt");
-            break;
-
-        case itemType::atServerfee:
+        } break;
+        case itemType::atServerfee: {
             strType.Set("atServerfee");
-            break;
-        case itemType::atIssuerfee:
+        } break;
+        case itemType::atIssuerfee: {
             strType.Set("atIssuerfee");
-            break;
-        case itemType::atWithdrawal:
+        } break;
+        case itemType::atWithdrawal: {
             strType.Set("atWithdrawal");
-            break;
-        case itemType::atDeposit:
+        } break;
+        case itemType::atDeposit: {
             strType.Set("atDeposit");
-            break;
-        case itemType::atWithdrawVoucher:
+        } break;
+        case itemType::atWithdrawVoucher: {
             strType.Set("atWithdrawVoucher");
-            break;
-        case itemType::atDepositCheque:
+        } break;
+        case itemType::atDepositCheque: {
             strType.Set("atDepositCheque");
-            break;
-        case itemType::atPayDividend:
+        } break;
+        case itemType::atPayDividend: {
             strType.Set("atPayDividend");
-            break;
-        case itemType::atMarketOffer:
+        } break;
+        case itemType::atMarketOffer: {
             strType.Set("atMarketOffer");
-            break;
-        case itemType::atPaymentPlan:
+        } break;
+        case itemType::atPaymentPlan: {
             strType.Set("atPaymentPlan");
-            break;
-        case itemType::atSmartContract:
+        } break;
+        case itemType::atSmartContract: {
             strType.Set("atSmartContract");
-            break;
-        case itemType::atBalanceStatement:
+        } break;
+        case itemType::atBalanceStatement: {
             strType.Set("atBalanceStatement");
-            break;
-        case itemType::atTransactionStatement:
+        } break;
+        case itemType::atTransactionStatement: {
             strType.Set("atTransactionStatement");
-            break;
-
-        default:
+        } break;
+        case itemType::error_state:
+        default: {
             strType.Set("error-unknown");
-            break;
+        }
     }
 }
 
@@ -1893,18 +1882,19 @@ void Item::UpdateContents(const PasswordPrompt& reason)  // Before transmission
     GetStringFromType(m_Type, strType);
 
     switch (m_Status) {
-        case request:
+        case request: {
             strStatus->Set("request");
-            break;
-        case acknowledgement:
+        } break;
+        case acknowledgement: {
             strStatus->Set("acknowledgement");
-            break;
-        case rejection:
+        } break;
+        case rejection: {
             strStatus->Set("rejection");
-            break;
-        default:
+        } break;
+        case error_status:
+        default: {
             strStatus->Set("error-unknown");
-            break;
+        }
     }
 
     // I release this because I'm about to repopulate it.

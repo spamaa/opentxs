@@ -205,6 +205,8 @@ auto ActivityThread::construct_row(
             return factory::BlockchainActivityThreadItem(
                 *this, api_, primary_id_, id, index, custom);
         }
+#else
+        case otx::client::StorageBox::BLOCKCHAIN:
 #endif  // OT_BLOCKCHAIN
         case otx::client::StorageBox::SENTPEERREQUEST:
         case otx::client::StorageBox::INCOMINGPEERREQUEST:
@@ -214,6 +216,10 @@ auto ActivityThread::construct_row(
         case otx::client::StorageBox::FINISHEDPEERREPLY:
         case otx::client::StorageBox::PROCESSEDPEERREQUEST:
         case otx::client::StorageBox::PROCESSEDPEERREPLY:
+        case otx::client::StorageBox::RESERVED_1:
+        case otx::client::StorageBox::OUTGOINGTRANSFER:
+        case otx::client::StorageBox::INCOMINGTRANSFER:
+        case otx::client::StorageBox::INTERNALTRANSFER:
         case otx::client::StorageBox::UNKNOWN:
         default: {
             OT_FAIL;
@@ -341,6 +347,10 @@ auto ActivityThread::Pay(
         case otx::client::PaymentType::Cheque: {
             return send_cheque(amount, sourceAccount, memo);
         }
+        case otx::client::PaymentType::Error:
+        case otx::client::PaymentType::Voucher:
+        case otx::client::PaymentType::Transfer:
+        case otx::client::PaymentType::Blinded:
         default: {
             LogError()(OT_PRETTY_CLASS())("Unsupported payment type: (")(
                 static_cast<int>(type))(")")

@@ -141,14 +141,18 @@ Primary::Primary(
 auto Primary::hasCapability(const NymCapability& capability) const -> bool
 {
     switch (capability) {
-        case (NymCapability::SIGN_CHILDCRED): {
+        case NymCapability::SIGN_CHILDCRED: {
+
             return signing_key_->CheckCapability(capability);
         }
+        case NymCapability::SIGN_MESSAGE:
+        case NymCapability::ENCRYPT_MESSAGE:
+        case NymCapability::AUTHENTICATE_CONNECTION:
         default: {
+
+            return false;
         }
     }
-
-    return false;
 }
 
 auto Primary::Path(proto::HDPath& output) const -> bool
@@ -310,7 +314,9 @@ auto Primary::verify_against_source(const Lock& lock) const -> bool
         case identity::SourceType::Bip47: {
             pSerialized = serialize(lock, AS_PUBLIC, WITHOUT_SIGNATURES);
         } break;
+        case identity::SourceType::Error:
         default: {
+
             return false;
         }
     }

@@ -627,6 +627,10 @@ auto OTX::can_deposit(
         case otx::client::Depositability::READY: {
             LogDetail()(OT_PRETTY_CLASS())("Payment can be deposited.").Flush();
         } break;
+        case otx::client::Depositability::WRONG_RECIPIENT:
+        case otx::client::Depositability::INVALID_INSTRUMENT:
+        case otx::client::Depositability::NOT_REGISTERED:
+        case otx::client::Depositability::UNKNOWN:
         default: {
             OT_FAIL;
         }
@@ -1683,6 +1687,8 @@ void OTX::process_notification(const zmq::Message& message) const
         case otx::ServerReplyType::Push: {
             context.get().ProcessNotification(api_, notification, reason_);
         } break;
+        case otx::ServerReplyType::Error:
+        case otx::ServerReplyType::Activate:
         default: {
             LogError()(OT_PRETTY_CLASS())(": Unsupported server reply type: ")(
                 value(notification.Type()))(".")

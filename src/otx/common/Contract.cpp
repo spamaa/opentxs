@@ -1334,6 +1334,7 @@ auto Contract::LoadContractXML() -> bool
                 }
                 // else if 1 was returned, that means the node was processed.
             } break;
+            case irr::io::EXN_UNKNOWN:
             default: {
                 //                otErr << "SKIPPING (default case) element in
                 // Contract::LoadContractXML: %d, value: %s\n",

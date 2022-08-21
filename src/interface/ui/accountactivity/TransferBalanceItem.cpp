@@ -90,6 +90,8 @@ auto TransferBalanceItem::effective_amount() const noexcept -> opentxs::Amount
         case otx::client::StorageBox::OUTGOINGCHEQUE:
         case otx::client::StorageBox::DRAFT:
         case otx::client::StorageBox::UNKNOWN:
+        case otx::client::StorageBox::RESERVED_1:
+        case otx::client::StorageBox::PENDING_SEND:
         default: {
         }
     }
@@ -233,6 +235,8 @@ auto TransferBalanceItem::startup(
         case otx::client::StorageBox::OUTGOINGCHEQUE:
         case otx::client::StorageBox::DRAFT:
         case otx::client::StorageBox::UNKNOWN:
+        case otx::client::StorageBox::RESERVED_1:
+        case otx::client::StorageBox::PENDING_SEND:
         default: {
             LogError()(OT_PRETTY_CLASS())("Invalid item type (")(
                 static_cast<std::uint8_t>(type_))(")")

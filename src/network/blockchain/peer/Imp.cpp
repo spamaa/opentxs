@@ -1311,6 +1311,10 @@ auto Peer::Imp::transmit(
         case State::verify:
         case State::run: {
         } break;
+        case State::pre_init:
+        case State::init:
+        case State::connect:
+        case State::shutdown:
         default: {
             LogAbort()(OT_PRETTY_CLASS())("attempting to transmit in state ")(
                 print_state(state_))

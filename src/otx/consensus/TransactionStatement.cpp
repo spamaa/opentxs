@@ -118,11 +118,11 @@ TransactionStatement::TransactionStatement(const String& serialized)
                         .Flush();
                 }
             } break;
+            case irr::io::EXN_UNKNOWN:
             default: {
                 LogInsane()(OT_PRETTY_CLASS())("Unknown XML type in ")(
                     nodeName.get())
                     .Flush();
-                break;
             }
         }
     }

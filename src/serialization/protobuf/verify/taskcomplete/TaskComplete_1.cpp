@@ -57,7 +57,8 @@ auto CheckProto_2(const TaskComplete& input, const bool silent) -> bool
         case RPCRESPONSE_TRANSACTION_FAILED:
         case RPCRESPONSE_ERROR:
         case RPCRESPONSE_UNIMPLEMENTED:
-            break;
+        case RPCRESPONSE_TXID: {
+        } break;
         default: {
             FAIL_1("invalid success code");
         }
