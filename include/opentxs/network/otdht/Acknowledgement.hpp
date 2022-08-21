@@ -7,6 +7,8 @@
 
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
+#include <string_view>
+
 #include "opentxs/blockchain/Types.hpp"
 #include "opentxs/network/otdht/Base.hpp"
 #include "opentxs/network/otdht/State.hpp"
@@ -36,7 +38,7 @@ class OPENTXS_EXPORT Acknowledgement final : public Base
 public:
     class Imp;
 
-    auto Endpoint() const noexcept -> const UnallocatedCString&;
+    auto Endpoint() const noexcept -> std::string_view;
     auto State() const noexcept -> const StateData&;
     /// throws std::out_of_range if specified chain is not present
     auto State(opentxs::blockchain::Type chain) const noexcept(false)

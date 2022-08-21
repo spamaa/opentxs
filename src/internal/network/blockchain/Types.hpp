@@ -48,5 +48,21 @@ enum class PeerJob : OTZMQWorkType {
     statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };
 
+// WARNING update print function if new values are added or removed
+enum class DHTJob : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    sync_ack = value(WorkType::P2PBlockchainSyncAck),
+    sync_reply = value(WorkType::P2PBlockchainSyncReply),
+    sync_push = value(WorkType::P2PBlockchainNewBlock),
+    response = value(WorkType::P2PResponse),
+    push_tx = value(WorkType::P2PPushTransaction),
+    job_processed = OT_ZMQ_INTERNAL_SIGNAL + 0,
+    registration = OT_ZMQ_REGISTER_SIGNAL,
+    init = OT_ZMQ_INIT_SIGNAL,
+    cfilter = OT_ZMQ_NEW_FILTER_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+
 auto print(PeerJob) noexcept -> std::string_view;
+auto print(DHTJob) noexcept -> std::string_view;
 }  // namespace opentxs::network::blockchain

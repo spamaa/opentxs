@@ -19,7 +19,7 @@
 #include "internal/network/otdht/Factory.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
 #include "internal/util/LogMacros.hpp"
-#include "network/otdht/Base.hpp"
+#include "network/otdht/messages/Base.hpp"
 #include "opentxs/network/otdht/Acknowledgement.hpp"  // IWYU pragma: keep
 #include "opentxs/network/otdht/Block.hpp"
 #include "opentxs/network/otdht/Data.hpp"  // IWYU pragma: keep

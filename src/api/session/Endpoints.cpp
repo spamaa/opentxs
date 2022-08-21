@@ -83,7 +83,20 @@ Endpoints::Endpoints(const int instance) noexcept
     , message_loaded_(build_inproc_path("otx/message_loaded", version_1_))
     , nym_created_(build_inproc_path("nymcreated", version_1_))
     , nym_download_(build_inproc_path("nymupdate", version_1_))
-    , p2p_wallet_(build_inproc_path("internal/p2p/wallet", version_1_))
+    , otdht_blockchain_([&] {
+        auto out = BlockchainMap{};
+
+        for (const auto& chain : opentxs::blockchain::DefinedChains()) {
+            out.emplace(
+                chain,
+                build_inproc_path(
+                    "internal/otdht/blockchain", version_1_, print(chain)));
+        }
+
+        return out;
+    }())
+    , otdht_node_(build_inproc_path("internal/otdht/node", version_1_))
+    , otdht_wallet_(build_inproc_path("internal/otdht/wallet", version_1_))
     , pair_event_(build_inproc_path("pairevent", version_1_))
     , peer_reply_update_(build_inproc_path("peerreplyupdate", version_1_))
     , peer_request_update_(build_inproc_path("peerrequestupdate", version_1_))
@@ -292,9 +305,20 @@ auto Endpoints::NymDownload() const noexcept -> std::string_view
     return nym_download_;
 }
 
-auto Endpoints::P2PWallet() const noexcept -> std::string_view
+auto Endpoints::OTDHTBlockchain(
+    const opentxs::blockchain::Type chain) const noexcept -> std::string_view
 {
-    return p2p_wallet_;
+    return otdht_blockchain_.at(chain);
+}
+
+auto Endpoints::OTDHTNode() const noexcept -> std::string_view
+{
+    return otdht_node_;
+}
+
+auto Endpoints::OTDHTWallet() const noexcept -> std::string_view
+{
+    return otdht_wallet_;
 }
 
 auto Endpoints::PairEvent() const noexcept -> std::string_view

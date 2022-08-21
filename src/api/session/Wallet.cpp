@@ -155,7 +155,7 @@ Wallet::Wallet(const api::Session& api)
 
         return api_.Network().ZeroMQ().Internal().MakeBatch(
             {
-                Type::Dealer,  // NOTE p2p_socket_
+                Type::Router,  // NOTE p2p_socket_
                 Type::Pull,    // NOTE loopback_
             },
             "api::session::Wallet");
@@ -171,7 +171,8 @@ Wallet::Wallet(const api::Session& api)
     , p2p_callback_(batch_.listen_callbacks_.at(0))
     , p2p_socket_([&]() -> auto& {
         auto& out = batch_.sockets_.at(0);
-        const auto endpoint = CString{api_.Endpoints().Internal().P2PWallet()};
+        const auto endpoint =
+            CString{api_.Endpoints().Internal().OTDHTWallet()};
         const auto rc = out.Bind(endpoint.c_str());
 
         OT_ASSERT(rc);

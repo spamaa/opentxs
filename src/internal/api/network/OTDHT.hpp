@@ -35,7 +35,6 @@ public:
 
     virtual auto Disable(const Chain chain) const noexcept -> void = 0;
     virtual auto Enable(const Chain chain) const noexcept -> void = 0;
-    virtual auto Endpoint() const noexcept -> std::string_view = 0;
     virtual auto Endpoint(const Chain chain) const noexcept
         -> std::string_view = 0;
     auto Internal() const noexcept -> const internal::OTDHT& final

@@ -3,9 +3,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"                               // IWYU pragma: associated
-#include "1_Internal.hpp"                             // IWYU pragma: associated
-#include "opentxs/network/otdht/PublishContract.hpp"  // IWYU pragma: associated
+#include "0_stdafx.hpp"    // IWYU pragma: associated
+#include "1_Internal.hpp"  // IWYU pragma: associated
+#include "opentxs/network/otdht/QueryContractReply.hpp"  // IWYU pragma: associated
 
 #include <Identifier.pb.h>
 #include <boost/endian/buffers.hpp>
@@ -18,7 +18,7 @@
 #include "internal/api/session/FactoryAPI.hpp"
 #include "internal/network/otdht/Factory.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
-#include "network/otdht/Base.hpp"
+#include "network/otdht/messages/Base.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/core/contract/ContractType.hpp"
@@ -26,6 +26,7 @@
 #include "opentxs/core/contract/Unit.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
 #include "opentxs/core/identifier/Nym.hpp"  // IWYU pragma: keep
+#include "opentxs/core/identifier/Types.hpp"
 #include "opentxs/identity/Nym.hpp"
 #include "opentxs/network/otdht/MessageType.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
@@ -33,17 +34,27 @@
 
 namespace opentxs::factory
 {
-auto BlockchainSyncPublishContract() noexcept -> network::otdht::PublishContract
+auto BlockchainSyncQueryContractReply() noexcept
+    -> network::otdht::QueryContractReply
 {
-    using ReturnType = network::otdht::PublishContract;
+    using ReturnType = network::otdht::QueryContractReply;
 
     return std::make_unique<ReturnType::Imp>().release();
 }
 
-auto BlockchainSyncPublishContract(const identity::Nym& payload) noexcept
-    -> network::otdht::PublishContract
+auto BlockchainSyncQueryContractReply(const identifier::Generic& id) noexcept
+    -> network::otdht::QueryContractReply
 {
-    using ReturnType = network::otdht::PublishContract;
+    using ReturnType = network::otdht::QueryContractReply;
+
+    return std::make_unique<ReturnType::Imp>(translate(id.Type()), id, Space{})
+        .release();
+}
+
+auto BlockchainSyncQueryContractReply(const identity::Nym& payload) noexcept
+    -> network::otdht::QueryContractReply
+{
+    using ReturnType = network::otdht::QueryContractReply;
 
     try {
         return std::make_unique<ReturnType::Imp>(
@@ -62,14 +73,14 @@ auto BlockchainSyncPublishContract(const identity::Nym& payload) noexcept
     } catch (const std::exception& e) {
         LogError()("opentxs::factory::")(__func__)(": ")(e.what()).Flush();
 
-        return BlockchainSyncPublishContract();
+        return BlockchainSyncQueryContractReply();
     }
 }
 
-auto BlockchainSyncPublishContract(const contract::Server& payload) noexcept
-    -> network::otdht::PublishContract
+auto BlockchainSyncQueryContractReply(const contract::Server& payload) noexcept
+    -> network::otdht::QueryContractReply
 {
-    using ReturnType = network::otdht::PublishContract;
+    using ReturnType = network::otdht::QueryContractReply;
 
     try {
         return std::make_unique<ReturnType::Imp>(
@@ -89,14 +100,14 @@ auto BlockchainSyncPublishContract(const contract::Server& payload) noexcept
     } catch (const std::exception& e) {
         LogError()("opentxs::factory::")(__func__)(": ")(e.what()).Flush();
 
-        return BlockchainSyncPublishContract();
+        return BlockchainSyncQueryContractReply();
     }
 }
 
-auto BlockchainSyncPublishContract(const contract::Unit& payload) noexcept
-    -> network::otdht::PublishContract
+auto BlockchainSyncQueryContractReply(const contract::Unit& payload) noexcept
+    -> network::otdht::QueryContractReply
 {
-    using ReturnType = network::otdht::PublishContract;
+    using ReturnType = network::otdht::QueryContractReply;
 
     try {
         return std::make_unique<ReturnType::Imp>(
@@ -115,18 +126,18 @@ auto BlockchainSyncPublishContract(const contract::Unit& payload) noexcept
     } catch (const std::exception& e) {
         LogError()("opentxs::factory::")(__func__)(": ")(e.what()).Flush();
 
-        return BlockchainSyncPublishContract();
+        return BlockchainSyncQueryContractReply();
     }
 }
 
-auto BlockchainSyncPublishContract_p(
+auto BlockchainSyncQueryContractReply_p(
     const api::Session& api,
     const contract::Type type,
     const ReadView id,
     const ReadView payload) noexcept
-    -> std::unique_ptr<network::otdht::PublishContract>
+    -> std::unique_ptr<network::otdht::QueryContractReply>
 {
-    using ReturnType = network::otdht::PublishContract;
+    using ReturnType = network::otdht::QueryContractReply;
 
     return std::make_unique<ReturnType>(
         std::make_unique<ReturnType::Imp>(api, type, id, payload).release());
@@ -135,13 +146,13 @@ auto BlockchainSyncPublishContract_p(
 
 namespace opentxs::network::otdht
 {
-class PublishContract::Imp final : public Base::Imp
+class QueryContractReply::Imp final : public Base::Imp
 {
 public:
     const contract::Type contract_type_;
     const identifier::Generic contract_id_;
     const Space payload_;
-    PublishContract* parent_;
+    QueryContractReply* parent_;
 
     static auto get(const Imp* imp) noexcept -> const Imp&
     {
@@ -155,25 +166,38 @@ public:
         }
     }
 
-    auto asPublishContract() const noexcept -> const PublishContract& final
+    auto asQueryContractReply() const noexcept
+        -> const QueryContractReply& final
     {
         if (nullptr != parent_) {
 
             return *parent_;
         } else {
 
-            return Base::Imp::asPublishContract();
+            return Base::Imp::asQueryContractReply();
         }
     }
+
     auto serialize(zeromq::Message& out) const noexcept -> bool final
     {
         if (false == serialize_type(out)) { return false; }
 
-        using Buffer = boost::endian::little_uint32_buf_t;
+        {
+            using Buffer = boost::endian::little_uint32_buf_t;
 
-        static_assert(sizeof(Buffer) == sizeof(contract_type_));
+            static_assert(sizeof(Buffer) == sizeof(MessageType));
 
-        out.AddFrame(Buffer{static_cast<std::uint32_t>(contract_type_)});
+            out.AddFrame(Buffer{
+                static_cast<std::uint32_t>(MessageType::contract_query)});
+        }
+        {
+            using Buffer = boost::endian::little_uint32_buf_t;
+
+            static_assert(sizeof(Buffer) == sizeof(contract_type_));
+
+            out.AddFrame(Buffer{static_cast<std::uint32_t>(contract_type_)});
+        }
+
         out.Internal().AddFrame([&] {
             auto out = proto::Identifier{};
             contract_id_.Serialize(out);
@@ -196,7 +220,7 @@ public:
     Imp(const contract::Type type,
         identifier::Generic&& id,
         Space&& payload) noexcept
-        : Base::Imp(MessageType::publish_contract)
+        : Base::Imp(MessageType::contract)
         , contract_type_(type)
         , contract_id_(std::move(id))
         , payload_(std::move(payload))
@@ -225,33 +249,33 @@ public:
     auto operator=(Imp&&) -> Imp& = delete;
 };
 
-PublishContract::PublishContract(Imp* imp) noexcept
+QueryContractReply::QueryContractReply(Imp* imp) noexcept
     : Base(imp)
     , imp_(imp)
 {
     imp_->parent_ = this;
 }
 
-auto PublishContract::ID() const noexcept -> const identifier::Generic&
+auto QueryContractReply::ID() const noexcept -> const identifier::Generic&
 {
     return Imp::get(imp_).contract_id_;
 }
 
-auto PublishContract::Payload() const noexcept -> ReadView
+auto QueryContractReply::Payload() const noexcept -> ReadView
 {
     return reader(Imp::get(imp_).payload_);
 }
 
-auto PublishContract::ContractType() const noexcept -> contract::Type
+auto QueryContractReply::ContractType() const noexcept -> contract::Type
 {
     return Imp::get(imp_).contract_type_;
 }
 
-PublishContract::~PublishContract()
+QueryContractReply::~QueryContractReply()
 {
-    if (nullptr != PublishContract::imp_) {
-        delete PublishContract::imp_;
-        PublishContract::imp_ = nullptr;
+    if (nullptr != QueryContractReply::imp_) {
+        delete QueryContractReply::imp_;
+        QueryContractReply::imp_ = nullptr;
         Base::imp_ = nullptr;
     }
 }

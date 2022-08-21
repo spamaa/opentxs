@@ -18,7 +18,7 @@
 #include "internal/serialization/protobuf/Check.hpp"
 #include "internal/serialization/protobuf/verify/P2PBlockchainSync.hpp"
 #include "internal/util/LogMacros.hpp"
-#include "network/otdht/Base.hpp"
+#include "network/otdht/messages/Base.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/block/Hash.hpp"

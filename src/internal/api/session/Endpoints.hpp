@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "opentxs/api/session/Endpoints.hpp"
+#include "opentxs/blockchain/Types.hpp"
 
 namespace opentxs::api::session::internal
 {
@@ -20,7 +21,10 @@ public:
         -> std::string_view = 0;
     virtual auto BlockchainStartupPull() const noexcept -> std::string_view = 0;
     auto Internal() const noexcept -> const Endpoints& final { return *this; }
-    virtual auto P2PWallet() const noexcept -> std::string_view = 0;
+    virtual auto OTDHTBlockchain(opentxs::blockchain::Type chain) const noexcept
+        -> std::string_view = 0;
+    virtual auto OTDHTNode() const noexcept -> std::string_view = 0;
+    virtual auto OTDHTWallet() const noexcept -> std::string_view = 0;
     virtual auto ProcessPushNotification() const noexcept
         -> std::string_view = 0;
     virtual auto PushNotification() const noexcept -> std::string_view = 0;

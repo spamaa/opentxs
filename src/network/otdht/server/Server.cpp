@@ -92,7 +92,8 @@ Server::Imp::Imp(const api::Session& api, const zeromq::Context& zmq) noexcept
     , update_(batch_.sockets_.at(1))
     , wallet_([&]() -> auto& {
         auto& out = batch_.sockets_.at(2);
-        const auto endpoint = CString{api_.Endpoints().Internal().P2PWallet()};
+        const auto endpoint =
+            CString{api_.Endpoints().Internal().OTDHTWallet()};
         const auto rc = out.Connect(endpoint.c_str());
 
         OT_ASSERT(rc);
@@ -259,8 +260,7 @@ auto Server::Imp::process_pushtx(
 
     sync_.SendExternal(
         [&] {
-            auto out =
-                opentxs::network::zeromq::reply_to_message(std::move(msg));
+            auto out = zeromq::reply_to_message(std::move(msg));
             const auto reply = factory::BlockchainSyncPushTransactionReply(
                 chain, pushtx.ID(), success);
             reply.Serialize(out);

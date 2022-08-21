@@ -29,12 +29,6 @@ auto OTDHT::StartServer::operator()(std::monostate& val) const noexcept -> bool
 }
 
 auto OTDHT::StartServer::operator()(
-    opentxs::network::otdht::Client& val) const noexcept -> bool
-{
-    return false;
-}
-
-auto OTDHT::StartServer::operator()(
     opentxs::network::otdht::Server& val) const noexcept -> bool
 {
     return val.Start(

@@ -326,12 +326,10 @@ private:
     network::zeromq::socket::Raw& to_block_oracle_;
     network::zeromq::socket::Raw& to_block_cache_;
     network::zeromq::socket::Raw& to_wallet_;
+    network::zeromq::socket::Raw& to_dht_;
     const Time start_;
     const UnallocatedCString sync_endpoint_;
     std::unique_ptr<base::SyncServer> sync_server_;
-    const bool have_p2p_requestor_;
-    OTZMQListenCallback sync_cb_;
-    OTZMQPairSocket sync_socket_;
     mutable SendPromises send_promises_;
     Timer heartbeat_;
     Time header_sync_;

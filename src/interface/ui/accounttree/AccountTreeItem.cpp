@@ -18,6 +18,7 @@
 #include "opentxs/core/AccountType.hpp"
 #include "opentxs/core/display/Definition.hpp"
 #include "opentxs/util/Bytes.hpp"
+#include "opentxs/util/Log.hpp"
 
 namespace opentxs::factory
 {

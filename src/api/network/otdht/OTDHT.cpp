@@ -11,11 +11,9 @@
 #include "api/network/otdht/ChainEndpoint.hpp"
 #include "api/network/otdht/Disable.hpp"
 #include "api/network/otdht/Enable.hpp"
-#include "api/network/otdht/GetEndpoint.hpp"
-#include "api/network/otdht/Init.hpp"
 #include "api/network/otdht/Start.hpp"
 #include "internal/api/network/Blockchain.hpp"
-#include "internal/network/otdht/Client.hpp"
+#include "internal/network/otdht/Node.hpp"
 #include "internal/network/otdht/Server.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
@@ -75,13 +73,6 @@ auto OTDHT::Enable(const Chain chain) const noexcept -> void
     std::visit(visitor, *node_.lock());
 }
 
-auto OTDHT::Endpoint() const noexcept -> std::string_view
-{
-    static const auto visitor = GetEndpoint{};
-
-    return std::visit(visitor, *node_.lock_shared());
-}
-
 auto OTDHT::Endpoint(const Chain chain) const noexcept -> std::string_view
 {
     static const auto visitor = ChainEndpoint{chain};
@@ -99,6 +90,7 @@ auto OTDHT::Start(std::shared_ptr<const api::Session> api) noexcept -> void
     static const auto defaultServers = Vector<CString>{
         "tcp://metier1.opentransactions.org:8814",
         "tcp://metier2.opentransactions.org:8814",
+        "tcp://ot01.matterfi.net:8814",
     };
     const auto& options = api_.GetOptions();
     const auto existing = [&] {
@@ -131,7 +123,7 @@ auto OTDHT::Start(std::shared_ptr<const api::Session> api) noexcept -> void
     switch (options.BlockchainProfile()) {
         case BlockchainProfile::mobile:
         case BlockchainProfile::desktop: {
-            *node_.lock() = opentxs::network::otdht::Client{api_};
+            opentxs::network::otdht::Node{api_}.Init(api);
         } break;
         case BlockchainProfile::server: {
             if (options.ProvideBlockchainSyncServer()) {
@@ -143,9 +135,6 @@ auto OTDHT::Start(std::shared_ptr<const api::Session> api) noexcept -> void
         default: {
         }
     }
-
-    const auto visitor = Init{blockchain_};
-    std::visit(visitor, *node_.lock());
 }
 
 auto OTDHT::StartListener(

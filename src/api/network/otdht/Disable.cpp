@@ -21,11 +21,6 @@ auto OTDHT::DisableChain::operator()(std::monostate& val) const noexcept -> void
 }
 
 auto OTDHT::DisableChain::operator()(
-    opentxs::network::otdht::Client& val) const noexcept -> void
-{
-}
-
-auto OTDHT::DisableChain::operator()(
     opentxs::network::otdht::Server& val) const noexcept -> void
 {
     val.Disable(chain_);

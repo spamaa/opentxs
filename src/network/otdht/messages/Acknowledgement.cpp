@@ -13,7 +13,7 @@
 #include <utility>
 
 #include "internal/network/otdht/Factory.hpp"
-#include "network/otdht/Base.hpp"
+#include "network/otdht/messages/Base.hpp"
 #include "opentxs/network/otdht/MessageType.hpp"
 #include "opentxs/network/otdht/State.hpp"
 #include "opentxs/util/Container.hpp"
@@ -95,7 +95,7 @@ Acknowledgement::Acknowledgement(Imp* imp) noexcept
     imp_->parent_ = this;
 }
 
-auto Acknowledgement::Endpoint() const noexcept -> const UnallocatedCString&
+auto Acknowledgement::Endpoint() const noexcept -> std::string_view
 {
     return imp_->endpoint_;
 }

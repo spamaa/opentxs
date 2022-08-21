@@ -14,7 +14,6 @@
 #include <iterator>
 #include <stdexcept>
 #include <tuple>
-#include <type_traits>
 #include <utility>
 
 #include "blockchain/node/filteroracle/FilterCheckpoints.hpp"
@@ -314,22 +313,55 @@ auto FilterOracle::compare_tips_to_checkpoint() noexcept -> void
 
 auto FilterOracle::compare_tips_to_header_chain() noexcept -> bool
 {
-    const auto current = database_.FilterHeaderTip(default_type_);
-    const auto [parent, best] = header_.CommonParent(current);
+    const auto best = header_.BestChain();
+    const auto cfilterTip = database_.FilterTip(default_type_);
+    const auto cfheaderTip = database_.FilterHeaderTip(default_type_);
+    auto resetCfilter{false};
+    auto resetCfheader{false};
 
-    if (parent == current) {
-        LogVerbose()(print(chain_))(
-            " filter header chain is following the best chain")
+    if (false == header_.IsInBestChain(cfilterTip)) {
+        LogConsole()(print(chain_))(" cfilter tip (")(
+            cfilterTip)(") is not in the best chain")
+            .Flush();
+        resetCfilter = true;
+    }
+
+    if (false == header_.IsInBestChain(cfheaderTip)) {
+        LogConsole()(print(chain_))(" cfheader tip (")(
+            cfilterTip)(") is not in the best chain")
+            .Flush();
+        resetCfheader = true;
+    }
+
+    if ((false == resetCfilter) && (false == resetCfheader)) {
+        LogConsole()(print(chain_))(" cfilter tip (")(
+            cfilterTip)(") is following the best chain")
             .Flush();
 
         return false;
     }
 
-    LogConsole()(print(chain_))(
-        " filter header chain is following a sibling chain. Resetting to "
-        "common ancestor at height ")(parent.height_)
-        .Flush();
-    reset_tips_to(default_type_, current, parent);
+    if (resetCfilter) {
+        const auto target = std::max<block::Height>(
+            0,
+            std::min<block::Height>(best.height_, cfilterTip.height_ - 1000));
+        const auto position = header_.GetPosition(target);
+        LogConsole()("resetting ")(print(chain_))(" cfilter tip to ")(position)
+            .Flush();
+        reset_tips_to(
+            default_type_, cfheaderTip, cfilterTip, position, false, true);
+    }
+
+    if (resetCfheader) {
+        const auto target = std::max<block::Height>(
+            0,
+            std::min<block::Height>(best.height_, cfheaderTip.height_ - 1000));
+        const auto position = header_.GetPosition(target);
+        LogConsole()("resetting ")(print(chain_))(" cfheader tip to ")(position)
+            .Flush();
+        reset_tips_to(
+            default_type_, cfheaderTip, cfilterTip, position, true, false);
+    }
 
     return true;
 }

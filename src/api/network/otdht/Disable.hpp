@@ -22,7 +22,6 @@ namespace network
 {
 namespace otdht
 {
-class Client;
 class Server;
 }  // namespace otdht
 }  // namespace network
@@ -36,8 +35,6 @@ class OTDHT::DisableChain
 {
 public:
     auto operator()(std::monostate& val) const noexcept -> void;
-    auto operator()(opentxs::network::otdht::Client& val) const noexcept
-        -> void;
     auto operator()(opentxs::network::otdht::Server& val) const noexcept
         -> void;
 

@@ -7,7 +7,6 @@
 #include "1_Internal.hpp"                       // IWYU pragma: associated
 #include "api/network/otdht/ChainEndpoint.hpp"  // IWYU pragma: associated
 
-#include "internal/network/otdht/Client.hpp"
 #include "internal/network/otdht/Server.hpp"
 #include "opentxs/util/Container.hpp"
 
@@ -26,13 +25,6 @@ auto OTDHT::ChainEndpoint::blank() noexcept -> std::string_view
 }
 
 auto OTDHT::ChainEndpoint::operator()(const std::monostate& val) const noexcept
-    -> std::string_view
-{
-    return blank();
-}
-
-auto OTDHT::ChainEndpoint::operator()(
-    const opentxs::network::otdht::Client& val) const noexcept
     -> std::string_view
 {
     return blank();
