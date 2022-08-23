@@ -6,11 +6,8 @@
 #pragma once
 
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <memory>
 #include <string_view>
-
-#include "internal/blockchain/node/filteroracle/Types.hpp"
-#include "opentxs/blockchain/Types.hpp"
-#include "opentxs/blockchain/bitcoin/cfilter/Types.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace opentxs  // NOLINT
@@ -24,16 +21,14 @@ class Session;
 
 namespace blockchain
 {
-namespace database
-{
-class Cfilter;
-}  // namespace database
-
 namespace node
 {
-class FilterOracle;
+namespace filteroracle
+{
+class Shared;
+}  // namespace filteroracle
+
 class Manager;
-struct Endpoints;
 }  // namespace node
 }  // namespace blockchain
 // }  // namespace v1
@@ -48,14 +43,9 @@ public:
     auto Start() noexcept -> void;
 
     BlockIndexer(
-        const api::Session& api,
-        const node::Manager& node,
-        const node::FilterOracle& parent,
-        database::Cfilter& db,
-        NotifyCallback&& notify,
-        blockchain::Type chain,
-        cfilter::Type type,
-        const node::Endpoints& endpoints) noexcept;
+        std::shared_ptr<const api::Session> api,
+        std::shared_ptr<const node::Manager> node,
+        std::shared_ptr<Shared> shared) noexcept;
     BlockIndexer(const BlockIndexer&) = delete;
     BlockIndexer(BlockIndexer&&) = delete;
     auto operator=(const BlockIndexer&) -> BlockIndexer& = delete;

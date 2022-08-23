@@ -186,16 +186,7 @@ Base::Base(
           chain_)
     , header_(factory::HeaderOracle(api, *this))
     , block_()
-    , filter_p_(factory::BlockchainFilterOracle(
-          api,
-          config_,
-          *this,
-          header_,
-          block_,
-          *database_p_,
-          chain_,
-          filter_type_,
-          endpoints_))
+    , filter_p_(factory::BlockchainFilterOracle(api, *this, filter_type_))
     , peer_p_(factory::BlockchainPeerManager(
           api,
           config_,
@@ -1103,6 +1094,7 @@ auto Base::Start(std::shared_ptr<const node::Manager> me) noexcept -> void
     auto api = api_.Internal().GetShared();
     opentxs::network::blockchain::OTDHT{api, ptr}.Init();
     block_.Start(api, ptr);
+    filters_.Internal().Init(api, ptr);
     init_promise_.set_value();
     header_.Start(api, ptr);
     peer_.Start();
