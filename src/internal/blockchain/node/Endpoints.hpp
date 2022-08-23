@@ -23,7 +23,7 @@ struct Endpoints final : public Allocated {
     const CString manager_pull_;
     const CString new_filter_publish_;
     const CString new_header_publish_;
-    const CString p2p_requestor_pair_;
+    const CString otdht_pull_;
     const CString shutdown_publish_;
     const CString wallet_pull_;
     const CString wallet_to_accounts_push_;

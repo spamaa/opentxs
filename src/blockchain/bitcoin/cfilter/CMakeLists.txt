@@ -14,6 +14,7 @@ target_sources(
   opentxs-common
   PRIVATE
     "${opentxs_SOURCE_DIR}/src/internal/blockchain/bitcoin/cfilter/GCS.hpp"
+    "Common.cpp"
     "Hash.cpp"
     "Header.cpp"
 )

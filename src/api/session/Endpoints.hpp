@@ -81,7 +81,10 @@ public:
     auto MessageLoaded() const noexcept -> std::string_view final;
     auto NymCreated() const noexcept -> std::string_view final;
     auto NymDownload() const noexcept -> std::string_view final;
-    auto P2PWallet() const noexcept -> std::string_view final;
+    auto OTDHTBlockchain(opentxs::blockchain::Type chain) const noexcept
+        -> std::string_view final;
+    auto OTDHTNode() const noexcept -> std::string_view final;
+    auto OTDHTWallet() const noexcept -> std::string_view final;
     auto PairEvent() const noexcept -> std::string_view final;
     auto PeerReplyUpdate() const noexcept -> std::string_view final;
     auto PeerRequestUpdate() const noexcept -> std::string_view final;
@@ -146,7 +149,9 @@ private:
     const CString message_loaded_;
     const CString nym_created_;
     const CString nym_download_;
-    const CString p2p_wallet_;
+    const BlockchainMap otdht_blockchain_;
+    const CString otdht_node_;
+    const CString otdht_wallet_;
     const CString pair_event_;
     const CString peer_reply_update_;
     const CString peer_request_update_;

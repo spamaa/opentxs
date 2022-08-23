@@ -15,6 +15,7 @@
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/crypto/Element.hpp"
 #include "opentxs/blockchain/crypto/Types.hpp"
+#include "opentxs/util/Log.hpp"
 
 namespace opentxs::blockchain::node::wallet
 {

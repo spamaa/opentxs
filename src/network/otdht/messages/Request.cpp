@@ -11,7 +11,7 @@
 #include <utility>
 
 #include "internal/network/otdht/Factory.hpp"
-#include "network/otdht/Base.hpp"
+#include "network/otdht/messages/Base.hpp"
 #include "opentxs/network/otdht/MessageType.hpp"
 
 namespace opentxs::factory

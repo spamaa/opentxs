@@ -6,8 +6,10 @@
 target_sources(
   opentxs-common
   PRIVATE
-    "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/p2p/Requestor.hpp"
-    "Requestor.cpp"
-    "Requestor.cpp"
+    "${opentxs_SOURCE_DIR}/src/internal/network/blockchain/OTDHT.hpp"
+    "Actor.cpp"
+    "Actor.hpp"
+    "OTDHT.cpp"
 )
 target_link_libraries(opentxs-common PRIVATE Boost::headers)
+target_link_libraries(opentxs PUBLIC Boost::system)

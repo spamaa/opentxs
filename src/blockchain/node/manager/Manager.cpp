@@ -42,14 +42,14 @@
 #include "internal/blockchain/node/blockoracle/Types.hpp"
 #include "internal/blockchain/node/filteroracle/FilterOracle.hpp"
 #include "internal/blockchain/node/headeroracle/HeaderOracle.hpp"
-#include "internal/blockchain/node/p2p/Requestor.hpp"
 #include "internal/blockchain/node/wallet/Types.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #include "internal/core/Factory.hpp"
 #include "internal/core/PaymentCode.hpp"
 #include "internal/identity/Nym.hpp"
+#include "internal/network/blockchain/OTDHT.hpp"
+#include "internal/network/blockchain/Types.hpp"
 #include "internal/network/otdht/Factory.hpp"
-#include "internal/network/otdht/Types.hpp"
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/P0330.hpp"
@@ -86,7 +86,6 @@
 #include "opentxs/network/otdht/Base.hpp"
 #include "opentxs/network/otdht/Data.hpp"
 #include "opentxs/network/otdht/PushTransaction.hpp"
-#include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
@@ -100,7 +99,6 @@
 #include "opentxs/util/Numbers.hpp"
 #include "opentxs/util/Options.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "opentxs/util/WorkType.hpp"
 #include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::implementation
@@ -140,6 +138,11 @@ Base::Base(
               {network::zeromq::socket::Type::Push,
                {
                    {endpoints.wallet_pull_,
+                    network::zeromq::socket::Direction::Connect},
+               }},
+              {network::zeromq::socket::Type::Push,
+               {
+                   {endpoints.otdht_pull_,
                     network::zeromq::socket::Direction::Connect},
                }},
           })
@@ -212,6 +215,7 @@ Base::Base(
     , to_block_oracle_(pipeline_.Internal().ExtraSocket(0))
     , to_block_cache_(pipeline_.Internal().ExtraSocket(1))
     , to_wallet_(pipeline_.Internal().ExtraSocket(2))
+    , to_dht_(pipeline_.Internal().ExtraSocket(3))
     , start_(Clock::now())
     , sync_endpoint_(syncEndpoint)
     , sync_server_([&] {
@@ -230,29 +234,6 @@ Base::Base(
             return std::unique_ptr<base::SyncServer>{};
         }
     }())
-    , have_p2p_requestor_([&] {
-        switch (config_.profile_) {
-            case BlockchainProfile::mobile:
-            case BlockchainProfile::desktop: {
-
-                return true;
-            }
-            case BlockchainProfile::desktop_native:
-            case BlockchainProfile::server: {
-
-                return false;
-            }
-            default: {
-                OT_FAIL;
-            }
-        }
-    }())
-    , sync_cb_(network::zeromq::ListenCallback::Factory(
-          [&](auto&& m) { pipeline_.Push(std::move(m)); }))
-    , sync_socket_(api_.Network().ZeroMQ().PairSocket(
-          sync_cb_,
-          endpoints_.p2p_requestor_pair_,
-          "Blockchain sync"))
     , send_promises_()
     , heartbeat_(api_.Network().Asio().Internal().GetTimer())
     , header_sync_()
@@ -420,15 +401,18 @@ auto Base::BroadcastTransaction(
 {
     mempool_.Submit(tx.clone());
 
-    if (pushtx && have_p2p_requestor_) {
-        sync_socket_->Send([&] {
-            auto out = network::zeromq::Message{};
-            const auto command =
-                factory::BlockchainSyncPushTransaction(chain_, tx);
-            command.Serialize(out);
+    if (pushtx) {
+        to_dht_.SendDeferred(
+            [&] {
+                auto out = network::zeromq::Message{};
+                const auto command =
+                    factory::BlockchainSyncPushTransaction(chain_, tx);
+                command.Serialize(out);
 
-            return out;
-        }());
+                return out;
+            }(),
+            __FILE__,
+            __LINE__);
     }
 
     if (false == running_.load()) { return false; }
@@ -620,16 +604,18 @@ auto Base::Listen(const blockchain::p2p::Address& address) const noexcept
 
 auto Base::notify_sync_client() const noexcept -> void
 {
-    if (have_p2p_requestor_) {
-        sync_socket_->Send([this] {
+    to_dht_.SendDeferred(
+        [this] {
             const auto tip = filters_.FilterTip(filters_.DefaultType());
-            auto msg = MakeWork(network::otdht::Job::Processed);
+            using Job = network::blockchain::DHTJob;
+            auto msg = MakeWork(Job::job_processed);
             msg.AddFrame(tip.height_);
             msg.AddFrame(tip.hash_);
 
             return msg;
-        }());
-    }
+        }(),
+        __FILE__,
+        __LINE__);
 }
 
 auto Base::PeerManager() const noexcept -> const internal::PeerManager&
@@ -1087,10 +1073,6 @@ auto Base::shutdown(std::promise<void>& promise) noexcept -> void
 
         if (sync_server_) { sync_server_->Shutdown(); }
 
-        if (have_p2p_requestor_) {
-            sync_socket_->Send(MakeWork(WorkType::Shutdown));
-        }
-
         peer_.Shutdown();
         filters_.Internal().Shutdown();
         shutdown_sender_.Close();
@@ -1119,9 +1101,7 @@ auto Base::Start(std::shared_ptr<const node::Manager> me) noexcept -> void
     }();
     *(self_.lock()) = ptr;
     auto api = api_.Internal().GetShared();
-
-    if (have_p2p_requestor_) { p2p::Requestor{api, ptr}.Init(); }
-
+    opentxs::network::blockchain::OTDHT{api, ptr}.Init();
     block_.Start(api, ptr);
     init_promise_.set_value();
     header_.Start(api, ptr);

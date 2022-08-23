@@ -12,6 +12,7 @@
 
 namespace opentxs::network::otdht
 {
+// WARNING update print function if new values are added or removed
 enum class Job : OTZMQWorkType {
     Shutdown = value(WorkType::Shutdown),
     BlockHeader = value(WorkType::BlockchainNewHeader),
@@ -33,6 +34,31 @@ enum class Job : OTZMQWorkType {
     NewCFilterTip = OT_ZMQ_NEW_FILTER_SIGNAL,
     StateMachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
 };
+// WARNING update print function if new values are added or removed
+enum class NodeJob : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    chain_state = value(WorkType::BlockchainStateChange),
+    new_cfilter = value(WorkType::BlockchainNewFilter),
+    new_peer = value(WorkType::SyncServerUpdated),
+    init = OT_ZMQ_INIT_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+// WARNING update print function if new values are added or removed
+enum class PeerJob : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    chain_state = value(WorkType::BlockchainStateChange),
+    sync_request = value(WorkType::P2PBlockchainSyncRequest),
+    sync_ack = value(WorkType::P2PBlockchainSyncAck),
+    sync_reply = value(WorkType::P2PBlockchainSyncReply),
+    sync_push = value(WorkType::P2PBlockchainNewBlock),
+    response = value(WorkType::P2PResponse),
+    push_tx = value(WorkType::P2PPushTransaction),
+    registration = OT_ZMQ_REGISTER_SIGNAL,
+    init = OT_ZMQ_INIT_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
 
 auto print(Job) noexcept -> std::string_view;
+auto print(NodeJob) noexcept -> std::string_view;
+auto print(PeerJob) noexcept -> std::string_view;
 }  // namespace opentxs::network::otdht

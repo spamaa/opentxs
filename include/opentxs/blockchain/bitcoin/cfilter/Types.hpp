@@ -8,10 +8,13 @@
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
 #include <cstdint>
+#include <string_view>
 
 namespace opentxs::blockchain::cfilter
 {
 using TypeEnum = std::uint32_t;
 
 enum class Type : TypeEnum;
+
+OPENTXS_EXPORT auto print(Type) noexcept -> std::string_view;
 }  // namespace opentxs::blockchain::cfilter

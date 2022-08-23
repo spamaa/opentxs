@@ -5,4 +5,5 @@
 
 add_subdirectory(bitcoin)
 add_subdirectory(connectionmanager)
+add_subdirectory(otdht)
 add_subdirectory(peer)

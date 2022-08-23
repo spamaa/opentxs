@@ -15,7 +15,7 @@
 #include "internal/api/session/FactoryAPI.hpp"
 #include "internal/network/otdht/Factory.hpp"
 #include "internal/network/zeromq/message/Message.hpp"
-#include "network/otdht/Base.hpp"
+#include "network/otdht/messages/Base.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/core/identifier/Generic.hpp"

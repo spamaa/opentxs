@@ -196,10 +196,6 @@ namespace internal
 {
 }  // namespace internal
 
-namespace p2p
-{
-}  // namespace p2p
-
 namespace wallet
 {
 }  // namespace wallet
@@ -410,9 +406,6 @@ namespace implementation
 
 namespace otdht
 {
-namespace client
-{
-}  // namespace client
 }  // namespace otdht
 
 namespace zeromq

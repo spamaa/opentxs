@@ -19,7 +19,7 @@ namespace network
 {
 namespace otdht
 {
-class Client;
+class Node;
 class Server;
 }  // namespace otdht
 }  // namespace network
@@ -33,10 +33,9 @@ class OTDHT::StartServer
 {
 public:
     auto operator()(std::monostate& val) const noexcept -> bool;
-    auto operator()(opentxs::network::otdht::Client& val) const noexcept
-        -> bool;
     auto operator()(opentxs::network::otdht::Server& val) const noexcept
         -> bool;
+    auto operator()(opentxs::network::otdht::Node& val) const noexcept -> bool;
 
     StartServer(
         std::string_view bindInternal,

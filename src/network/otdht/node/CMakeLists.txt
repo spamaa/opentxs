@@ -6,21 +6,16 @@
 target_sources(
   opentxs-common
   PRIVATE
-    "${opentxs_SOURCE_DIR}/src/internal/network/otdht/Client.hpp"
-    "Client.cpp"
-    "Client.hpp"
-    "Server.cpp"
-    "Server.hpp"
+    "${opentxs_SOURCE_DIR}/src/internal/network/otdht/Node.hpp"
+    "Actor.cpp"
+    "Actor.hpp"
+    "Data.cpp"
+    "Node.cpp"
+    "Shared.cpp"
+    "Shared.hpp"
 )
+target_link_libraries(opentxs-common PRIVATE Boost::headers)
+target_link_libraries(opentxs PUBLIC Boost::system)
 target_include_directories(
   opentxs-common SYSTEM PRIVATE "${opentxs_SOURCE_DIR}/deps/cs_libguarded/src"
-)
-
-target_link_libraries(opentxs-common PRIVATE "${OT_ZMQ_TARGET}")
-target_link_libraries(
-  opentxs
-  PUBLIC
-    "${OT_ZMQ_TARGET}"
-    Boost::system
-    Boost::thread
 )

@@ -12,7 +12,7 @@
 #include <variant>
 
 #include "internal/api/network/OTDHT.hpp"
-#include "internal/network/otdht/Client.hpp"
+#include "internal/network/otdht/Node.hpp"
 #include "internal/network/otdht/Server.hpp"
 #include "opentxs/api/network/OTDHT.hpp"
 #include "opentxs/util/Allocator.hpp"
@@ -36,7 +36,7 @@ namespace network
 {
 namespace otdht
 {
-class Client;
+class Node;
 class Server;
 }  // namespace otdht
 }  // namespace network
@@ -54,7 +54,6 @@ public:
     auto DeletePeer(std::string_view endpoint) const noexcept -> bool final;
     auto Disable(const Chain chain) const noexcept -> void final;
     auto Enable(const Chain chain) const noexcept -> void final;
-    auto Endpoint() const noexcept -> std::string_view final;
     auto Endpoint(const Chain chain) const noexcept -> std::string_view final;
     auto KnownPeers(alloc::Default alloc) const noexcept -> Endpoints final;
     auto StartListener(
@@ -79,14 +78,9 @@ private:
     class ChainEndpoint;
     class DisableChain;
     class EnableChain;
-    class GetEndpoint;
-    class Init;
     class StartServer;
 
-    using Node = std::variant<
-        std::monostate,
-        opentxs::network::otdht::Client,
-        opentxs::network::otdht::Server>;
+    using Node = std::variant<std::monostate, opentxs::network::otdht::Server>;
     using GuardedNode = libguarded::shared_guarded<Node, std::shared_mutex>;
 
     const api::Session& api_;
