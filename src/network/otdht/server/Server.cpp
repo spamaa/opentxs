@@ -148,7 +148,7 @@ Server::Imp::Imp(const api::Session& api, const zeromq::Context& zmq) noexcept
                   });
               out.emplace_back(
                   wallet_.ID(), &wallet_, [&socket = sync_](auto&& m) {
-                      socket.Send(std::move(m), __FILE__, __LINE__);
+                      socket.SendDeferred(std::move(m), __FILE__, __LINE__);
                   });
 
               for (auto& [chain, data] : map_) {
@@ -196,7 +196,7 @@ auto Server::Imp::process_external(zeromq::Message&& incoming) noexcept -> void
             } break;
             case Type::publish_contract:
             case Type::contract_query: {
-                wallet_.Send(std::move(incoming), __FILE__, __LINE__);
+                wallet_.SendDeferred(std::move(incoming), __FILE__, __LINE__);
             } break;
             case Type::pushtx: {
                 process_pushtx(std::move(incoming), *base);
@@ -306,7 +306,7 @@ auto Server::Imp::process_sync(
                         map_.at(state.Chain());
 
                     if (enabled) {
-                        socket.get().Send(
+                        socket.get().SendDeferred(
                             zeromq::Message{incoming}, __FILE__, __LINE__);
                     }
                 } catch (...) {

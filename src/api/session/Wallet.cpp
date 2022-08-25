@@ -2685,7 +2685,7 @@ auto Wallet::search_notary(const identifier::Notary& id) const noexcept -> void
     LogVerbose()(OT_PRETTY_CLASS())(
         "Searching remote networks for unknown notary ")(id)
         .Flush();
-    to_loopback_.modify_detach([&id](auto& socket) {
+    to_loopback_.modify_detach([id](auto& socket) {
         const auto command = factory::BlockchainSyncQueryContract(id);
         socket.Send(
             [&] {
@@ -2704,7 +2704,7 @@ auto Wallet::search_nym(const identifier::Nym& id) const noexcept -> void
     LogVerbose()(OT_PRETTY_CLASS())(
         "Searching remote networks for unknown nym ")(id)
         .Flush();
-    to_loopback_.modify_detach([&id](auto& socket) {
+    to_loopback_.modify_detach([id](auto& socket) {
         const auto command = factory::BlockchainSyncQueryContract(id);
         socket.Send(
             [&] {
@@ -2724,7 +2724,7 @@ auto Wallet::search_unit(const identifier::UnitDefinition& id) const noexcept
     LogVerbose()(OT_PRETTY_CLASS())(
         "Searching remote networks for unknown unit definition ")(id)
         .Flush();
-    to_loopback_.modify_detach([&id](auto& socket) {
+    to_loopback_.modify_detach([id](auto& socket) {
         const auto command = factory::BlockchainSyncQueryContract(id);
         socket.Send(
             [&] {
