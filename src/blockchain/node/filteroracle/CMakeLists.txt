@@ -11,18 +11,26 @@ target_sources(
     "${opentxs_SOURCE_DIR}/src/internal/blockchain/node/filteroracle/Types.hpp"
     "BlockIndexer.cpp"
     "BlockIndexer.hpp"
-    "FilterCheckpoints.hpp"
-    "FilterDownloader.hpp"
+    "CfheaderDownloader.cpp"
+    "CfheaderDownloader.hpp"
+    "CfilterDownloader.cpp"
+    "CfilterDownloader.hpp"
+    "Data.cpp"
+    "Data.hpp"
+    "FilterCheckpoints.cpp"
     "FilterOracle.cpp"
     "FilterOracle.hpp"
-    "HeaderDownloader.cpp"
-    "HeaderDownloader.hpp"
+    "Shared.cpp"
+    "Shared.hpp"
 )
 set(cxx-install-headers
     "${opentxs_SOURCE_DIR}/include/opentxs/blockchain/node/FilterOracle.hpp"
 )
 target_link_libraries(opentxs-common PRIVATE Boost::headers)
 target_link_libraries(opentxs PUBLIC Boost::system)
+target_include_directories(
+  opentxs-common SYSTEM PRIVATE "${opentxs_SOURCE_DIR}/deps/cs_libguarded/src"
+)
 target_sources(opentxs-common PRIVATE ${cxx-install-headers})
 
 if(OPENTXS_STANDALONE)

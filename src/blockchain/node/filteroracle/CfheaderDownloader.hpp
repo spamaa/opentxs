@@ -3,7 +3,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// IWYU pragma: no_forward_declare opentxs::blockchain::node::implementation::FilterOracle::HeaderDownloader
 // IWYU pragma: no_include "opentxs/blockchain/BlockchainType.hpp"
 // IWYU pragma: no_include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
 
@@ -13,10 +12,10 @@
 #include <exception>
 #include <functional>
 #include <future>
+#include <memory>
 
 #include "blockchain/DownloadManager.hpp"
 #include "blockchain/DownloadTask.hpp"
-#include "blockchain/node/filteroracle/FilterOracle.hpp"
 #include "core/Worker.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/Types.hpp"
@@ -49,16 +48,13 @@ class Hash;
 class Header;
 }  // namespace cfilter
 
-namespace database
-{
-class Cfilter;
-}  // namespace database
-
 namespace node
 {
-class HeaderOracle;
-class Manager;
-struct Endpoints;
+namespace filteroracle
+{
+class CfheaderDownloader;
+class Shared;
+}  // namespace filteroracle
 }  // namespace node
 }  // namespace blockchain
 
@@ -66,6 +62,11 @@ namespace network
 {
 namespace zeromq
 {
+namespace socket
+{
+class Raw;
+}  // namespace socket
+
 class Message;
 }  // namespace zeromq
 }  // namespace network
@@ -73,47 +74,28 @@ class Message;
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
-namespace opentxs::blockchain::node::implementation
+namespace opentxs::blockchain::node::filteroracle
 {
-using HeaderDM = download::Manager<
-    FilterOracle::HeaderDownloader,
-    cfilter::Hash,
-    cfilter::Header,
-    cfilter::Type>;
-using HeaderWorker = Worker<FilterOracle::HeaderDownloader, api::Session>;
+using HeaderDM = download::
+    Manager<CfheaderDownloader, cfilter::Hash, cfilter::Header, cfilter::Type>;
+using HeaderWorker = Worker<CfheaderDownloader, api::Session>;
 
-class FilterOracle::HeaderDownloader : public HeaderDM, public HeaderWorker
+class CfheaderDownloader : public HeaderDM, public HeaderWorker
 {
 public:
-    using Callback =
-        std::function<Position(const Position&, const cfilter::Header&)>;
-
     auto NextBatch() noexcept -> BatchType;
 
-    HeaderDownloader(
-        const api::Session& api,
-        database::Cfilter& db,
-        const node::HeaderOracle& header,
-        const node::Manager& node,
-        FilterOracle::FilterDownloader& filter,
-        const blockchain::Type chain,
-        const cfilter::Type type,
-        const node::Endpoints& endpoints,
-        Callback&& cb) noexcept;
+    CfheaderDownloader(std::shared_ptr<Shared> shared) noexcept;
 
-    ~HeaderDownloader();
+    ~CfheaderDownloader();
 
 private:
     friend HeaderDM;
     friend HeaderWorker;
 
-    database::Cfilter& db_;
-    const node::HeaderOracle& header_;
-    const node::Manager& node_;
-    FilterOracle::FilterDownloader& filter_;
-    const blockchain::Type chain_;
-    const cfilter::Type type_;
-    const Callback checkpoint_;
+    std::shared_ptr<Shared> shared_p_;
+    Shared& shared_;
+    network::zeromq::socket::Raw& to_cfilter_;
 
     auto batch_ready() const noexcept -> void;
     auto batch_size(const std::size_t in) const noexcept -> std::size_t;
@@ -122,11 +104,11 @@ private:
     auto update_tip(const Position& position, const cfilter::Header&)
         const noexcept -> void;
 
-    auto pipeline(const zmq::Message& in) noexcept -> void;
-    auto process_position(const zmq::Message& in) noexcept -> void;
+    auto pipeline(const network::zeromq::Message& in) noexcept -> void;
+    auto process_position(const network::zeromq::Message& in) noexcept -> void;
     auto process_position() noexcept -> void;
-    auto process_reset(const zmq::Message& in) noexcept -> void;
+    auto process_reset(const network::zeromq::Message& in) noexcept -> void;
     auto queue_processing(DownloadedData&& data) noexcept -> void;
     auto shutdown(std::promise<void>& promise) noexcept -> void;
 };
-}  // namespace opentxs::blockchain::node::implementation
+}  // namespace opentxs::blockchain::node::filteroracle

@@ -67,14 +67,8 @@ namespace opentxs::factory
 {
 auto BlockchainFilterOracle(
     const api::Session& api,
-    const blockchain::node::internal::Config& config,
     const blockchain::node::Manager& node,
-    const blockchain::node::HeaderOracle& header,
-    const blockchain::node::BlockOracle& block,
-    blockchain::database::Cfilter& database,
-    const blockchain::Type chain,
-    const blockchain::cfilter::Type filter,
-    const blockchain::node::Endpoints& endpoints) noexcept
+    const blockchain::cfilter::Type filter) noexcept
     -> std::unique_ptr<blockchain::node::FilterOracle>;
 auto BlockchainNetworkBitcoin(
     const api::Session& api,

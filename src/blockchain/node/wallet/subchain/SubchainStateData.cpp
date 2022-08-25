@@ -1122,10 +1122,10 @@ auto SubchainStateData::scan(
             log(OT_PRETTY_CLASS())(name)(" ")(procedure)("ning filters from ")(
                 startHeight)(" to ")(stopHeight)
                 .Flush();
+            auto alloc = get_allocator();
             const auto target =
                 static_cast<std::size_t>(stopHeight - startHeight + 1);
-            const auto blocks = headers.BestHashes(
-                startHeight, target, get_allocator().resource());
+            const auto blocks = headers.BestHashes(startHeight, target, alloc);
 
             if (blocks.empty()) { throw std::runtime_error{""}; }
 
@@ -1134,18 +1134,19 @@ auto SubchainStateData::scan(
             auto tp = api_.Network().Asio().Internal().Post(
                 ThreadPool::General,
                 [&] {
-                    filterPromise.set_value(filters.LoadFilters(type, blocks));
+                    filterPromise.set_value(
+                        filters.LoadFilters(type, blocks, alloc));
                 },
                 "SubchainStateData filter");
 
             if (false == tp) { throw std::runtime_error{""}; }
 
-            auto selected = BlockTargets{get_allocator()};
+            auto selected = BlockTargets{alloc};
             select_targets(*handle, blocks, elements, startHeight, selected);
 
             OT_ASSERT(false == selected.empty());
 
-            auto results = wallet::MatchCache::Results{get_allocator()};
+            auto results = wallet::MatchCache::Results{alloc};
             auto prehash = PrehashData{
                 api_,
                 selected,
@@ -1153,7 +1154,7 @@ auto SubchainStateData::scan(
                 results,
                 startHeight,
                 std::min(threads, selected.size()),
-                get_allocator()};
+                alloc};
 
             if (1_uz < prehash.job_count_) {
                 auto count = job_counter_.Allocate();
@@ -1201,9 +1202,7 @@ auto SubchainStateData::scan(
             OT_ASSERT(cfilterCount <= blocks.size());
 
             auto data = MatchResults{std::make_tuple(
-                Positions{get_allocator()},
-                Positions{get_allocator()},
-                FilterMap{get_allocator()})};
+                Positions{alloc}, Positions{alloc}, FilterMap{alloc})};
 
             OT_ASSERT(0u < selected.size());
 

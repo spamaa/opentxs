@@ -60,7 +60,8 @@ public:
         alloc::Default alloc) const noexcept -> GCS = 0;
     virtual auto LoadFilters(
         const cfilter::Type type,
-        const Vector<block::Hash>& blocks) const noexcept -> Vector<GCS> = 0;
+        const Vector<block::Hash>& blocks,
+        alloc::Default alloc) const noexcept -> Vector<GCS> = 0;
     virtual auto LoadFilterHeader(
         const cfilter::Type type,
         const block::Hash& block) const noexcept -> cfilter::Header = 0;

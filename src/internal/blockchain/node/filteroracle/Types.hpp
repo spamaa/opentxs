@@ -18,6 +18,16 @@ namespace opentxs::blockchain::node::filteroracle
 using NotifyCallback =
     std::function<void(const cfilter::Type, const block::Position&)>;
 
+enum class DownloadJob : OTZMQWorkType {
+    shutdown = value(WorkType::Shutdown),
+    block = value(WorkType::BlockchainNewHeader),
+    reorg = value(WorkType::BlockchainReorg),
+    reset_filter_tip = OT_ZMQ_INTERNAL_SIGNAL + 0,
+    heartbeat = OT_ZMQ_HEARTBEAT_SIGNAL,
+    full_block = OT_ZMQ_NEW_FULL_BLOCK_SIGNAL,
+    statemachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
+};
+
 // WARNING update print function if new values are added or removed
 enum class BlockIndexerJob : OTZMQWorkType {
     shutdown = value(WorkType::Shutdown),
