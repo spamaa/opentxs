@@ -199,7 +199,7 @@ Pipeline::Imp::Imp(
             {outgoing_.ID(),
              &outgoing_,
              [id = outgoing_.ID(), socket = &dealer_](auto&& m) {
-                 socket->Send(std::move(m), __FILE__, __LINE__);
+                 socket->SendDeferred(std::move(m), __FILE__, __LINE__);
              }},
             {internal_.ID(),
              &internal_,

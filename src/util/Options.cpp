@@ -49,6 +49,7 @@ struct Options::Imp::Parser {
     static constexpr auto ipv6_connection_mode_{"ipv6_connection_mode"};
     static constexpr auto log_endpoint_{"log_endpoint"};
     static constexpr auto log_level_{"log_level"};
+    static constexpr auto max_jobs_{"thread_pool_cap"};
     static constexpr auto notary_inproc_{"notary_inproc"};
     static constexpr auto notary_bind_ip_{"notary_bind_ip"};
     static constexpr auto notary_bind_port_{"notary_bind_port"};
@@ -124,6 +125,10 @@ struct Options::Imp::Parser {
                 log_endpoint_,
                 po::value<UnallocatedCString>(),
                 "ZeroMQ endpoint to which to copy log data");
+            out.add_options()(
+                max_jobs_,
+                po::value<int>(),
+                "Maximum number of threads allowed in any thread pool");
             out.add_options()(
                 log_level_,
                 po::value<int>(),
@@ -213,10 +218,11 @@ Options::Imp::Imp() noexcept
     , default_mint_key_bytes_(std::nullopt)
     , experimental_(std::nullopt)
     , home_(std::nullopt)
-    , log_endpoint_(std::nullopt)
     , ipv4_connection_mode_(std::nullopt)
     , ipv6_connection_mode_(std::nullopt)
+    , log_endpoint_(std::nullopt)
     , log_level_(std::nullopt)
+    , max_jobs_(std::nullopt)
     , notary_bind_inproc_(std::nullopt)
     , notary_bind_ip_(std::nullopt)
     , notary_bind_port_(std::nullopt)
@@ -311,16 +317,16 @@ auto Options::Imp::import_value(
             using Type = opentxs::BlockchainProfile;
 
             switch (std::stoi(sValue)) {
-                case 0: {
+                case static_cast<int>(Type::mobile): {
                     blockchain_profile_ = Type::mobile;
                 } break;
-                case 1: {
+                case static_cast<int>(Type::desktop): {
                     blockchain_profile_ = Type::desktop;
                 } break;
-                case 2: {
+                case static_cast<int>(Type::desktop_native): {
                     blockchain_profile_ = Type::desktop_native;
                 } break;
-                case 3: {
+                case static_cast<int>(Type::server): {
                     blockchain_profile_ = Type::server;
                 } break;
                 default: {
@@ -352,6 +358,8 @@ auto Options::Imp::import_value(
             log_endpoint_ = value;
         } else if (0 == key.compare(Parser::log_level_)) {
             log_level_ = std::stoi(sValue);
+        } else if (0 == key.compare(Parser::max_jobs_)) {
+            max_jobs_ = std::max(std::stoi(sValue), 0);
         } else if (0 == key.compare(Parser::notary_inproc_)) {
             notary_bind_inproc_ = to_bool(value);
         } else if (0 == key.compare(Parser::notary_bind_ip_)) {
@@ -514,6 +522,12 @@ auto Options::Imp::parse(int argc, char** argv) noexcept(false) -> void
         } else if (name == Parser::log_level_) {
             try {
                 log_level_ = value.as<int>();
+            } catch (...) {
+            }
+        } else if (name == Parser::max_jobs_) {
+            try {
+                max_jobs_ =
+                    static_cast<unsigned int>(std::max(value.as<int>(), 0));
             } catch (...) {
             }
         } else if (name == Parser::notary_bind_ip_) {
@@ -685,6 +699,8 @@ auto operator+(const Options& lhs, const Options& rhs) noexcept -> Options
     if (const auto& v = r.log_level_; v.has_value()) {
         l.log_level_ = v.value();
     }
+
+    if (const auto& v = r.max_jobs_; v.has_value()) { l.max_jobs_ = v.value(); }
 
     if (const auto& v = r.notary_bind_inproc_; v.has_value()) {
         l.notary_bind_inproc_ = v.value();
@@ -900,6 +916,11 @@ auto Options::LogLevel() const noexcept -> int
     return Imp::get(imp_->log_level_);
 }
 
+auto Options::MaxJobs() const noexcept -> unsigned int
+{
+    return Imp::get(imp_->max_jobs_);
+}
+
 auto Options::NotaryBindIP() const noexcept -> std::string_view
 {
     return Imp::get(imp_->notary_bind_ip_);
@@ -1050,6 +1071,13 @@ auto Options::SetLogEndpoint(std::string_view endpoint) noexcept -> Options&
 auto Options::SetLogLevel(int level) noexcept -> Options&
 {
     imp_->log_level_ = level;
+
+    return *this;
+}
+
+auto Options::SetMaxJobs(unsigned int value) noexcept -> Options&
+{
+    imp_->max_jobs_ = value;
 
     return *this;
 }

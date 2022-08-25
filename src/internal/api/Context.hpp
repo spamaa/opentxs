@@ -27,6 +27,8 @@ namespace opentxs::api::internal
 class Context : virtual public api::Context
 {
 public:
+    static auto MaxJobs() noexcept -> unsigned int;
+
     virtual auto GetPasswordCaller() const noexcept -> PasswordCaller& = 0;
     auto Internal() const noexcept -> const Context& final { return *this; }
     virtual auto Legacy() const noexcept -> const api::Legacy& = 0;

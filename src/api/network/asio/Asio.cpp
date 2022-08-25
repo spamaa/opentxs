@@ -27,7 +27,6 @@
 #include <memory>
 #include <stdexcept>
 #include <string_view>
-#include <thread>
 #include <type_traits>
 #include <utility>
 
@@ -42,6 +41,7 @@
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
 #include "internal/util/P0330.hpp"
+#include "internal/util/Thread.hpp"
 #include "network/asio/Endpoint.hpp"
 #include "network/asio/Socket.hpp"
 #include "opentxs/api/network/Asio.hpp"
@@ -63,7 +63,6 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/WorkType.hpp"
-#include "util/Thread.hpp"
 #include "util/Work.hpp"
 
 namespace opentxs
@@ -287,19 +286,14 @@ auto Asio::Init() noexcept -> void
         OT_ASSERT(listen);
     }
 
-    const auto threads =
-        std::max<unsigned int>(std::thread::hardware_concurrency(), 1u);
-    io_context_->Init(
-        std::max<unsigned int>(threads / 8u, 1u), ThreadPriority::Normal);
+    const auto threads = MaxJobs();
+    io_context_->Init(std::max(threads / 8u, 1u), ThreadPriority::Normal);
     thread_pools_.at(ThreadPool::General)
-        .Init(
-            std::max<unsigned int>(threads - 1u, 1u),
-            ThreadPriority::AboveNormal);
+        .Init(std::max(threads - 1u, 1u), ThreadPriority::AboveNormal);
     thread_pools_.at(ThreadPool::Storage)
-        .Init(
-            std::max<unsigned int>(threads / 4u, 2u), ThreadPriority::Highest);
+        .Init(std::max(threads / 4u, 2u), ThreadPriority::Highest);
     thread_pools_.at(ThreadPool::Blockchain)
-        .Init(std::max<unsigned int>(threads, 1u), ThreadPriority::Lowest);
+        .Init(std::max(threads, 1u), ThreadPriority::Lowest);
 }
 
 auto Asio::MakeSocket(const Endpoint& endpoint) const noexcept

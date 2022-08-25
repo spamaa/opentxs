@@ -9,7 +9,7 @@
 #include "api/context/Context.hpp"    // IWYU pragma: associated
 #include "core/String.hpp"            // IWYU pragma: associated
 #include "internal/util/Signals.hpp"  // IWYU pragma: associated
-#include "util/Thread.hpp"            // IWYU pragma: associated
+#include "internal/util/Thread.hpp"   // IWYU pragma: associated
 #include "util/storage/drivers/filesystem/Common.hpp"  // IWYU pragma: associated
 
 #include <Windows.h>  // IWYU pragma: associated

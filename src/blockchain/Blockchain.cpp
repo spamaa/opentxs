@@ -16,7 +16,6 @@
 #include <limits>
 #include <stdexcept>
 #include <string_view>
-#include <thread>
 #include <utility>
 
 #include "internal/blockchain/Params.hpp"
@@ -423,17 +422,6 @@ auto GetFilterParams(const cfilter::Type type) noexcept(false) -> FilterParams
         };
 
     return {gcs_bits_.at(type), gcs_fp_rate_.at(type)};
-}
-
-auto Grind(const std::function<void()> function) noexcept -> void
-{
-    auto threads = UnallocatedVector<std::thread>{};
-
-    for (auto i = unsigned{}; i < std::thread::hardware_concurrency(); ++i) {
-        threads.emplace_back(function);
-    }
-
-    for (auto& thread : threads) { thread.join(); }
 }
 
 auto Serialize(const Type chain, const cfilter::Type type) noexcept(false)

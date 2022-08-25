@@ -12,11 +12,11 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
-#include <thread>
 #include <utility>
 
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/util/Container.hpp"
 
 namespace opentxs
@@ -69,15 +69,14 @@ struct Outstanding::Imp {
         OutstandingMap::iterator position,
         int limit) noexcept
         : limit_([&] {
-            const auto threads =
-                static_cast<int>(std::thread::hardware_concurrency());
+            const auto threads = static_cast<int>(MaxJobs());
 
             if (0 >= limit) {
 
                 return threads;
             } else {
 
-                return std::min<int>(threads, limit);
+                return std::min(threads, limit);
             }
         }())
         , parent_(parent)

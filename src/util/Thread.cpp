@@ -3,14 +3,26 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"     // IWYU pragma: associated
-#include "1_Internal.hpp"   // IWYU pragma: associated
-#include "util/Thread.hpp"  // IWYU pragma: associated
+#include "0_stdafx.hpp"              // IWYU pragma: associated
+#include "1_Internal.hpp"            // IWYU pragma: associated
+#include "internal/util/Thread.hpp"  // IWYU pragma: associated
 
 #include <robin_hood.h>
+#include <algorithm>
+#include <thread>
+
+#include "internal/api/Context.hpp"
 
 namespace opentxs
 {
+auto MaxJobs() noexcept -> unsigned int
+{
+    const auto configured = api::internal::Context::MaxJobs();
+    const auto hardware = std::thread::hardware_concurrency();
+
+    return std::min(std::max(configured, 1u), std::max(hardware, 1u));
+}
+
 auto print(ThreadPriority priority) noexcept -> const char*
 {
     static const auto map =

@@ -12,12 +12,12 @@
 
 #include "internal/network/zeromq/socket/Factory.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/network/zeromq/ListenCallback.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/socket/Pair.hpp"
 #include "opentxs/network/zeromq/socket/Socket.hpp"
 #include "opentxs/util/Pimpl.hpp"
-#include "util/Thread.hpp"
 
 template class opentxs::Pimpl<opentxs::network::zeromq::Proxy>;
 

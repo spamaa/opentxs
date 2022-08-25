@@ -114,6 +114,7 @@ public:
         -> const session::Notary& = 0;
     /// Returns a count of the notary sessions.
     virtual auto NotarySessionCount() const noexcept -> std::size_t = 0;
+    virtual auto Options() const noexcept -> const opentxs::Options& = 0;
     virtual auto ProfileId() const noexcept -> std::string_view = 0;
     OPENTXS_NO_EXPORT virtual auto QtRootObject() const noexcept
         -> QObject* = 0;
@@ -128,12 +129,13 @@ public:
      *
      *  Otherwise the next instance will be created
      */
-    virtual auto StartClientSession(const Options& args, const int instance)
-        const -> const api::session::Client& = 0;
+    virtual auto StartClientSession(
+        const opentxs::Options& args,
+        const int instance) const -> const api::session::Client& = 0;
     virtual auto StartClientSession(const int instance) const
         -> const api::session::Client& = 0;
     virtual auto StartClientSession(
-        const Options& args,
+        const opentxs::Options& args,
         const int instance,
         std::string_view recoverWords,
         std::string_view recoverPassphrase) const
@@ -144,8 +146,9 @@ public:
      *
      *  Otherwise the next instance will be created
      */
-    virtual auto StartNotarySession(const Options& args, const int instance)
-        const -> const session::Notary& = 0;
+    virtual auto StartNotarySession(
+        const opentxs::Options& args,
+        const int instance) const -> const session::Notary& = 0;
     virtual auto StartNotarySession(const int instance) const
         -> const session::Notary& = 0;
     /** Access ZAP configuration API */
