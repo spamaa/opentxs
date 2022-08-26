@@ -20,6 +20,7 @@ enum class ThreadPriority {
 };
 
 auto print(ThreadPriority priority) noexcept -> const char*;
+auto MaxJobs() noexcept -> unsigned int;
 auto SetThisThreadsName(const std::string_view threadname) noexcept -> void;
 auto SetThisThreadsPriority(ThreadPriority priority) noexcept -> void;
 }  // namespace opentxs

@@ -27,6 +27,7 @@
 #include "internal/util/Flag.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/api/Context.hpp"
 #include "opentxs/api/Settings.hpp"
 #include "opentxs/api/session/Crypto.hpp"
@@ -52,7 +53,6 @@
 #include "otx/common/OTStorage.hpp"
 #include "otx/server/Server.hpp"
 #include "otx/server/ServerSettings.hpp"
-#include "util/Thread.hpp"
 
 namespace opentxs
 {

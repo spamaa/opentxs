@@ -27,6 +27,7 @@
 #include "internal/util/BoostPMR.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
+#include "internal/util/Thread.hpp"
 #include "network/zeromq/context/Thread.hpp"
 #include "opentxs/network/zeromq/ZeroMQ.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
@@ -40,7 +41,7 @@ namespace opentxs::network::zeromq::context
 Pool::Pool(std::shared_ptr<const Context> parent) noexcept
     : parent_p_(parent)
     , parent_(*parent_p_)
-    , count_(std::thread::hardware_concurrency())
+    , count_(MaxJobs())
     , shutdown_counter_()
     , running_(true)
     , gate_()

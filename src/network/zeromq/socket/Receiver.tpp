@@ -18,12 +18,12 @@
 #include "internal/util/Flag.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Signals.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
 #include "opentxs/network/zeromq/socket/Types.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Time.hpp"
-#include "util/Thread.hpp"
 
 namespace opentxs::network::zeromq::socket::implementation
 {

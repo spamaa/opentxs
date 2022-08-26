@@ -60,7 +60,7 @@ public:
         Message&& msg,
         const char* file,
         int line,
-        bool silent = false) noexcept -> bool;
+        bool silent = true) noexcept -> bool;
     /** Send to a recipient without ZMQ_DONTWAIT
      */
     // TODO c++20 std::source_location
@@ -68,7 +68,7 @@ public:
         Message&& msg,
         const char* file,
         int line,
-        bool silent = false) noexcept -> bool;
+        bool silent = true) noexcept -> bool;
     /** Send to a remote recipient
      *
      *  This function returns false if the message can not be sent.
@@ -78,7 +78,7 @@ public:
         Message&& msg,
         const char* file,
         int line,
-        bool silent = false) noexcept -> bool;
+        bool silent = true) noexcept -> bool;
     auto SetExposedUntrusted() noexcept -> bool;
     auto SetIncomingHWM(int value) noexcept -> bool;
     auto SetLinger(int value) noexcept -> bool;

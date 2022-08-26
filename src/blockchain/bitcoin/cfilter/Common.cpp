@@ -7,8 +7,8 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "opentxs/blockchain/bitcoin/cfilter/Types.hpp"  // IWYU pragma: associated
 
-#include "opentxs/util/Container.hpp"
 #include "opentxs/blockchain/bitcoin/cfilter/FilterType.hpp"
+#include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 
 namespace opentxs::blockchain::cfilter

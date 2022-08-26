@@ -17,13 +17,13 @@
 #include <utility>
 
 #include "internal/util/Mutex.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/blockchain/Blockchain.hpp"
 #include "opentxs/core/ByteArray.hpp"  // IWYU pragma: keep
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Time.hpp"
 #include "opentxs/util/Types.hpp"
 #include "util/ScopeGuard.hpp"
-#include "util/Thread.hpp"
 
 namespace opentxs::ui::implementation
 {

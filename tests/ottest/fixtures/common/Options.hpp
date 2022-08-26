@@ -39,6 +39,7 @@ struct OptionsData {
     opentxs::ConnectionMode ipv6_connection_mode_;
     ot::CString log_endpoint_;
     int log_level_;
+    unsigned int max_jobs_;
     std::size_t mint_key_bytes_;
     bool notary_bind_inproc_;
     ot::CString notary_bind_ip_;

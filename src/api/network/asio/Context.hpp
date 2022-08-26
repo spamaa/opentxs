@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "util/Thread.hpp"
+#include "internal/util/Thread.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace boost

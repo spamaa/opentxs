@@ -17,7 +17,6 @@
 #include <future>
 #include <memory>
 #include <string_view>
-#include <thread>
 #include <type_traits>
 #include <utility>
 
@@ -32,6 +31,7 @@
 #include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/network/zeromq/socket/Raw.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
@@ -409,7 +409,7 @@ auto Process::Imp::queue_downloads() noexcept -> void
 auto Process::Imp::queue_process() noexcept -> bool
 {
     auto counter = 0u;
-    const auto limit = std::max(std::thread::hardware_concurrency(), 1u);
+    const auto limit = MaxJobs();
     const auto CanProcess = [&] {
         ++counter;
 

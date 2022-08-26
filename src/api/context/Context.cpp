@@ -60,7 +60,7 @@ namespace opentxs::factory
 {
 auto Context(
     Flag& running,
-    const Options& args,
+    const opentxs::Options& args,
     PasswordCaller* externalPasswordCallback) noexcept
     -> std::unique_ptr<api::internal::Context>
 {
@@ -81,6 +81,14 @@ auto Context::SuggestFolder(std::string_view appName) noexcept
     return Legacy::SuggestFolder(appName);
 }
 }  // namespace opentxs::api
+
+namespace opentxs::api::internal
+{
+auto Context::MaxJobs() noexcept -> unsigned int
+{
+    return imp::Context::JobCount().load();
+}
+}  // namespace opentxs::api::internal
 
 namespace opentxs::api::imp
 {
@@ -122,10 +130,18 @@ auto Context::Sessions::clear(
 
 namespace opentxs::api::imp
 {
-Context::Context(Flag& running, const Options& args, PasswordCaller* password)
+Context::Context(
+    Flag& running,
+    const opentxs::Options& args,
+    PasswordCaller* password)
     : api::internal::Context()
     , running_(running)
-    , args_(args)
+    , args_([&]() -> const auto& {
+        const auto& out = args;
+        JobCount().store(out.MaxJobs());
+
+        return out;
+    }())
     , home_(args_.Home().string().c_str())
     , null_callback_(opentxs::Factory::NullCallback())
     , default_external_password_callback_([&] {
@@ -386,6 +402,14 @@ auto Context::Init_Zap() -> void
     OT_ASSERT(zap_);
 }
 
+auto Context::JobCount() noexcept -> std::atomic<unsigned int>&
+{
+    static auto count =
+        std::atomic<unsigned int>{std::numeric_limits<unsigned int>::max()};
+
+    return count;
+}
+
 auto Context::NotarySession(const int instance) const -> const session::Notary&
 {
     const auto& output = sessions_.lock_shared()->server_.at(instance);
@@ -459,8 +483,9 @@ auto Context::shutdown() noexcept -> void
     }
 }
 
-auto Context::StartClientSession(const Options& args, const int instance) const
-    -> const api::session::Client&
+auto Context::StartClientSession(
+    const opentxs::Options& args,
+    const int instance) const -> const api::session::Client&
 {
     auto handle = sessions_.lock();
 
@@ -506,13 +531,13 @@ auto Context::StartClientSession(const Options& args, const int instance) const
 auto Context::StartClientSession(const int instance) const
     -> const api::session::Client&
 {
-    static const auto blank = Options{};
+    static const auto blank = opentxs::Options{};
 
     return StartClientSession(blank, instance);
 }
 
 auto Context::StartClientSession(
-    const Options& args,
+    const opentxs::Options& args,
     const int instance,
     std::string_view recoverWords,
     std::string_view recoverPassphrase) const -> const api::session::Client&
@@ -538,8 +563,9 @@ auto Context::StartClientSession(
     return client;
 }
 
-auto Context::StartNotarySession(const Options& args, const int instance) const
-    -> const session::Notary&
+auto Context::StartNotarySession(
+    const opentxs::Options& args,
+    const int instance) const -> const session::Notary&
 {
     auto handle = sessions_.lock();
 
@@ -584,7 +610,7 @@ auto Context::StartNotarySession(const Options& args, const int instance) const
 auto Context::StartNotarySession(const int instance) const
     -> const session::Notary&
 {
-    static const auto blank = Options{};
+    static const auto blank = opentxs::Options{};
 
     return StartNotarySession(blank, instance);
 }

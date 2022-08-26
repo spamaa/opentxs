@@ -34,10 +34,11 @@ struct Options::Imp final {
     std::optional<std::size_t> default_mint_key_bytes_;
     std::optional<bool> experimental_;
     std::optional<std::filesystem::path> home_;
-    std::optional<CString> log_endpoint_;
     std::optional<ConnectionMode> ipv4_connection_mode_;
     std::optional<ConnectionMode> ipv6_connection_mode_;
+    std::optional<CString> log_endpoint_;
     std::optional<int> log_level_;
+    std::optional<unsigned int> max_jobs_;
     std::optional<bool> notary_bind_inproc_;
     std::optional<CString> notary_bind_ip_;
     std::optional<std::uint16_t> notary_bind_port_;

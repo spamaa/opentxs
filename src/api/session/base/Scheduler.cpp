@@ -9,8 +9,8 @@
 
 #include "internal/util/Flag.hpp"
 #include "internal/util/LogMacros.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/util/Time.hpp"
-#include "util/Thread.hpp"
 
 namespace opentxs::api::session
 {

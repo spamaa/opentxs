@@ -56,6 +56,7 @@ auto check_options(
     EXPECT_EQ(test.Ipv4ConnectionMode(), expect.ipv4_connection_mode_);
     EXPECT_EQ(test.Ipv6ConnectionMode(), expect.ipv6_connection_mode_);
     EXPECT_EQ(test.LogLevel(), expect.log_level_);
+    EXPECT_EQ(test.MaxJobs(), expect.max_jobs_);
     EXPECT_EQ(test.NotaryBindIP(), expect.notary_bind_ip_);
     EXPECT_EQ(test.NotaryBindPort(), expect.notary_bind_port_);
     EXPECT_EQ(test.NotaryInproc(), expect.notary_bind_inproc_);

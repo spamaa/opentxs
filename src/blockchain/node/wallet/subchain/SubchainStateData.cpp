@@ -20,7 +20,6 @@
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
-#include <thread>
 #include <type_traits>
 #include <utility>
 
@@ -48,6 +47,7 @@
 #include "internal/util/BoostPMR.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/api/crypto/Blockchain.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Network.hpp"
@@ -591,7 +591,7 @@ auto SubchainStateData::choose_thread_count(std::size_t elements) const noexcept
     static_assert(calc(50000, 100) == 9);
     static_assert(calc(51200, 100) == 10);
 
-    return calc(elements, std::thread::hardware_concurrency());
+    return calc(elements, MaxJobs());
 }
 
 auto SubchainStateData::describe(

@@ -10,6 +10,7 @@
 #include <cs_ordered_guarded.h>
 #include <cs_plain_guarded.h>
 #include <cs_shared_guarded.h>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -107,6 +108,8 @@ namespace opentxs::api::imp
 class Context final : public internal::Context
 {
 public:
+    static auto JobCount() noexcept -> std::atomic<unsigned int>&;
+
     auto Asio() const noexcept -> const network::Asio& final { return *asio_; }
     auto Cancel(const TaskID task) const -> bool final;
     auto ClientSession(const int instance) const noexcept(false)
@@ -130,6 +133,10 @@ public:
     {
         return sessions_.lock_shared()->server_.size();
     }
+    auto Options() const noexcept -> const opentxs::Options& final
+    {
+        return args_;
+    }
     auto ProfileId() const noexcept -> std::string_view final;
     auto QtRootObject() const noexcept -> QObject* final;
     auto Reschedule(const TaskID task, const std::chrono::seconds& interval)
@@ -142,18 +149,18 @@ public:
         const std::chrono::seconds& interval,
         const PeriodicTask& task,
         const std::chrono::seconds& last) const -> TaskID final;
-    auto StartClientSession(const Options& args, const int instance) const
-        -> const api::session::Client& final;
+    auto StartClientSession(const opentxs::Options& args, const int instance)
+        const -> const api::session::Client& final;
     auto StartClientSession(const int instance) const
         -> const api::session::Client& final;
     auto StartClientSession(
-        const Options& args,
+        const opentxs::Options& args,
         const int instance,
         std::string_view recoverWords,
         std::string_view recoverPassphrase) const
         -> const api::session::Client& final;
-    auto StartNotarySession(const Options& args, const int instance) const
-        -> const session::Notary& final;
+    auto StartNotarySession(const opentxs::Options& args, const int instance)
+        const -> const session::Notary& final;
     auto StartNotarySession(const int instance) const
         -> const session::Notary& final;
     auto ZAP() const noexcept -> const api::network::ZAP& final;
@@ -166,7 +173,7 @@ public:
 
     Context(
         Flag& running,
-        const Options& args,
+        const opentxs::Options& args,
         PasswordCaller* externalPasswordCallback = nullptr);
     Context() = delete;
     Context(const Context&) = delete;
@@ -199,7 +206,7 @@ private:
         libguarded::ordered_guarded<SignalHandler, std::shared_mutex>;
 
     Flag& running_;
-    const Options args_;
+    const opentxs::Options args_;
     const std::filesystem::path home_;
     const std::unique_ptr<PasswordCallback> null_callback_;
     const std::unique_ptr<PasswordCaller> default_external_password_callback_;

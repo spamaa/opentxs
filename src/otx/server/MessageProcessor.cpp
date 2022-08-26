@@ -36,6 +36,7 @@
 #include "internal/serialization/protobuf/verify/ServerRequest.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
+#include "internal/util/Thread.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Endpoints.hpp"
 #include "opentxs/api/session/Factory.hpp"
@@ -64,7 +65,6 @@
 #include "opentxs/util/WorkType.hpp"
 #include "otx/server/Server.hpp"
 #include "otx/server/UserCommandProcessor.hpp"
-#include "util/Thread.hpp"
 
 namespace opentxs::server
 {
