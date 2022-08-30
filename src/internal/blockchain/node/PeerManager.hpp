@@ -80,6 +80,8 @@ public:
     virtual auto VerifyPeer(const int id, const UnallocatedCString& address)
         const noexcept -> void = 0;
 
+    virtual auto Resolve(std::string_view host, std::uint16_t post) noexcept
+        -> void = 0;
     virtual auto Start() noexcept -> void = 0;
     virtual auto Shutdown() noexcept -> std::shared_future<void> = 0;
 

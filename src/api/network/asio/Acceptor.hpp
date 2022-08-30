@@ -7,7 +7,7 @@
 
 #include <functional>
 
-#include "opentxs/api/network/Asio.hpp"
+#include "internal/api/network/Asio.hpp"
 
 // NOLINTBEGIN(modernize-concat-nested-namespaces)
 namespace boost
@@ -50,7 +50,7 @@ namespace opentxs::api::network::asio
 class Acceptor
 {
 public:
-    using Callback = Asio::AcceptCallback;
+    using Callback = internal::Asio::AcceptCallback;
 
     auto Start() noexcept -> void;
     auto Stop() noexcept -> void;

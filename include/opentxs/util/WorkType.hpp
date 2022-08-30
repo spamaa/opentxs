@@ -8,6 +8,7 @@
 #include "opentxs/Version.hpp"  // IWYU pragma: associated
 
 #include <cstdint>
+#include <string_view>
 
 namespace opentxs
 {
@@ -66,6 +67,7 @@ enum class WorkType : OTZMQWorkType {
     AsioConnect = 2049,
     AsioDisconnect = 2050,
     AsioSendResult = 2051,
+    AsioResolve = 2052,
     BitcoinP2P = 3072,
     OTXRequest = 4096,
     OTXResponse = 4097,
@@ -77,6 +79,8 @@ constexpr auto value(const WorkType in) noexcept
 {
     return static_cast<OTZMQWorkType>(in);
 }
+
+auto print(OTZMQWorkType in) noexcept -> std::string_view;
 
 /*** Tagged Status Message Format
  *

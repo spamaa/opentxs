@@ -51,6 +51,11 @@ namespace opentxs  // NOLINT
 // {
 namespace api
 {
+namespace internal
+{
+class Log;
+}  // namespace internal
+
 class Session;
 }  // namespace api
 
@@ -78,6 +83,7 @@ class ReplyCallback;
 }  // namespace network
 
 class Factory;
+class Options;
 // }  // namespace v1
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
@@ -177,7 +183,8 @@ public:
     auto Init(std::shared_ptr<const zeromq::Context> me) noexcept -> void final;
     auto Stop() noexcept -> std::future<void> final;
 
-    Context() noexcept;
+    Context(const opentxs::Options& args) noexcept;
+    Context() = delete;
     Context(const Context&) = delete;
     Context(Context&&) = delete;
     auto operator=(const Context&) -> Context& = delete;
@@ -189,6 +196,7 @@ private:
     using Pool = libguarded::plain_guarded<std::optional<context::Pool>>;
 
     void* context_;
+    std::unique_ptr<api::internal::Log> log_;
     mutable Pool pool_;
     std::promise<void> shutdown_;
 

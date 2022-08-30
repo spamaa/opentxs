@@ -27,6 +27,7 @@
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/P0330.hpp"
 #include "internal/util/Timer.hpp"
+#include "opentxs/api/Context.hpp"
 #include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Client.hpp"
@@ -55,6 +56,7 @@ namespace opentxs  // NOLINT
 // {
 namespace api
 {
+class Context;
 class Session;
 }  // namespace api
 
@@ -177,11 +179,13 @@ protected:
     }
 
     Actor(
-        const api::Session& api,
+        const api::network::Asio& asio,
+        const network::zeromq::Context& zmq,
         const Log& logger,
-        const CString&& name,
-        const std::chrono::milliseconds rateLimit,
-        const network::zeromq::BatchID batch,
+        int instance,
+        CString&& name,
+        std::chrono::milliseconds rateLimit,
+        network::zeromq::BatchID batch,
         allocator_type alloc,
         const network::zeromq::EndpointArgs& subscribe = {},
         const network::zeromq::EndpointArgs& pull = {},
@@ -191,15 +195,21 @@ protected:
         : name_([&] {
             // TODO c++20 allocator
             auto ss = std::stringstream{};
-            ss << "instance ";
-            ss << std::to_string(api.Instance());
+
+            if (0 > instance) {
+                ss << "global";
+            } else {
+                ss << "instance ";
+                ss << std::to_string(instance);
+            }
+
             ss << " ";
             ss << name;
 
             return CString{ss.str().c_str(), alloc};
         }())
         , log_(logger)
-        , pipeline_(api.Network().ZeroMQ().Internal().Pipeline(
+        , pipeline_(zmq.Internal().Pipeline(
               {},
               name,
               subscribe,
@@ -215,11 +225,67 @@ protected:
         , next_state_machine_()
         , cache_(alloc)
         , state_machine_queued_(false)
-        , rate_limit_timer_(api.Network().Asio().Internal().GetTimer())
+        , rate_limit_timer_(asio.Internal().GetTimer())
     {
         log_(OT_PRETTY_CLASS())(name_)(": using ZMQ batch ")(
             pipeline_.BatchID())
             .Flush();
+    }
+    Actor(
+        const api::Session& api,
+        const Log& logger,
+        CString&& name,
+        std::chrono::milliseconds rateLimit,
+        network::zeromq::BatchID batch,
+        allocator_type alloc,
+        const network::zeromq::EndpointArgs& subscribe = {},
+        const network::zeromq::EndpointArgs& pull = {},
+        const network::zeromq::EndpointArgs& dealer = {},
+        const Vector<network::zeromq::SocketData>& extra = {},
+        Set<Work>&& neverDrop = {}) noexcept
+        : Actor(
+              api.Network().Asio(),
+              api.Network().ZeroMQ(),
+              logger,
+              api.Instance(),
+              std::move(name),
+              std::move(rateLimit),
+              std::move(batch),
+              std::move(alloc),
+              subscribe,
+              pull,
+              dealer,
+              extra,
+              std::move(neverDrop))
+    {
+    }
+    Actor(
+        const api::Context& context,
+        const Log& logger,
+        CString&& name,
+        std::chrono::milliseconds rateLimit,
+        network::zeromq::BatchID batch,
+        allocator_type alloc,
+        const network::zeromq::EndpointArgs& subscribe = {},
+        const network::zeromq::EndpointArgs& pull = {},
+        const network::zeromq::EndpointArgs& dealer = {},
+        const Vector<network::zeromq::SocketData>& extra = {},
+        Set<Work>&& neverDrop = {}) noexcept
+        : Actor(
+              context.Asio(),
+              context.ZMQ(),
+              logger,
+              -1,
+              std::move(name),
+              std::move(rateLimit),
+              std::move(batch),
+              std::move(alloc),
+              subscribe,
+              pull,
+              dealer,
+              extra,
+              std::move(neverDrop))
+    {
     }
 
     ~Actor() override = default;

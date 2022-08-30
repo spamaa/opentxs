@@ -7,39 +7,151 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "opentxs/OT.hpp"  // IWYU pragma: associated
 
-#include <chrono>
+#include <cassert>
+#include <future>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 
+#include "core/Shutdown.hpp"
 #include "internal/api/Context.hpp"
 #include "internal/api/Factory.hpp"
+#include "internal/api/network/Asio.hpp"
+#include "internal/api/network/Factory.hpp"
+#include "internal/api/session/Endpoints.hpp"
+#include "internal/network/zeromq/Context.hpp"
+#include "internal/network/zeromq/Factory.hpp"
 #include "internal/util/Flag.hpp"
-#include "internal/util/LogMacros.hpp"
+#include "opentxs/api/network/Asio.hpp"
+#include "opentxs/network/zeromq/Context.hpp"
+#include "opentxs/util/Log.hpp"
 #include "opentxs/util/Options.hpp"
-#include "opentxs/util/Time.hpp"
 
 namespace opentxs
 {
-api::internal::Context* instance_pointer_{nullptr};
-OTFlag running_{Flag::Factory(true)};
-
-auto Context() -> const api::Context&
+class Instance final
 {
-    if (nullptr == instance_pointer_) {
-        throw std::runtime_error("Context is not initialized");
+public:
+    static auto get() noexcept -> Instance&
+    {
+        static auto instance = Instance{};
+
+        return instance;
     }
 
-    return *instance_pointer_;
-}
+    auto Context() const -> const api::Context&
+    {
+        if (false == context_.operator bool()) {
+            const auto error = CString{"Context is not initialized\n"}.append(
+                PrintStackTrace());
 
-auto Cleanup() noexcept -> void
-{
-    if (nullptr != instance_pointer_) {
-        instance_pointer_->shutdown();
-        delete instance_pointer_;
-        instance_pointer_ = nullptr;
+            throw std::runtime_error(error.c_str());
+        }
+
+        return *context_;
     }
-}
+    auto Join() const noexcept -> void { shutdown_.get(); }
+    auto ZMQ() const noexcept -> const network::zeromq::Context&
+    {
+        assert(zmq_);
+
+        return *zmq_;
+    }
+
+    auto Cleanup() noexcept -> void
+    {
+        if (context_) {
+            shutdown_sender_->Activate();
+            context_->Shutdown();
+            context_.reset();
+            Join();
+            shutdown_sender_.reset();
+            asio_->Internal().Shutdown();
+            asio_.reset();
+            auto zmq = zmq_->Internal().Stop();
+            zmq_.reset();
+            zmq.get();
+        } else {
+            shutdown();
+        }
+    }
+    auto Init(const Options& args, PasswordCaller* externalPasswordCallback)
+        -> const api::Context&
+    {
+        if (context_) {
+            throw std::runtime_error("Context is already initialized");
+        }
+
+        init();
+        zmq_ = [&] {
+            auto zmq = factory::ZMQContext(args);
+            zmq->Internal().Init(zmq);
+
+            return zmq;
+        }();
+        asio_ = factory::AsioAPI(*zmq_);
+        using Endpoints = api::session::internal::Endpoints;
+        shutdown_sender_.emplace(
+            *asio_, *zmq_, Endpoints::ContextShutdown(), "global shutdown");
+        context_ = factory::Context(
+            *zmq_,
+            *asio_,
+            *shutdown_sender_,
+            args,
+            running_,
+            shutdown_promise_,
+            externalPasswordCallback);
+        asio_->Internal().Init(context_);
+        context_->Init();
+
+        return *context_;
+    }
+
+    Instance(const Instance&) = delete;
+    Instance(Instance&&) = delete;
+    auto operator=(const Instance&) -> Instance& = delete;
+    auto operator=(Instance&&) -> Instance& = delete;
+
+    ~Instance() { Join(); }
+
+private:
+    std::promise<void> shutdown_promise_;
+    std::shared_future<void> shutdown_;
+    OTFlag running_;
+    std::shared_ptr<network::zeromq::Context> zmq_;
+    std::unique_ptr<api::network::Asio> asio_;
+    std::shared_ptr<api::internal::Context> context_;
+    std::optional<opentxs::internal::ShutdownSender> shutdown_sender_;
+
+    Instance() noexcept
+        : shutdown_promise_()
+        , shutdown_(shutdown_promise_.get_future())
+        , running_(Flag::Factory(true))
+        , zmq_(nullptr)
+        , asio_(nullptr)
+        , context_(nullptr)
+        , shutdown_sender_(std::nullopt)
+    {
+    }
+
+    auto init() noexcept -> void
+    {
+        shutdown();
+        shutdown_promise_ = {};
+        shutdown_ = shutdown_promise_.get_future();
+    }
+    auto shutdown() noexcept -> void
+    {
+        try {
+            shutdown_promise_.set_value();
+        } catch (...) {
+        }
+    }
+};
+
+auto Context() -> const api::Context& { return Instance::get().Context(); }
+
+auto Cleanup() noexcept -> void { Instance::get().Cleanup(); }
 
 auto InitContext() -> const api::Context&
 {
@@ -63,22 +175,16 @@ auto InitContext(PasswordCaller* cb) -> const api::Context&
 auto InitContext(const Options& args, PasswordCaller* externalPasswordCallback)
     -> const api::Context&
 {
-    if (nullptr != instance_pointer_) {
-        throw std::runtime_error("Context is already initialized");
-    }
-
-    instance_pointer_ =
-        factory::Context(running_, args, externalPasswordCallback).release();
-
-    OT_ASSERT(nullptr != instance_pointer_);
-
-    instance_pointer_->Init();
-
-    return *instance_pointer_;
+    return Instance::get().Init(args, externalPasswordCallback);
 }
 
-auto Join() noexcept -> void
+auto Join() noexcept -> void { Instance::get().Join(); }
+}  // namespace opentxs
+
+namespace opentxs
 {
-    while (nullptr != instance_pointer_) { Sleep(250ms); }
+auto get_zeromq() noexcept -> const opentxs::network::zeromq::Context&
+{
+    return Instance::get().ZMQ();
 }
 }  // namespace opentxs

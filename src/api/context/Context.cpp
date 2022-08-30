@@ -8,7 +8,6 @@
 #include "api/context/Context.hpp"  // IWYU pragma: associated
 
 #include <algorithm>
-#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -21,18 +20,16 @@
 #include <utility>
 
 #include "2_Factory.hpp"
+#include "core/Shutdown.hpp"
 #include "internal/api/Crypto.hpp"
 #include "internal/api/Factory.hpp"
-#include "internal/api/Log.hpp"
 #include "internal/api/crypto/Factory.hpp"
-#include "internal/api/network/Factory.hpp"
 #include "internal/api/session/Client.hpp"
 #include "internal/api/session/Factory.hpp"
 #include "internal/api/session/Notary.hpp"
 #include "internal/api/session/Session.hpp"
 #include "internal/interface/rpc/RPC.hpp"
 #include "internal/network/zeromq/Context.hpp"
-#include "internal/network/zeromq/Factory.hpp"
 #include "internal/util/Flag.hpp"
 #include "internal/util/Log.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -49,6 +46,7 @@
 #include "opentxs/core/String.hpp"
 #include "opentxs/crypto/Language.hpp"
 #include "opentxs/crypto/SeedStyle.hpp"
+#include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Options.hpp"
@@ -59,15 +57,19 @@
 namespace opentxs::factory
 {
 auto Context(
+    const network::zeromq::Context& zmq,
+    const api::network::Asio& asio,
+    const internal::ShutdownSender& sender,
+    const Options& args,
     Flag& running,
-    const opentxs::Options& args,
+    std::promise<void>& shutdown,
     PasswordCaller* externalPasswordCallback) noexcept
-    -> std::unique_ptr<api::internal::Context>
+    -> std::shared_ptr<api::internal::Context>
 {
     using ReturnType = api::imp::Context;
 
-    return std::make_unique<ReturnType>(
-        running, args, externalPasswordCallback);
+    return std::make_shared<ReturnType>(
+        args, zmq, asio, sender, running, shutdown, externalPasswordCallback);
 }
 }  // namespace opentxs::factory
 
@@ -131,23 +133,31 @@ auto Context::Sessions::clear(
 namespace opentxs::api::imp
 {
 Context::Context(
-    Flag& running,
     const opentxs::Options& args,
+    const opentxs::network::zeromq::Context& zmq,
+    const network::Asio& asio,
+    const opentxs::internal::ShutdownSender& sender,
+    Flag& running,
+    std::promise<void>& shutdown,
     PasswordCaller* password)
     : api::internal::Context()
     , running_(running)
+    , shutdown_(shutdown)
     , args_([&]() -> const auto& {
         const auto& out = args;
         JobCount().store(out.MaxJobs());
 
         return out;
     }())
+    , zmq_context_(zmq)
+    , asio_(asio)
+    , shutdown_sender_(sender)
     , home_(args_.Home().string().c_str())
     , null_callback_(opentxs::Factory::NullCallback())
     , default_external_password_callback_([&] {
         auto out = std::make_unique<PasswordCaller>();
 
-        assert(out);
+        OT_ASSERT(out);
 
         out->SetCallback(null_callback_.get());
 
@@ -163,15 +173,7 @@ Context::Context(
         }
     }())
     , profile_id_()
-    , zmq_context_([] {
-        auto zmq = factory::ZMQContext();
-        zmq->Internal().Init(zmq);
-
-        return zmq;
-    }())
-    , asio_()
     , periodic_(std::nullopt)
-    , log_(factory::Log(*zmq_context_, args_.RemoteLogEndpoint()))
     , legacy_(factory::Legacy(home_))
     , config_()
     , crypto_(nullptr)
@@ -182,15 +184,13 @@ Context::Context(
     , file_lock_()
     , signal_handler_()
 {
-    // NOTE: OT_ASSERT is not available until Init() has been called
-    assert(null_callback_);
-    assert(default_external_password_callback_);
-    assert(zmq_context_);
-    assert(legacy_);
-    assert(log_);
-    assert(nullptr != external_password_callback_);
-    assert(external_password_callback_->HaveCallback());
-    assert(rpc_);
+    OT_ASSERT(null_callback_);
+    OT_ASSERT(default_external_password_callback_);
+    OT_ASSERT(zmq_context_);
+    OT_ASSERT(legacy_);
+    OT_ASSERT(nullptr != external_password_callback_);
+    OT_ASSERT(external_password_callback_->HaveCallback());
+    OT_ASSERT(rpc_);
 }
 
 auto Context::Cancel(const TaskID task) const -> bool
@@ -273,7 +273,6 @@ auto Context::ProfileId() const noexcept -> std::string_view
 auto Context::Init() noexcept -> void
 {
     Init_Log();
-    Init_Asio();
     Init_Periodic();
     init_pid();
     Init_Crypto();
@@ -284,55 +283,12 @@ auto Context::Init() noexcept -> void
     Init_Zap();
 }
 
-auto Context::Init_Asio() -> void
-{
-    asio_ = factory::AsioAPI(*zmq_context_);
-
-    OT_ASSERT(asio_);
-
-    asio_->Init();
-}
-
 auto Context::Init_Crypto() -> void
 {
     crypto_ =
         factory::CryptoAPI(Config(legacy_->OpentxsConfigFilePath().string()));
 
     OT_ASSERT(crypto_);
-}
-
-auto Context::Init_Periodic() -> void
-{
-    OT_ASSERT(asio_);
-
-    periodic_.emplace(*asio_);
-
-    OT_ASSERT(periodic_.has_value());
-}
-
-auto Context::Init_Profile() -> void
-{
-    const auto& config = Config(legacy_->OpentxsConfigFilePath().string());
-    auto profile_id_exists{false};
-    auto existing_profile_id{String::Factory()};
-    config.Check_str(
-        String::Factory("profile"),
-        String::Factory("profile_id"),
-        existing_profile_id,
-        profile_id_exists);
-
-    if (profile_id_exists) {
-        profile_id_.set_value(existing_profile_id->Get());
-    } else {
-        const auto new_profile_id(crypto_->Encode().Nonce(20));
-        auto new_or_update{true};
-        config.Set_str(
-            String::Factory("profile"),
-            String::Factory("profile_id"),
-            new_profile_id,
-            new_or_update);
-        profile_id_.set_value(new_profile_id->Get());
-    }
 }
 
 auto Context::Init_Factory() -> void
@@ -372,6 +328,13 @@ auto Context::Init_Log() -> void
     opentxs::internal::Log::SetVerbosity(static_cast<int>(level));
 }
 
+auto Context::Init_Periodic() -> void
+{
+    periodic_.emplace(asio_);
+
+    OT_ASSERT(periodic_.has_value());
+}
+
 auto Context::init_pid() const -> void
 {
     try {
@@ -395,9 +358,34 @@ auto Context::init_pid() const -> void
     }
 }
 
+auto Context::Init_Profile() -> void
+{
+    const auto& config = Config(legacy_->OpentxsConfigFilePath().string());
+    auto profile_id_exists{false};
+    auto existing_profile_id{String::Factory()};
+    config.Check_str(
+        String::Factory("profile"),
+        String::Factory("profile_id"),
+        existing_profile_id,
+        profile_id_exists);
+
+    if (profile_id_exists) {
+        profile_id_.set_value(existing_profile_id->Get());
+    } else {
+        const auto new_profile_id(crypto_->Encode().Nonce(20));
+        auto new_or_update{true};
+        config.Set_str(
+            String::Factory("profile"),
+            String::Factory("profile_id"),
+            new_profile_id,
+            new_or_update);
+        profile_id_.set_value(new_profile_id->Get());
+    }
+}
+
 auto Context::Init_Zap() -> void
 {
-    zap_.reset(opentxs::Factory::ZAP(*zmq_context_));
+    zap_.reset(opentxs::Factory::ZAP(zmq_context_));
 
     OT_ASSERT(zap_);
 }
@@ -447,7 +435,7 @@ auto Context::server_instance(const int count) -> int
     return (2 * count) + 1;
 }
 
-auto Context::shutdown() noexcept -> void
+auto Context::Shutdown() noexcept -> void
 {
     running_.Off();
     periodic_->Shutdown();
@@ -459,28 +447,18 @@ auto Context::shutdown() noexcept -> void
         }
     });
     rpc_.reset();
-
-    if (zmq_context_) { sessions_.lock()->clear(*zmq_context_); }
-
+    sessions_.lock()->clear(zmq_context_);
     zap_.reset();
     shutdown_qt();
     crypto_.reset();
     legacy_.reset();
     factory_.reset();
     config_.lock()->clear();
+}
 
-    if (asio_) {
-        asio_->Shutdown();
-        asio_.reset();
-    }
-
-    log_.reset();
-
-    if (zmq_context_) {
-        auto zmq = zmq_context_->Internal().Stop();
-        zmq_context_.reset();
-        zmq.get();
-    }
+auto Context::ShuttingDown() const noexcept -> bool
+{
+    return shutdown_sender_.Activated();
 }
 
 auto Context::StartClientSession(
@@ -509,7 +487,7 @@ auto Context::StartClientSession(
             args_ + args,
             Config(legacy_->ClientConfigFilePath(next).string()),
             *crypto_,
-            *zmq_context_,
+            zmq_context_,
             legacy_->ClientDataFolder(next),
             instance));
 
@@ -589,7 +567,7 @@ auto Context::StartNotarySession(
             args_ + args,
             *crypto_,
             Config(legacy_->ServerConfigFilePath(next).string()),
-            *zmq_context_,
+            zmq_context_,
             legacy_->ServerDataFolder(next),
             instance));
 
@@ -622,5 +600,10 @@ auto Context::ZAP() const noexcept -> const api::network::ZAP&
     return *zap_;
 }
 
-Context::~Context() { shutdown(); }
+auto Context::ZMQ() const noexcept -> const opentxs::network::zeromq::Context&
+{
+    return zmq_context_;
+}
+
+Context::~Context() { shutdown_.set_value(); }
 }  // namespace opentxs::api::imp

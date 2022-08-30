@@ -29,6 +29,25 @@ auto EndpointsAPI(const int instance) noexcept
 }
 }  // namespace opentxs::factory
 
+namespace opentxs::api::session::internal
+{
+auto Endpoints::Asio() noexcept -> std::string_view
+{
+    static const auto endpoint =
+        opentxs::network::zeromq::MakeDeterministicInproc("asio", -1, 1);
+
+    return endpoint;
+}
+
+auto Endpoints::ContextShutdown() noexcept -> std::string_view
+{
+    static const auto endpoint =
+        opentxs::network::zeromq::MakeDeterministicInproc("shutdown", -1, 1);
+
+    return endpoint;
+}
+}  // namespace opentxs::api::session::internal
+
 namespace opentxs::api::session::imp
 {
 Endpoints::Endpoints(const int instance) noexcept

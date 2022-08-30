@@ -49,7 +49,7 @@ public:
 
     auto Shutdown() -> void;
 
-    Periodic(network::Asio& asio);
+    Periodic(const network::Asio& asio);
     Periodic() = delete;
     Periodic(const Periodic&) = delete;
     Periodic(Periodic&&) = delete;
@@ -63,7 +63,7 @@ private:
     using TaskMap = Map<TaskID, Params>;
     using Data = libguarded::plain_guarded<TaskMap>;
 
-    network::Asio& asio_;
+    const network::Asio& asio_;
     mutable Data data_;
 
     static auto first_interval(

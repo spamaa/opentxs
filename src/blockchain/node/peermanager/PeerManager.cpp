@@ -7,8 +7,10 @@
 #include "1_Internal.hpp"  // IWYU pragma: associated
 #include "blockchain/node/peermanager/PeerManager.hpp"  // IWYU pragma: associated
 
+#include <boost/asio.hpp>
 #include <atomic>
 #include <chrono>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -16,25 +18,35 @@
 
 #include "core/Worker.hpp"
 #include "internal/api/network/Blockchain.hpp"
+#include "internal/api/session/Endpoints.hpp"
+#include "internal/blockchain/Params.hpp"
 #include "internal/blockchain/bitcoin/block/Transaction.hpp"
 #include "internal/blockchain/node/Endpoints.hpp"
 #include "internal/blockchain/node/Factory.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"  // IWYU pragma: keep
+#include "internal/network/zeromq/Types.hpp"
+#include "internal/network/zeromq/socket/Pipeline.hpp"
 #include "internal/util/LogMacros.hpp"
 #include "internal/util/Mutex.hpp"
 #include "opentxs/api/network/Blockchain.hpp"
 #include "opentxs/api/network/Network.hpp"
+#include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
 #include "opentxs/blockchain/BlockchainType.hpp"
 #include "opentxs/blockchain/bitcoin/block/Transaction.hpp"
 #include "opentxs/blockchain/p2p/Address.hpp"
+#include "opentxs/blockchain/p2p/Types.hpp"
+#include "opentxs/core/ByteArray.hpp"
 #include "opentxs/network/zeromq/Pipeline.hpp"
 #include "opentxs/network/zeromq/message/Frame.hpp"
+#include "opentxs/network/zeromq/message/FrameIterator.hpp"
 #include "opentxs/network/zeromq/message/FrameSection.hpp"
 #include "opentxs/network/zeromq/message/Message.hpp"
+#include "opentxs/network/zeromq/socket/Types.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Pimpl.hpp"
+#include "opentxs/util/Time.hpp"
 
 namespace opentxs::factory
 {
@@ -84,7 +96,20 @@ PeerManager::PeerManager(
     std::string_view seednode,
     const node::Endpoints& endpoints) noexcept
     : internal::PeerManager()
-    , Worker(api, 100ms, "blockchain::node::PeerManager")
+    , Worker(
+          api,
+          100ms,
+          "blockchain::node::PeerManager",
+          {},
+          {},
+          [&] {
+              using Dir = opentxs::network::zeromq::socket::Direction;
+              using Endpoints = api::session::internal::Endpoints;
+              auto dealer = opentxs::network::zeromq::EndpointArgs{};
+              dealer.emplace_back(Endpoints::Asio(), Dir::Connect);
+
+              return dealer;
+          }())
     , node_(node)
     , database_(database)
     , chain_(chain)
@@ -241,6 +266,63 @@ auto PeerManager::pipeline(zmq::Message&& message) noexcept -> void
     }();
 
     switch (work) {
+        case Work::Shutdown: {
+            shutdown(shutdown_promise_);
+        } break;
+        case Work::Resolve: {
+            static constexpr auto success = std::byte{0x01};
+            static constexpr auto ipv4 =
+                sizeof(boost::asio::ip::address_v4::bytes_type);
+            static constexpr auto ipv6 =
+                sizeof(boost::asio::ip::address_v6::bytes_type);
+            const auto& data = params::Chains().at(chain_);
+
+            OT_ASSERT(2 < body.size());
+
+            if (body.at(1).as<std::byte>() == success) {
+                const auto port = body.at(2).as<std::uint16_t>();
+                auto addresses = Vector<
+                    std::unique_ptr<blockchain::p2p::internal::Address>>{};
+
+                for (auto i = std::next(body.begin(), 3), end = body.end();
+                     i != end;
+                     ++i) {
+                    const auto& frame = *i;
+                    const auto network = [&] {
+                        switch (frame.size()) {
+                            case ipv4: {
+
+                                return blockchain::p2p::Network::ipv4;
+                            }
+                            case ipv6: {
+
+                                return blockchain::p2p::Network::ipv6;
+                            }
+                            default: {
+                                LogAbort()(OT_PRETTY_CLASS())(
+                                    "invalid address size (")(frame.size())(")")
+                                    .Abort();
+                            }
+                        }
+                    }();
+                    addresses.emplace_back(factory::BlockchainAddress(
+                        api_,
+                        data.p2p_protocol_,
+                        network,
+                        api_.Factory().DataFromBytes(frame.Bytes()),
+                        port,
+                        chain_,
+                        Time{},
+                        {},
+                        false));
+                }
+
+                peers_.AddResolvedDNS(std::move(addresses));
+                do_work();
+            } else {
+                LogError()(OT_PRETTY_CLASS())(body.at(2).Bytes()).Flush();
+            }
+        } break;
         case Work::Disconnect: {
             OT_ASSERT(1 < body.size());
 
@@ -312,13 +394,22 @@ auto PeerManager::pipeline(zmq::Message&& message) noexcept -> void
         case Work::StateMachine: {
             do_work();
         } break;
-        case Work::Shutdown: {
-            shutdown(shutdown_promise_);
-        } break;
         default: {
             OT_FAIL;
         }
     }
+}
+
+auto PeerManager::Resolve(std::string_view host, std::uint16_t post) noexcept
+    -> void
+{
+    pipeline_.Internal().SendFromThread([&] {
+        auto out = MakeWork(WorkType::AsioResolve);
+        out.AddFrame(host.data(), host.size());
+        out.AddFrame(post);
+
+        return out;
+    }());
 }
 
 auto PeerManager::shutdown(std::promise<void>& promise) noexcept -> void

@@ -17,6 +17,14 @@ namespace api
 class Legacy;
 }  // namespace api
 
+namespace network
+{
+namespace zeromq
+{
+class Context;
+}  // namespace zeromq
+}  // namespace network
+
 class PasswordCaller;
 // }  // namespace v1
 }  // namespace opentxs
@@ -32,11 +40,17 @@ public:
     virtual auto GetPasswordCaller() const noexcept -> PasswordCaller& = 0;
     auto Internal() const noexcept -> const Context& final { return *this; }
     virtual auto Legacy() const noexcept -> const api::Legacy& = 0;
+    virtual auto ShuttingDown() const noexcept -> bool = 0;
 
     virtual auto Init() noexcept -> void = 0;
     auto Internal() noexcept -> Context& final { return *this; }
-    virtual auto shutdown() noexcept -> void = 0;
+    virtual auto Shutdown() noexcept -> void = 0;
 
     ~Context() override = default;
 };
 }  // namespace opentxs::api::internal
+
+namespace opentxs
+{
+auto get_zeromq() noexcept -> const opentxs::network::zeromq::Context&;
+}  // namespace opentxs

@@ -19,11 +19,14 @@ namespace zeromq
 class Context;
 }  // namespace zeromq
 }  // namespace network
+
+class Options;
 // }  // namespace v1
 }  // namespace opentxs
 // NOLINTEND(modernize-concat-nested-namespaces)
 
 namespace opentxs::factory
 {
-auto ZMQContext() noexcept -> std::shared_ptr<network::zeromq::Context>;
+auto ZMQContext(const opentxs::Options& args) noexcept
+    -> std::shared_ptr<network::zeromq::Context>;
 }  // namespace opentxs::factory

@@ -133,6 +133,9 @@ public:
     auto AddPeer(
         const blockchain::p2p::Address& address,
         std::promise<bool>& promise) noexcept -> void;
+    auto AddResolvedDNS(
+        Vector<std::unique_ptr<blockchain::p2p::internal::Address>>
+            address) noexcept -> void;
     auto ConstructPeer(Endpoint endpoint) noexcept -> int;
     auto LookupIncomingSocket(const int id) noexcept(false)
         -> opentxs::network::asio::Socket;
@@ -145,7 +148,7 @@ public:
         const node::internal::Config& config,
         const node::Manager& node,
         database::Peer& database,
-        const node::internal::PeerManager& parent,
+        node::internal::PeerManager& parent,
         const node::Endpoints& endpoints,
         const Type chain,
         const std::string_view seednode) noexcept;
@@ -176,7 +179,7 @@ private:
     const node::internal::Config& config_;
     const node::Manager& node_;
     database::Peer& database_;
-    const node::internal::PeerManager& parent_;
+    node::internal::PeerManager& parent_;
     const network::zeromq::socket::Publish& connected_peers_;
     const node::Endpoints& endpoints_;
     const bool invalid_peer_;
@@ -192,6 +195,7 @@ private:
     std::unique_ptr<IncomingConnectionManager> incoming_zmq_;
     std::unique_ptr<IncomingConnectionManager> incoming_tcp_;
     Map<identifier::Generic, Time> attempt_;
+    Deque<std::unique_ptr<blockchain::p2p::internal::Address>> resolved_dns_;
     Gatekeeper gatekeeper_;
 
     static auto get_preferred_services(
@@ -203,10 +207,8 @@ private:
         bool& invalidPeer) noexcept -> ByteArray;
 
     auto get_default_peer() const noexcept -> Endpoint;
-    auto get_dns_peer() const noexcept -> Endpoint;
     auto get_fallback_peer(
         const blockchain::p2p::Protocol protocol) const noexcept -> Endpoint;
-    auto get_peer() const noexcept -> Endpoint;
     auto get_preferred_peer(
         const blockchain::p2p::Protocol protocol) const noexcept -> Endpoint;
     auto get_types() const noexcept -> UnallocatedSet<blockchain::p2p::Network>;
@@ -216,6 +218,8 @@ private:
     auto add_peer(Endpoint endpoint) noexcept -> int;
     auto add_peer(const int id, Endpoint endpoint) noexcept -> int;
     auto adjust_count(int adjustment) noexcept -> void;
+    auto get_dns_peer() noexcept -> Endpoint;
+    auto get_peer() noexcept -> Endpoint;
     auto previous_failure_timeout(
         const identifier::Generic& addressID) const noexcept -> bool;
     auto peer_factory(

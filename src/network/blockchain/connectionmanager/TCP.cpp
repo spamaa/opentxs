@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <type_traits>
 
+#include "internal/api/network/Asio.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
 #include "internal/network/blockchain/Types.hpp"
 #include "internal/util/LogMacros.hpp"
@@ -82,7 +83,7 @@ struct TCPConnectionManager : virtual public ConnectionManager {
     }
     auto do_init() noexcept -> std::optional<std::string_view> final
     {
-        return api_.Network().Asio().NotificationEndpoint();
+        return api_.Network().Asio().Internal().NotificationEndpoint();
     }
     auto is_initialized() const noexcept -> bool final
     {
@@ -223,7 +224,7 @@ struct TCPConnectionManager : virtual public ConnectionManager {
         , get_body_size_(std::move(gbs))
         , connection_id_promise_()
         , connection_id_future_(connection_id_promise_.get_future())
-        , socket_(api_.Network().Asio().MakeSocket(endpoint_))
+        , socket_(api_.Network().Asio().Internal().MakeSocket(endpoint_))
         , header_([&] {
             auto out = api_.Factory().Data();
             out.SetSize(headerSize);

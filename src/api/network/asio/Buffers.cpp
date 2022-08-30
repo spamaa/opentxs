@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <memory>
 #include <mutex>
-#include <utility>
 
 #include "internal/util/Mutex.hpp"
 #include "opentxs/util/Bytes.hpp"
@@ -25,7 +24,7 @@ struct Buffers::Imp {
         auto lock = Lock{lock_};
         buffers_.erase(id);
     }
-    auto get(const std::size_t bytes) noexcept -> std::pair<Index, AsioBuffer>
+    auto get(const std::size_t bytes) noexcept -> Handle
     {
         auto lock = Lock{lock_};
         auto id = ++counter_;
@@ -48,8 +47,7 @@ Buffers::Buffers() noexcept
 
 auto Buffers::clear(Index id) noexcept -> void { imp_->clear(id); }
 
-auto Buffers::get(const std::size_t bytes) noexcept
-    -> std::pair<Index, AsioBuffer>
+auto Buffers::get(const std::size_t bytes) noexcept -> Handle
 {
     return imp_->get(bytes);
 }
