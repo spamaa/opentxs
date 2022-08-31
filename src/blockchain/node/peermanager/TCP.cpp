@@ -11,8 +11,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include "internal/api/network/Asio.hpp"
 #include "internal/blockchain/p2p/P2P.hpp"
-#include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/Network.hpp"
 #include "opentxs/api/session/Factory.hpp"
 #include "opentxs/api/session/Session.hpp"
@@ -71,8 +71,8 @@ public:
                 return listeners_.emplace_back(network, reader(bytes), port);
             }
             ();
-            const auto output =
-                api_.Network().Asio().Accept(endpoint, [=](auto&& socket) {
+            const auto output = api_.Network().Asio().Internal().Accept(
+                endpoint, [=](auto&& socket) {
                     accept(type, port, bytes, std::move(socket));
                 });
 
@@ -107,7 +107,7 @@ public:
         auto lock = Lock{lock_};
 
         for (const auto& endpoint : listeners_) {
-            api_.Network().Asio().Close(endpoint);
+            api_.Network().Asio().Internal().Close(endpoint);
         }
 
         listeners_.clear();

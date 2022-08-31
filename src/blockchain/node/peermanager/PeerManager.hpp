@@ -131,12 +131,13 @@ class PeerManager final : virtual public node::internal::PeerManager,
 {
 public:
     enum class Work : OTZMQWorkType {
+        Shutdown = value(WorkType::Shutdown),
+        Resolve = value(WorkType::AsioResolve),
         Disconnect = OT_ZMQ_INTERNAL_SIGNAL + 0,
         AddPeer = OT_ZMQ_INTERNAL_SIGNAL + 1,
         AddListener = OT_ZMQ_INTERNAL_SIGNAL + 2,
         IncomingPeer = OT_ZMQ_INTERNAL_SIGNAL + 3,
         StateMachine = OT_ZMQ_STATE_MACHINE_SIGNAL,
-        Shutdown = value(WorkType::Shutdown),
     };
 
     auto AddIncomingPeer(const int id, std::uintptr_t endpoint) const noexcept
@@ -173,6 +174,8 @@ public:
     auto VerifyPeer(const int id, const UnallocatedCString& address)
         const noexcept -> void final;
 
+    auto Resolve(std::string_view host, std::uint16_t post) noexcept
+        -> void final;
     auto Shutdown() noexcept -> std::shared_future<void> final
     {
         return signal_shutdown();

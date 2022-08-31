@@ -64,6 +64,7 @@ target_sources(
     "Time.cpp"
     "Timer.cpp"
     "Timer.hpp"
+    "Work.cpp"
     "Work.hpp"
 )
 target_include_directories(

@@ -6,6 +6,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <opentxs/opentxs.hpp>
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -18,11 +19,12 @@ namespace ottest
 {
 namespace ot_mocks = common::mocks::util;
 using ::testing::StrictMock;
+using namespace std::literals;
 
 TEST(OT_suite, ShouldThrowAnExceptionDuringGettingUninitializeContext)
 {
-    const ot::UnallocatedCString expected = "Context is not initialized";
-    ot::UnallocatedCString error_message;
+    const auto expected = "Context is not initialized"sv;
+    auto error_message = ot::CString{};
 
     try {
         [[maybe_unused]] const auto& otx = opentxs::Context();
@@ -30,7 +32,11 @@ TEST(OT_suite, ShouldThrowAnExceptionDuringGettingUninitializeContext)
         error_message = er.what();
     }
 
-    EXPECT_EQ(expected, error_message);
+    const auto prefix = std::string_view{
+        error_message.data(), std::min(expected.size(), error_message.size())};
+
+    EXPECT_EQ(expected, prefix);
+
     opentxs::Cleanup();
 }
 

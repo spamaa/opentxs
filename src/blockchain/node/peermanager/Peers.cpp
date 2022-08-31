@@ -46,7 +46,6 @@
 #include "opentxs/blockchain/node/Manager.hpp"
 #include "opentxs/blockchain/p2p/Address.hpp"
 #include "opentxs/core/identifier/Generic.hpp"
-#include "opentxs/network/asio/Endpoint.hpp"
 #include "opentxs/network/asio/Socket.hpp"
 #include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/network/zeromq/ZeroMQ.hpp"
@@ -59,7 +58,9 @@
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Log.hpp"
 #include "opentxs/util/Options.hpp"
+#include "opentxs/util/Types.hpp"
 #include "opentxs/util/WorkType.hpp"
+#include "util/ScopeGuard.hpp"
 #include "util/Work.hpp"
 
 namespace opentxs::blockchain::node::peermanager
@@ -71,7 +72,7 @@ Peers::Peers(
     const internal::Config& config,
     const node::Manager& node,
     database::Peer& database,
-    const internal::PeerManager& parent,
+    internal::PeerManager& parent,
     const node::Endpoints& endpoints,
     const Type chain,
     const std::string_view seednode) noexcept
@@ -113,6 +114,7 @@ Peers::Peers(
     , incoming_zmq_()
     , incoming_tcp_()
     , attempt_()
+    , resolved_dns_()  // TODO allocator
     , gatekeeper_()
 {
     const auto& data = params::Chains().at(chain_);
@@ -271,6 +273,14 @@ auto Peers::AddPeer(
     promise.set_value(true);
 }
 
+auto Peers::AddResolvedDNS(
+    Vector<std::unique_ptr<blockchain::p2p::internal::Address>>
+        address) noexcept -> void
+{
+    std::move(
+        address.begin(), address.end(), std::back_inserter(resolved_dns_));
+}
+
 auto Peers::ConstructPeer(Endpoint endpoint) noexcept -> int
 {
     auto id = ++next_id_;
@@ -320,11 +330,31 @@ auto Peers::get_default_peer() const noexcept -> Endpoint
         false)};
 }
 
-auto Peers::get_dns_peer() const noexcept -> Endpoint
+auto Peers::get_dns_peer() noexcept -> Endpoint
 {
     if (api_.GetOptions().TestMode()) { return {}; }
 
     try {
+        while (false == resolved_dns_.empty()) {
+            auto post = ScopeGuard{[&] { resolved_dns_.pop_front(); }};
+            auto out = std::move(resolved_dns_.front());
+
+            if (out) {
+                database_.AddOrUpdate(out->clone_internal());
+
+                if (previous_failure_timeout(out->ID())) {
+                    LogVerbose()(OT_PRETTY_CLASS())("Skipping ")(print(chain_))(
+                        " peer ")(out->Display())(" due to retry timeout")
+                        .Flush();
+
+                    continue;
+                } else {
+
+                    return out;
+                }
+            }
+        }
+
         const auto& data = params::Chains().at(chain_);
         const auto& dns = data.dns_seeds_;
 
@@ -359,59 +389,8 @@ auto Peers::get_dns_peer() const noexcept -> Endpoint
         }
 
         const auto port = data.default_port_;
-        LogVerbose()(OT_PRETTY_CLASS())("Using DNS seed: ")(seed).Flush();
-
-        for (const auto& endpoint : api_.Network().Asio().Resolve(seed, port)) {
-            LogVerbose()(OT_PRETTY_CLASS())("Found address: ")(
-                endpoint.GetAddress())
-                .Flush();
-            auto output = Endpoint{};
-            auto network = blockchain::p2p::Network{};
-
-            switch (endpoint.GetType()) {
-                case network::asio::Endpoint::Type::ipv4: {
-                    network = blockchain::p2p::Network::ipv4;
-                } break;
-                case network::asio::Endpoint::Type::ipv6: {
-                    network = blockchain::p2p::Network::ipv6;
-                } break;
-                case network::asio::Endpoint::Type::none:
-                default: {
-                    LogVerbose()(OT_PRETTY_CLASS())("unknown endpoint type")
-                        .Flush();
-
-                    continue;
-                }
-            }
-
-            output = factory::BlockchainAddress(
-                api_,
-                data.p2p_protocol_,
-                network,
-                api_.Factory().DataFromBytes(endpoint.GetBytes()),
-                port,
-                chain_,
-                Time{},
-                {},
-                false);
-
-            if (output) {
-                database_.AddOrUpdate(output->clone_internal());
-
-                if (previous_failure_timeout(output->ID())) {
-                    LogVerbose()(OT_PRETTY_CLASS())("Skipping ")(print(chain_))(
-                        " peer ")(output->Display())(" due to retry "
-                                                     "timeout")
-                        .Flush();
-
-                    continue;
-                }
-
-                return output;
-            }
-        }
-
-        LogVerbose()(OT_PRETTY_CLASS())("No addresses found").Flush();
+        LogVerbose()(OT_PRETTY_CLASS())("Resolving dns seed: ")(seed).Flush();
+        parent_.Resolve(seed, port);
 
         return {};
     } catch (const boost::system::system_error& e) {
@@ -431,7 +410,7 @@ auto Peers::get_fallback_peer(
     return database_.Get(protocol, get_types(), {});
 }
 
-auto Peers::get_peer() const noexcept -> Endpoint
+auto Peers::get_peer() noexcept -> Endpoint
 {
     const auto protocol = params::Chains().at(chain_).p2p_protocol_;
     auto pAddress = get_default_peer();

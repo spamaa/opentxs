@@ -25,7 +25,7 @@
 
 namespace opentxs::api::imp
 {
-Periodic::Periodic(network::Asio& asio)
+Periodic::Periodic(const network::Asio& asio)
     : asio_(asio)
     , data_()
 {

@@ -15,6 +15,9 @@ namespace opentxs::api::session::internal
 class Endpoints : virtual public api::session::Endpoints
 {
 public:
+    static auto Asio() noexcept -> std::string_view;
+    static auto ContextShutdown() noexcept -> std::string_view;
+
     virtual auto BlockchainBlockUpdated(const opentxs::blockchain::Type chain)
         const noexcept -> std::string_view = 0;
     virtual auto BlockchainStartupPublish() const noexcept

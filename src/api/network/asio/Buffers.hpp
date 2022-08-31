@@ -20,9 +20,10 @@ public:
         std::declval<void*>(),
         std::declval<std::size_t>()));
     using Index = std::int64_t;
+    using Handle = std::pair<Index, AsioBuffer>;
 
     auto clear(Index id) noexcept -> void;
-    auto get(const std::size_t bytes) noexcept -> std::pair<Index, AsioBuffer>;
+    auto get(const std::size_t bytes) noexcept -> Handle;
 
     Buffers() noexcept;
     Buffers(const Buffers&) = delete;

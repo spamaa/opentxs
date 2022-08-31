@@ -18,9 +18,15 @@ namespace opentxs
 auto MaxJobs() noexcept -> unsigned int
 {
     const auto configured = api::internal::Context::MaxJobs();
-    const auto hardware = std::thread::hardware_concurrency();
+    const auto hardware = std::max(std::thread::hardware_concurrency(), 1u);
 
-    return std::min(std::max(configured, 1u), std::max(hardware, 1u));
+    if (0u == configured) {
+
+        return hardware;
+    } else {
+
+        return std::min(configured, hardware);
+    }
 }
 
 auto print(ThreadPriority priority) noexcept -> const char*

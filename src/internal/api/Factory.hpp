@@ -6,6 +6,7 @@
 #pragma once
 
 #include <filesystem>
+#include <future>
 #include <memory>
 #include <string_view>
 
@@ -24,6 +25,11 @@ class Context;
 class Log;
 }  // namespace internal
 
+namespace network
+{
+class Asio;
+}  // namespace network
+
 namespace session
 {
 class Storage;
@@ -32,6 +38,11 @@ class Storage;
 class Legacy;
 class Settings;
 }  // namespace api
+
+namespace internal
+{
+class ShutdownSender;
+}  // namespace internal
 
 namespace network
 {
@@ -52,10 +63,14 @@ class String;
 namespace opentxs::factory
 {
 auto Context(
-    Flag& running,
+    const network::zeromq::Context& zmq,
+    const api::network::Asio& asio,
+    const internal::ShutdownSender& sender,
     const Options& args,
-    PasswordCaller* externalPasswordCallback = nullptr) noexcept
-    -> std::unique_ptr<api::internal::Context>;
+    Flag& running,
+    std::promise<void>& shutdown,
+    PasswordCaller* externalPasswordCallback) noexcept
+    -> std::shared_ptr<api::internal::Context>;
 auto Legacy(const std::filesystem::path& home) noexcept
     -> std::unique_ptr<api::Legacy>;
 auto Log(

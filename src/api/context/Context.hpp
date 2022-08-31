@@ -3,6 +3,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// IWYU pragma: no_include "opentxs/network/zeromq/Context.hpp"
+
 #pragma once
 
 #include <RPCResponse.pb.h>
@@ -36,14 +38,12 @@
 #include "opentxs/api/Periodic.hpp"
 #include "opentxs/api/Settings.hpp"
 #include "opentxs/api/crypto/Crypto.hpp"
-#include "opentxs/api/network/Asio.hpp"
 #include "opentxs/api/network/ZAP.hpp"
 #include "opentxs/api/session/Client.hpp"
 #include "opentxs/api/session/Notary.hpp"
 #include "opentxs/core/Secret.hpp"
 #include "opentxs/interface/rpc/request/Base.hpp"
 #include "opentxs/interface/rpc/response/Base.hpp"
-#include "opentxs/network/zeromq/Context.hpp"
 #include "opentxs/util/Bytes.hpp"
 #include "opentxs/util/Container.hpp"
 #include "opentxs/util/Options.hpp"
@@ -57,16 +57,29 @@ namespace opentxs  // NOLINT
 // {
 namespace api
 {
+namespace network
+{
+class Asio;
+}  // namespace network
+
 namespace session
 {
 class Client;
 }  // namespace session
+}  // namespace api
 
 namespace internal
 {
-class Log;
+class ShutdownSender;
 }  // namespace internal
-}  // namespace api
+
+namespace network
+{
+namespace zeromq
+{
+class Context;
+}  // namespace zeromq
+}  // namespace network
 
 namespace proto
 {
@@ -110,7 +123,7 @@ class Context final : public internal::Context
 public:
     static auto JobCount() noexcept -> std::atomic<unsigned int>&;
 
-    auto Asio() const noexcept -> const network::Asio& final { return *asio_; }
+    auto Asio() const noexcept -> const network::Asio& final { return asio_; }
     auto Cancel(const TaskID task) const -> bool final;
     auto ClientSession(const int instance) const noexcept(false)
         -> const api::session::Client& final;
@@ -122,6 +135,7 @@ public:
         -> const api::Settings& final;
     auto Crypto() const noexcept -> const api::Crypto& final;
     auto Factory() const noexcept -> const api::Factory& final;
+    auto GetPasswordCaller() const noexcept -> PasswordCaller& final;
     auto HandleSignals(ShutdownCallback* shutdown) const noexcept -> void final;
     auto Legacy() const noexcept -> const api::Legacy& final
     {
@@ -149,6 +163,7 @@ public:
         const std::chrono::seconds& interval,
         const PeriodicTask& task,
         const std::chrono::seconds& last) const -> TaskID final;
+    auto ShuttingDown() const noexcept -> bool final;
     auto StartClientSession(const opentxs::Options& args, const int instance)
         const -> const api::session::Client& final;
     auto StartClientSession(const int instance) const
@@ -164,16 +179,18 @@ public:
     auto StartNotarySession(const int instance) const
         -> const session::Notary& final;
     auto ZAP() const noexcept -> const api::network::ZAP& final;
-    auto ZMQ() const noexcept -> const opentxs::network::zeromq::Context& final
-    {
-        return *zmq_context_;
-    }
+    auto ZMQ() const noexcept -> const opentxs::network::zeromq::Context& final;
 
-    auto GetPasswordCaller() const noexcept -> PasswordCaller& final;
+    auto Init() noexcept -> void final;
+    auto Shutdown() noexcept -> void final;
 
     Context(
-        Flag& running,
         const opentxs::Options& args,
+        const opentxs::network::zeromq::Context& zmq,
+        const network::Asio& asio,
+        const opentxs::internal::ShutdownSender& sender,
+        Flag& running,
+        std::promise<void>& shutdown,
         PasswordCaller* externalPasswordCallback = nullptr);
     Context() = delete;
     Context(const Context&) = delete;
@@ -206,16 +223,17 @@ private:
         libguarded::ordered_guarded<SignalHandler, std::shared_mutex>;
 
     Flag& running_;
+    std::promise<void>& shutdown_;
     const opentxs::Options args_;
+    const opentxs::network::zeromq::Context& zmq_context_;
+    const network::Asio& asio_;
+    const opentxs::internal::ShutdownSender& shutdown_sender_;
     const std::filesystem::path home_;
     const std::unique_ptr<PasswordCallback> null_callback_;
     const std::unique_ptr<PasswordCaller> default_external_password_callback_;
     PasswordCaller* const external_password_callback_;
     AsyncConst<CString> profile_id_;
-    std::shared_ptr<opentxs::network::zeromq::Context> zmq_context_;
-    std::unique_ptr<network::Asio> asio_;
     std::optional<api::imp::Periodic> periodic_;
-    std::unique_ptr<api::internal::Log> log_;
     std::unique_ptr<api::Legacy> legacy_;
     mutable GuardedConfig config_;
     std::unique_ptr<api::Crypto> crypto_;
@@ -233,8 +251,6 @@ private:
     auto init_pid() const -> void;
 
     auto get_qt() const noexcept -> std::unique_ptr<QObject>&;
-    auto Init() noexcept -> void final;
-    auto Init_Asio() -> void;
     auto Init_CoreDump() noexcept -> void;
     auto Init_Crypto() -> void;
     auto Init_Factory() -> void;
@@ -243,7 +259,6 @@ private:
     auto Init_Profile() -> void;
     auto Init_Rlimit() noexcept -> void;
     auto Init_Zap() -> void;
-    auto shutdown() noexcept -> void final;
     auto shutdown_qt() noexcept -> void;
 };
 }  // namespace opentxs::api::imp

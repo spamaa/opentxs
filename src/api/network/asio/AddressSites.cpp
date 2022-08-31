@@ -3,13 +3,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "0_stdafx.hpp"               // IWYU pragma: associated
-#include "1_Internal.hpp"             // IWYU pragma: associated
-#include "api/network/asio/Asio.hpp"  // IWYU pragma: associated
+#include "0_stdafx.hpp"                 // IWYU pragma: associated
+#include "1_Internal.hpp"               // IWYU pragma: associated
+#include "api/network/asio/Shared.hpp"  // IWYU pragma: associated
 
-namespace opentxs::api::network::implementation
+namespace opentxs::api::network::asio
 {
-auto Asio::sites() -> const Vector<Site>&
+auto Shared::sites() -> const Vector<Site>&
 {
     static const auto sites = Vector<Site>{
         {
@@ -47,4 +47,4 @@ auto Asio::sites() -> const Vector<Site>&
 
     return sites;
 }
-}  // namespace opentxs::api::network::implementation
+}  // namespace opentxs::api::network::asio

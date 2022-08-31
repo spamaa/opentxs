@@ -14,6 +14,8 @@
 #include <thread>
 #include <utility>
 
+#include "internal/api/Factory.hpp"
+#include "internal/api/Log.hpp"
 #include "internal/network/zeromq/Factory.hpp"
 #include "internal/network/zeromq/Handle.hpp"
 #include "internal/network/zeromq/socket/Factory.hpp"
@@ -29,14 +31,16 @@
 #include "opentxs/network/zeromq/socket/Request.hpp"
 #include "opentxs/network/zeromq/socket/Router.hpp"
 #include "opentxs/network/zeromq/socket/Subscribe.hpp"
+#include "opentxs/util/Options.hpp"
 
 namespace opentxs::factory
 {
-auto ZMQContext() noexcept -> std::shared_ptr<network::zeromq::Context>
+auto ZMQContext(const opentxs::Options& args) noexcept
+    -> std::shared_ptr<network::zeromq::Context>
 {
     using ReturnType = network::zeromq::implementation::Context;
 
-    return std::make_shared<ReturnType>();
+    return std::make_shared<ReturnType>(args);
 }
 }  // namespace opentxs::factory
 
@@ -59,7 +63,7 @@ auto GetSocketID() noexcept -> SocketID
 
 namespace opentxs::network::zeromq::implementation
 {
-Context::Context() noexcept
+Context::Context(const opentxs::Options& args) noexcept
     : context_([] {
         auto* context = ::zmq_ctx_new();
         assert(nullptr != context);
@@ -72,10 +76,12 @@ Context::Context() noexcept
 
         return context;
     }())
+    , log_(factory::Log(*this, args.RemoteLogEndpoint()))
     , pool_(std::nullopt)
     , shutdown_()
 {
     assert(nullptr != context_);
+    assert(log_);
 }
 
 Context::operator void*() const noexcept
@@ -368,6 +374,8 @@ auto Context::ThreadID(BatchID id) const noexcept -> std::thread::id
 
 Context::~Context()
 {
+    log_.reset();
+
     if (nullptr != context_) {
         std::thread{[context = context_] {
             // NOTE neither of these functions should block forever but
