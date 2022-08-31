@@ -83,6 +83,7 @@ public:
         }
 
         init();
+        api::internal::Context::SetMaxJobs(args);
         zmq_ = [&] {
             auto zmq = factory::ZMQContext(args);
             zmq->Internal().Init(zmq);

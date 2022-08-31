@@ -90,6 +90,11 @@ auto Context::MaxJobs() noexcept -> unsigned int
 {
     return imp::Context::JobCount().load();
 }
+
+auto Context::SetMaxJobs(const opentxs::Options& args) noexcept -> void
+{
+    imp::Context::JobCount().store(args.MaxJobs());
+}
 }  // namespace opentxs::api::internal
 
 namespace opentxs::api::imp
@@ -143,12 +148,7 @@ Context::Context(
     : api::internal::Context()
     , running_(running)
     , shutdown_(shutdown)
-    , args_([&]() -> const auto& {
-        const auto& out = args;
-        JobCount().store(out.MaxJobs());
-
-        return out;
-    }())
+    , args_(args)
     , zmq_context_(zmq)
     , asio_(asio)
     , shutdown_sender_(sender)

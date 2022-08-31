@@ -25,6 +25,7 @@ class Context;
 }  // namespace zeromq
 }  // namespace network
 
+class Options;
 class PasswordCaller;
 // }  // namespace v1
 }  // namespace opentxs
@@ -36,6 +37,7 @@ class Context : virtual public api::Context
 {
 public:
     static auto MaxJobs() noexcept -> unsigned int;
+    static auto SetMaxJobs(const opentxs::Options& args) noexcept -> void;
 
     virtual auto GetPasswordCaller() const noexcept -> PasswordCaller& = 0;
     auto Internal() const noexcept -> const Context& final { return *this; }
